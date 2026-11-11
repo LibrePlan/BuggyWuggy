@@ -52,6 +52,14 @@ public final class IssueDtos {
         }
     }
 
+    /** Short reference to another issue (e.g. the parent). */
+    public record IssueRef(long id, String key, String summary) {
+    }
+
+    /** A child issue: a sub-task of a standard issue, or an issue in an epic. */
+    public record ChildIssueRef(long id, String key, String summary, IssueTypeRef issueType, StatusRef status) {
+    }
+
     // --- issues ----------------------------------------------------------------------
 
     public record IssueResponse(
@@ -59,6 +67,7 @@ public final class IssueDtos {
             PriorityRef priority, ResolutionRef resolution, String summary, String description,
             UserRef reporter, UserRef assignee, UserRef creator, List<String> labels, List<Named> components,
             List<Named> affectsVersions, List<Named> fixVersions, LocalDate dueDate,
+            IssueRef parent, List<ChildIssueRef> children,
             Instant createdAt, Instant updatedAt, Instant resolvedAt, long version) {
     }
 
@@ -66,9 +75,14 @@ public final class IssueDtos {
             StatusRef status, PriorityRef priority, UserRef assignee, Instant updatedAt) {
     }
 
+    /**
+     * {@code parent} (issue key or id) is required for sub-tasks and optional for standard
+     * issues, where it must be an epic of the same project.
+     */
     public record CreateIssueRequest(
             @NotBlank String project,
             @NotNull Long issueTypeId,
+            String parent,
             @NotBlank @Size(max = 255) String summary,
             @Size(max = 100_000) String description,
             Long priorityId,
@@ -91,6 +105,8 @@ public final class IssueDtos {
             @Size(min = 1, max = 255) String summary,
             @Size(max = 100_000) String description,
             Long issueTypeId,
+            String parent,
+            Boolean clearParent,
             Long priorityId,
             Long assigneeId,
             Boolean unassign,
@@ -104,6 +120,7 @@ public final class IssueDtos {
 
         boolean editsFields() {
             return summary != null || description != null || issueTypeId != null || priorityId != null
+                    || changesHierarchy()
                     || labels != null || componentIds != null || affectsVersionIds != null || fixVersionIds != null
                     || dueDate != null || Boolean.TRUE.equals(clearDueDate);
         }
@@ -111,6 +128,22 @@ public final class IssueDtos {
         boolean changesAssignee() {
             return assigneeId != null || Boolean.TRUE.equals(unassign);
         }
+
+        boolean changesHierarchy() {
+            return issueTypeId != null || parent != null || Boolean.TRUE.equals(clearParent);
+        }
+    }
+
+    // --- workflow --------------------------------------------------------------------
+
+    public record TransitionResponse(long id, String name, StatusRef to, boolean setsResolution) {
+    }
+
+    /**
+     * {@code resolutionId} may only be given when moving to a done status; if omitted there,
+     * the current or default resolution is used.
+     */
+    public record TransitionRequest(@NotNull Long transitionId, Long resolutionId, Long version) {
     }
 
     // --- lookups ---------------------------------------------------------------------

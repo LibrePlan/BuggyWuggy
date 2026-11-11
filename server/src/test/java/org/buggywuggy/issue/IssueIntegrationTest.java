@@ -244,15 +244,15 @@ class IssueIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    void issueTypeCanOnlyChangeWithinHierarchyLevel() {
+    void issueTypeChangeIsRecorded() {
         ApiClient admin = setupAndLoginAdmin();
         createProject(admin, "BUG", "Bug Tracker");
         String key = createIssue(admin, "BUG", "Typed");
 
         assertThat((String) admin.patch("/api/v1/issues/" + key, """
                 {"issueTypeId": %d}""".formatted(typeId("Task"))).json("$.issueType.name")).isEqualTo("Task");
-        assertThat((String) admin.patch("/api/v1/issues/" + key, """
-                {"issueTypeId": %d}""".formatted(typeId("Epic"))).json("$.code")).isEqualTo("issue.type-change-invalid");
+        assertThat((List<String>) admin.get("/api/v1/issues/" + key + "/history").json("$[0].items[*].toText"))
+                .containsExactly("Task");
     }
 
     // --- keys, archive, delete, listing -------------------------------------------------

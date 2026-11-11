@@ -9,16 +9,21 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import java.time.Clock;
+import java.time.Duration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 public class CommonConfiguration {
 
-    /** All "now" timestamps come from this clock, so tests can control time. */
+    /**
+     * All "now" timestamps come from this clock, so tests can control time. It ticks in
+     * microseconds, the precision of PostgreSQL timestamps, so a value returned right after a
+     * change is identical to the value read back later.
+     */
     @Bean
     Clock clock() {
-        return Clock.systemUTC();
+        return Clock.tick(Clock.systemUTC(), Duration.ofNanos(1_000));
     }
 
     @Bean

@@ -17,6 +17,14 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
     @Query("select i from Issue i where i.projectId = :projectId and i.number = :number")
     Optional<Issue> findByProjectAndNumber(long projectId, long number);
 
+    @Query("select count(i) > 0 from Issue i where i.parent.id = :parentId")
+    boolean hasChildren(long parentId);
+
+    @Query("""
+            select i from Issue i join fetch i.issueType join fetch i.status
+            where i.parent.id = :parentId order by i.number""")
+    List<Issue> findChildren(long parentId);
+
     @Query(value = """
             select i from Issue i
             join fetch i.issueType join fetch i.status left join fetch i.priority left join fetch i.assignee

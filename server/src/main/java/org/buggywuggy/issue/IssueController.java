@@ -14,6 +14,8 @@ import org.buggywuggy.common.PageResponse;
 import org.buggywuggy.issue.IssueDtos.CreateIssueRequest;
 import org.buggywuggy.issue.IssueDtos.IssueResponse;
 import org.buggywuggy.issue.IssueDtos.IssueSummaryResponse;
+import org.buggywuggy.issue.IssueDtos.TransitionRequest;
+import org.buggywuggy.issue.IssueDtos.TransitionResponse;
 import org.buggywuggy.issue.IssueDtos.UpdateIssueRequest;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
 import org.springframework.http.HttpStatus;
@@ -34,9 +36,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class IssueController {
 
     private final IssueService issueService;
+    private final IssueWorkflowService workflowService;
 
-    public IssueController(IssueService issueService) {
+    public IssueController(IssueService issueService, IssueWorkflowService workflowService) {
         this.issueService = issueService;
+        this.workflowService = workflowService;
+    }
+
+    /** Workflow transitions the current user can perform on the issue now. */
+    @GetMapping("/api/v1/issues/{idOrKey}/transitions")
+    public List<TransitionResponse> transitions(@AuthenticationPrincipal BuggyWuggyPrincipal user,
+            @PathVariable String idOrKey) {
+        return workflowService.available(user, idOrKey);
+    }
+
+    @PostMapping("/api/v1/issues/{idOrKey}/transitions")
+    public IssueResponse transition(@AuthenticationPrincipal BuggyWuggyPrincipal user,
+            @PathVariable String idOrKey, @Valid @RequestBody TransitionRequest request) {
+        return workflowService.transition(user, idOrKey, request);
     }
 
     @PostMapping("/api/v1/issues")

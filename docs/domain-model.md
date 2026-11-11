@@ -131,6 +131,11 @@ Named `project_version` to avoid confusion with the optimistic-locking `version`
 - A sub-task must have a parent, and that parent must not be a sub-task or epic.
 - A standard issue may have an epic as parent.
 - An epic has no parent in v1.
+- Parent and child are always in the same project (v1).
+- Changing the issue type to another hierarchy level is allowed only when the issue has no
+  children, and the parent must be valid for the new type in the same request (e.g. task →
+  sub-task together with a parent; sub-task → task together with clearing the parent).
+- Deleting an issue deletes its sub-tasks; deleting an epic keeps its issues without parent.
 
 The **issue key** (`BUG-123`) is not stored; it is `project.key || '-' || issue.number`.
 
@@ -197,7 +202,10 @@ implementation: local filesystem under the data directory, path derived from
 - *(later)* transition conditions, validators, post-functions and screens hang off `workflow_transition`.
 
 Resolution handling in v1 is built-in: moving to a status with category `DONE` requires
-a resolution; moving out of it clears the resolution.
+a resolution; moving out of it clears the resolution. When no resolution is given, the
+current one is kept (e.g. Resolved → Closed), otherwise the default resolution is used.
+`resolved_at` is set when an issue enters a done status and kept while it moves between
+done statuses. Transitions to the current status are never offered.
 
 - `workflow_scheme(id, name, description, is_default)` — exactly one default, used for new projects.
 - `workflow_scheme_entry(workflow_scheme_id, issue_type_id nullable, workflow_id)` —

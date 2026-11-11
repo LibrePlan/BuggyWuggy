@@ -25,7 +25,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.buggywuggy.common.PageResponse;
+import org.buggywuggy.issue.IssueDtos.ChildIssueRef;
 import org.buggywuggy.issue.IssueDtos.CreateIssueRequest;
+import org.buggywuggy.issue.IssueDtos.IssueRef;
 import org.buggywuggy.issue.IssueDtos.IssueResponse;
 import org.buggywuggy.issue.IssueDtos.IssueSummaryResponse;
 import org.buggywuggy.issue.IssueDtos.IssueTypeRef;
@@ -180,9 +182,8 @@ public class IssueService {
         }
         IssueType type = issueTypes.findById(request.issueTypeId())
                 .orElseThrow(() -> badRequest("issue.type-invalid", request.issueTypeId()));
-        if (type.isSubtask()) {
-            throw badRequest("issue.subtask-requires-parent");
-        }
+        Issue parent = request.parent() == null ? null : resolveParent(project.getId(), request.parent());
+        validateParent(null, type, parent);
         long workflowId = workflows.workflowFor(project.getWorkflowSchemeId(), type.getId());
         Status status = statuses.getReferenceById(workflows.initialStatus(workflowId));
         Instant now = clock.instant();
@@ -190,6 +191,7 @@ public class IssueService {
 
         Issue issue = new Issue(project.getId(), nextNumber(project.getId()), type, status,
                 request.summary().trim(), creator, now);
+        issue.setParent(parent);
         issue.setDescription(blankToNull(request.description()));
         issue.setDueDate(request.dueDate());
         issue.setPriority(request.priorityId() != null
@@ -257,8 +259,8 @@ public class IssueService {
             changes.record(Fields.DESCRIPTION, null, issue.getDescription(), null, description);
             issue.setDescription(description);
         }
-        if (request.issueTypeId() != null) {
-            changeIssueType(access, request.issueTypeId(), changes);
+        if (request.changesHierarchy()) {
+            changeTypeAndParent(access, request, changes);
         }
         if (request.priorityId() != null) {
             Priority priority = priorityById(request.priorityId());
@@ -340,24 +342,87 @@ public class IssueService {
                 Map.of("id", projectId), Long.class);
     }
 
-    private void changeIssueType(IssueAccess access, long issueTypeId, Changes changes) {
+    /**
+     * Changes issue type and/or parent together, because the hierarchy rules depend on both:
+     * converting a task to a sub-task needs a parent in the same request, and converting a
+     * sub-task to a task needs its parent cleared (or replaced by an epic).
+     */
+    private void changeTypeAndParent(IssueAccess access, UpdateIssueRequest request, Changes changes) {
         Issue issue = access.issue();
-        IssueType type = issueTypes.findById(issueTypeId)
-                .orElseThrow(() -> badRequest("issue.type-invalid", issueTypeId));
-        IssueType old = issue.getIssueType();
-        if (type.getId().equals(old.getId())) {
+        IssueType oldType = issue.getIssueType();
+        Issue oldParent = issue.getParent();
+
+        IssueType type = request.issueTypeId() == null ? oldType : issueTypes.findById(request.issueTypeId())
+                .orElseThrow(() -> badRequest("issue.type-invalid", request.issueTypeId()));
+        Issue parent = Boolean.TRUE.equals(request.clearParent()) ? null
+                : request.parent() != null ? resolveParent(issue.getProjectId(), request.parent())
+                : oldParent;
+
+        if (type.getHierarchyLevel() != oldType.getHierarchyLevel() && issues.hasChildren(issue.getId())) {
+            throw badRequest("issue.type-change-has-children", type.getName());
+        }
+        validateParent(issue, type, parent);
+
+        if (!type.getId().equals(oldType.getId())) {
+            long workflowId = workflows.workflowFor(access.project().project().getWorkflowSchemeId(), type.getId());
+            if (!workflows.containsStatus(workflowId, issue.getStatus().getId())) {
+                throw badRequest("issue.type-change-workflow", type.getName());
+            }
+            changes.record(Fields.ISSUE_TYPE, oldType.getId(), oldType.getName(), type.getId(), type.getName());
+            issue.setIssueType(type);
+        }
+        if (!Objects.equals(idOf(oldParent), idOf(parent))) {
+            String projectKey = access.project().project().getProjectKey();
+            changes.record(Fields.PARENT, idOf(oldParent), keyOf(projectKey, oldParent),
+                    idOf(parent), keyOf(projectKey, parent));
+            issue.setParent(parent);
+        }
+    }
+
+    /**
+     * Hierarchy rules: a sub-task needs a standard issue as parent; a standard issue may have an
+     * epic as parent; an epic has no parent. Parent and child are always in the same project.
+     */
+    private static void validateParent(Issue issue, IssueType type, Issue parent) {
+        if (type.getHierarchyLevel() == IssueType.EPIC) {
+            if (parent != null) {
+                throw badRequest("issue.parent-not-allowed", type.getName());
+            }
             return;
         }
-        // Moving between hierarchy levels (e.g. task <-> sub-task or epic) needs parent handling.
-        if (type.getHierarchyLevel() != old.getHierarchyLevel()) {
-            throw badRequest("issue.type-change-invalid", type.getName());
+        if (parent == null) {
+            if (type.isSubtask()) {
+                throw badRequest("issue.subtask-requires-parent");
+            }
+            return;
         }
-        long workflowId = workflows.workflowFor(access.project().project().getWorkflowSchemeId(), type.getId());
-        if (!workflows.containsStatus(workflowId, issue.getStatus().getId())) {
-            throw badRequest("issue.type-change-workflow", type.getName());
+        int required = type.getHierarchyLevel() + 1;
+        boolean self = issue != null && Objects.equals(issue.getId(), parent.getId());
+        if (self || parent.getIssueType().getHierarchyLevel() != required) {
+            throw badRequest("issue.parent-invalid", type.getName(), parent.getIssueType().getName());
         }
-        changes.record(Fields.ISSUE_TYPE, old.getId(), old.getName(), type.getId(), type.getName());
-        issue.setIssueType(type);
+    }
+
+    private Issue resolveParent(long projectId, String parentIdOrKey) {
+        Issue parent = find(parentIdOrKey).orElseThrow(() -> badRequest("issue.parent-not-found", parentIdOrKey));
+        if (parent.getProjectId() != projectId) {
+            throw badRequest("issue.parent-other-project");
+        }
+        return parent;
+    }
+
+    private static Long idOf(Issue issue) {
+        return issue == null ? null : issue.getId();
+    }
+
+    private static String keyOf(String projectKey, Issue issue) {
+        return issue == null ? null : projectKey + "-" + issue.getNumber();
+    }
+
+    /** The workflow that applies to the issue (via its project's scheme and its type). */
+    long workflowOf(IssueAccess access) {
+        return workflows.workflowFor(access.project().project().getWorkflowSchemeId(),
+                access.issue().getIssueType().getId());
     }
 
     private void updateVersions(Issue issue, VersionKind kind, String field, List<Long> requested, Changes changes) {
@@ -458,10 +523,17 @@ public class IssueService {
         return value == null || value.isBlank() ? null : value;
     }
 
-    private IssueResponse toResponse(IssueAccess access) {
+    IssueResponse toResponse(IssueAccess access) {
         Issue i = access.issue();
         Project p = access.project().project();
         long id = i.getId();
+        String projectKey = p.getProjectKey();
+        IssueRef parent = i.getParent() == null ? null : new IssueRef(i.getParent().getId(),
+                keyOf(projectKey, i.getParent()), i.getParent().getSummary());
+        List<ChildIssueRef> children = issues.findChildren(id).stream()
+                .map(c -> new ChildIssueRef(c.getId(), keyOf(projectKey, c), c.getSummary(),
+                        IssueTypeRef.of(c.getIssueType()), StatusRef.of(c.getStatus())))
+                .toList();
         return new IssueResponse(id, access.key(),
                 new ProjectRef(p.getId(), p.getProjectKey(), p.getName()),
                 IssueTypeRef.of(i.getIssueType()), StatusRef.of(i.getStatus()), PriorityRef.of(i.getPriority()),
@@ -469,6 +541,7 @@ public class IssueService {
                 UserRef.of(i.getReporter()), UserRef.of(i.getAssignee()), UserRef.of(i.getCreator()),
                 fields.labels(id), fields.components(id),
                 fields.versions(id, VersionKind.AFFECTS), fields.versions(id, VersionKind.FIX),
-                i.getDueDate(), i.getCreatedAt(), i.getUpdatedAt(), i.getResolvedAt(), i.getVersion());
+                i.getDueDate(), parent, children,
+                i.getCreatedAt(), i.getUpdatedAt(), i.getResolvedAt(), i.getVersion());
     }
 }
