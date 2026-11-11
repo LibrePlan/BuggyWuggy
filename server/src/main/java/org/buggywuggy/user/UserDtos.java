@@ -64,6 +64,14 @@ public final class UserDtos {
     public record GroupRef(long id, String name) {
     }
 
+    /** Short reference to a user, embedded in other resources. */
+    public record UserRef(long id, String username, String displayName) {
+
+        public static UserRef of(UserAccount u) {
+            return u == null ? null : new UserRef(u.getId(), u.getUsername(), u.getDisplayName());
+        }
+    }
+
     public record UserResponse(
             long id, String username, String displayName, String email, boolean active, boolean systemAdmin,
             String locale, String timeZone, Instant createdAt, Instant lastLoginAt, List<GroupRef> groups) {

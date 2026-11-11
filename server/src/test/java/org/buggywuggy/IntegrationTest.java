@@ -33,6 +33,7 @@ public abstract class IntegrationTest {
     @BeforeEach
     void resetUsers() {
         jdbc.update("delete from spring_session");
+        jdbc.update("delete from project");
         jdbc.update("delete from user_account");
         jdbc.update("delete from user_group where name not in ('administrators', 'users')");
     }
@@ -60,6 +61,22 @@ public abstract class IntegrationTest {
                 .formatted(username, username, username, password));
         assertThat(response.status()).as(response.toString()).isEqualTo(201);
         return ((Number) response.json("$.id")).longValue();
+    }
+
+    /** Creates a project through the API and returns its id. */
+    protected long createProject(ApiClient client, String key, String name) {
+        var response = client.post("/api/v1/projects", """
+                {"key": "%s", "name": "%s"}""".formatted(key, name));
+        assertThat(response.status()).as(response.toString()).isEqualTo(201);
+        return ((Number) response.json("$.id")).longValue();
+    }
+
+    protected long roleId(String name) {
+        return jdbc.queryForObject("select id from project_role where name = ?", Long.class, name);
+    }
+
+    protected long groupId(String name) {
+        return jdbc.queryForObject("select id from user_group where name = ?", Long.class, name);
     }
 
     protected ApiClient loginAs(String username, String password) {

@@ -15,8 +15,8 @@ import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import org.buggywuggy.common.PageResponse;
+import org.buggywuggy.common.SqlLike;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
 import org.buggywuggy.security.SessionInvalidator;
 import org.buggywuggy.user.UserDtos.CreateUserRequest;
@@ -56,7 +56,7 @@ public class UserService {
         PageRequest pageable = PageRequest.of(page, size);
         Page<UserAccount> result = query == null || query.isBlank()
                 ? users.findAllRegular(pageable)
-                : users.searchRegular(containsPattern(query), pageable);
+                : users.searchRegular(SqlLike.containsPattern(query), pageable);
         return PageResponse.of(result, UserResponse::of);
     }
 
@@ -185,6 +185,14 @@ public class UserService {
         sessions.invalidateAllExcept(user.getUsername(), currentSessionId);
     }
 
+    /** Returns the user if it exists and is active; otherwise fails with {@code messageKey}. */
+    @Transactional(readOnly = true)
+    public UserAccount requireActiveUser(long id, String messageKey) {
+        return users.findById(id)
+                .filter(u -> u.isActive() && !u.isPlaceholder())
+                .orElseThrow(() -> badRequest(messageKey));
+    }
+
     public void recordLogin(long userId) {
         users.updateLastLogin(userId, clock.instant());
     }
@@ -229,13 +237,6 @@ public class UserService {
 
     private static String blankToNull(String value) {
         return value.isBlank() ? null : value.trim();
-    }
-
-    /** A case-insensitive LIKE pattern matching {@code text} anywhere, with wildcards escaped. */
-    static String containsPattern(String text) {
-        String escaped = text.trim().toLowerCase(Locale.ROOT)
-                .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-        return "%" + escaped + "%";
     }
 
     private static MyselfResponse toMyself(UserAccount u, BuggyWuggyPrincipal principal) {

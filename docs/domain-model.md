@@ -199,7 +199,7 @@ implementation: local filesystem under the data directory, path derived from
 Resolution handling in v1 is built-in: moving to a status with category `DONE` requires
 a resolution; moving out of it clears the resolution.
 
-- `workflow_scheme(id, name, description)`
+- `workflow_scheme(id, name, description, is_default)` — exactly one default, used for new projects.
 - `workflow_scheme_entry(workflow_scheme_id, issue_type_id nullable, workflow_id)` —
   `issue_type_id = null` is the default for the scheme.
 
@@ -209,7 +209,7 @@ v1 seeds one workflow ("Default"), one workflow scheme, and assigns it to every 
 - `project_role(id, name, description)` — seeded: Administrators, Developers, Users.
 - `project_role_actor(id, project_id, project_role_id, user_id nullable, group_id nullable)` —
   exactly one of `user_id` / `group_id` is set.
-- `permission_scheme(id, name, description)`
+- `permission_scheme(id, name, description, is_default)` — exactly one default, used for new projects.
 - `permission_grant(id, permission_scheme_id, permission, holder_type, holder_ref)`
   - `permission` ∈ `BROWSE_PROJECT`, `CREATE_ISSUE`, `EDIT_ISSUE`, `DELETE_ISSUE`,
     `ASSIGN_ISSUE`, `ASSIGNABLE_USER`, `TRANSITION_ISSUE`, `ADD_COMMENT`,
@@ -223,6 +223,19 @@ Global permissions (system admin, create projects, browse users) live on `user_a
 plus `global_permission_grant(permission, group_id)`.
 
 v1 seeds one default permission scheme; the UI only edits role membership per project.
+
+**Evaluation rules**
+- Permissions are evaluated per request from the database, so role and group changes take effect immediately.
+- `REPORTER` and `ASSIGNEE` grants only apply in the context of a specific issue.
+- Users with the global `ADMINISTER` permission get `ADMINISTER_PROJECT` on every project
+  (they can configure it), but still need `BROWSE_PROJECT` through the scheme to see issues.
+- A project the user can neither browse nor administer is reported as *not found*.
+- Changing a project key, archiving and deleting a project require the global `ADMINISTER` permission.
+- Archived projects are read-only and hidden from project lists unless requested.
+
+**Default role members** — `project_role_default_actor(project_role_id, group_id)` lists the
+groups added to a role when a project is created (seeded: `users` → Users,
+`administrators` → Administrators). The project lead is always added to the Administrators role.
 
 ## 8. Change history and import support
 
