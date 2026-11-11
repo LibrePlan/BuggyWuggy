@@ -1,0 +1,15 @@
+# Local development database. Usage: docker compose up -d
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: buggywuggy
+      POSTGRES_USER: buggywuggy
+      POSTGRES_PASSWORD: buggywuggy
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:

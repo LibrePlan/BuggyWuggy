@@ -1,0 +1,25 @@
+# Build output
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Frontend (later)
+node/
+node_modules/
+dist/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+
+# OS
+.DS_Store
+
+# Local configuration and data
+.env
+*.local.yml
+data/
