@@ -7,6 +7,7 @@ import { fieldErrorMap, toApiError } from './apiError';
 import { readCookie } from './cookies';
 import { changedFields, formatDate } from './format';
 import { childTypes, topLevelTypes } from './issueTypes';
+import { groupByDescription, linkOptions, normalizeIssueKey } from './links';
 import { suggestProjectKey } from './projectKey';
 import { withQuery } from '../api/client';
 
@@ -98,5 +99,33 @@ describe('formatting', () => {
   it('builds query strings without empty values', () => {
     expect(withQuery('/x', { a: 1, b: '', c: undefined, d: 'q r' })).toBe('/x?a=1&d=q+r');
     expect(withQuery('/x')).toBe('/x');
+  });
+});
+
+describe('issue links', () => {
+  const types = [
+    { id: 1, name: 'Blocks', outward: 'blocks', inward: 'is blocked by' },
+    { id: 2, name: 'Relates', outward: 'relates to', inward: 'relates to' },
+  ];
+  it('offers both directions unless they read the same', () => {
+    expect(linkOptions(types).map((o) => o.value)).toEqual(['1:OUTWARD', '1:INWARD', '2:OUTWARD']);
+    expect(linkOptions(types)[1]).toMatchObject({ label: 'is blocked by', linkTypeId: 1, direction: 'INWARD' });
+  });
+  it('groups links by phrase in order', () => {
+    const links = [
+      { description: 'blocks', key: 'A-1' },
+      { description: 'relates to', key: 'A-2' },
+      { description: 'blocks', key: 'A-3' },
+    ];
+    expect(groupByDescription(links).map(([d, l]) => [d, l.map((x) => x.key)])).toEqual([
+      ['blocks', ['A-1', 'A-3']],
+      ['relates to', ['A-2']],
+    ]);
+  });
+  it('normalizes typed keys', () => {
+    expect(normalizeIssueKey(' bug-12 ')).toBe('BUG-12');
+    expect(normalizeIssueKey('42')).toBe('42');
+    expect(normalizeIssueKey('BUG-')).toBe('');
+    expect(normalizeIssueKey('hello')).toBe('');
   });
 });

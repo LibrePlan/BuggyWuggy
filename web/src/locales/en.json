@@ -1,6 +1,12 @@
 {
-  "app": { "name": "BuggyWuggy" },
-  "nav": { "projects": "Projects", "userMenu": "User menu", "logout": "Log out" },
+  "app": {
+    "name": "BuggyWuggy"
+  },
+  "nav": {
+    "projects": "Projects",
+    "userMenu": "User menu",
+    "logout": "Log out"
+  },
   "common": {
     "cancel": "Cancel",
     "create": "Create",
@@ -35,7 +41,10 @@
     "submit": "Create administrator",
     "done": "The administrator has been created. You can log in now."
   },
-  "login": { "title": "Log in", "submit": "Log in" },
+  "login": {
+    "title": "Log in",
+    "submit": "Log in"
+  },
   "user": {
     "username": "Username",
     "displayName": "Full name",
@@ -122,7 +131,35 @@
       "fixversion": "Fix version",
       "parent": "Parent",
       "status": "Status",
-      "resolution": "Resolution"
+      "resolution": "Resolution",
+      "link": "Link"
     }
+  },
+  "comment": {
+    "title": "Comments",
+    "empty": "No comments yet.",
+    "placeholder": "Add a comment…",
+    "add": "Add comment",
+    "shortcut": "Ctrl+Enter to send",
+    "edited": "edited",
+    "deleteConfirm": "Delete this comment permanently?",
+    "conflict": "This comment was changed in the meantime. The latest version is shown now."
+  },
+  "link": {
+    "title": "Linked issues",
+    "add": "Link issue",
+    "addTitle": "Link {{key}} to another issue",
+    "empty": "No linked issues.",
+    "thisIssue": "This issue",
+    "otherIssue": "Issue",
+    "keyInvalid": "Enter an issue key such as BUG-123",
+    "submit": "Link",
+    "remove": "Remove link to {{key}}"
+  },
+  "watch": {
+    "start": "Watch",
+    "stop": "Stop watching",
+    "count_one": "{{count}} watcher",
+    "count_other": "{{count}} watchers"
   }
 }

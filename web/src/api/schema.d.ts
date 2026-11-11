@@ -68,6 +68,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/issues/{idOrKey}/watchers/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["addWatcher"];
+        post?: never;
+        delete: operations["removeWatcher"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users/{id}/password": {
         parameters: {
             query?: never;
@@ -190,6 +206,38 @@ export interface paths {
         get: operations["transitions"];
         put?: never;
         post: operations["transition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/issues/{idOrKey}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["links"];
+        put?: never;
+        post: operations["addLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/issues/{idOrKey}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["comments"];
+        put?: never;
+        post: operations["addComment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -322,6 +370,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["update_4"];
+        trace?: never;
+    };
+    "/api/v1/issues/{idOrKey}/comments/{commentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteComment"];
+        options?: never;
+        head?: never;
+        patch: operations["updateComment"];
         trace?: never;
     };
     "/api/v1/admin/users/{id}": {
@@ -500,6 +564,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/issues/{idOrKey}/watchers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["watchers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/issues/{idOrKey}/history": {
         parameters: {
             query?: never;
@@ -524,6 +604,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["issueTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/issue-link-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["linkTypes"];
         put?: never;
         post?: never;
         delete?: never;
@@ -564,6 +660,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/issues/{idOrKey}/links/{linkId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteLink"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -588,6 +700,18 @@ export interface components {
         ChangeOwnPasswordRequest: {
             currentPassword: string;
             newPassword: string;
+        };
+        UserRef: {
+            /** Format: int64 */
+            id: number;
+            username: string;
+            displayName: string;
+        };
+        WatchersResponse: {
+            watching: boolean;
+            /** Format: int32 */
+            count: number;
+            watchers: components["schemas"]["UserRef"][] | null;
         };
         SetPasswordRequest: {
             password: string;
@@ -642,12 +766,6 @@ export interface components {
             archived: boolean;
             /** Format: date-time */
             createdAt: string;
-        };
-        UserRef: {
-            /** Format: int64 */
-            id: number;
-            username: string;
-            displayName: string;
         };
         CreateVersionRequest: {
             name: string;
@@ -786,6 +904,55 @@ export interface components {
             /** Format: int64 */
             version?: number;
         };
+        CreateLinkRequest: {
+            /** Format: int64 */
+            linkTypeId: number;
+            issue: string;
+            /** @enum {string} */
+            direction?: "OUTWARD" | "INWARD";
+        };
+        IssueLinkResponse: {
+            /** Format: int64 */
+            id: number;
+            type: components["schemas"]["LinkTypeResponse"];
+            /** @enum {string} */
+            direction: "OUTWARD" | "INWARD";
+            description: string;
+            issue: components["schemas"]["LinkedIssueRef"];
+        };
+        LinkTypeResponse: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            outward: string;
+            inward: string;
+        };
+        LinkedIssueRef: {
+            /** Format: int64 */
+            id: number;
+            key: string;
+            summary: string;
+            issueType: components["schemas"]["IssueTypeRef"];
+            status: components["schemas"]["StatusRef"];
+        };
+        CreateCommentRequest: {
+            body: string;
+        };
+        CommentResponse: {
+            /** Format: int64 */
+            id: number;
+            author: components["schemas"]["UserRef"] | null;
+            body: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            updateAuthor: components["schemas"]["UserRef"] | null;
+            /** Format: int64 */
+            version: number;
+            canEdit: boolean;
+            canDelete: boolean;
+        };
         LoginRequest: {
             username: string;
             password: string;
@@ -882,6 +1049,11 @@ export interface components {
             /** Format: date */
             dueDate?: string;
             clearDueDate?: boolean;
+        };
+        UpdateCommentRequest: {
+            body: string;
+            /** Format: int64 */
+            version?: number;
         };
         UpdateUserRequest: {
             displayName?: string;
@@ -1170,6 +1342,52 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    addWatcher: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+                userId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["WatchersResponse"];
+                };
+            };
+        };
+    };
+    removeWatcher: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+                userId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["WatchersResponse"];
+                };
             };
         };
     };
@@ -1476,6 +1694,102 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["IssueResponse"];
+                };
+            };
+        };
+    };
+    links: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["IssueLinkResponse"][];
+                };
+            };
+        };
+    };
+    addLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["IssueLinkResponse"];
+                };
+            };
+        };
+    };
+    comments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommentResponse"][];
+                };
+            };
+        };
+    };
+    addComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCommentRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommentResponse"];
                 };
             };
         };
@@ -1875,6 +2189,54 @@ export interface operations {
             };
         };
     };
+    deleteComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+                commentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+                commentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCommentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommentResponse"];
+                };
+            };
+        };
+    };
     get_3: {
         parameters: {
             query?: never;
@@ -2185,6 +2547,28 @@ export interface operations {
             };
         };
     };
+    watchers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["WatchersResponse"];
+                };
+            };
+        };
+    };
     history: {
         parameters: {
             query?: never;
@@ -2223,6 +2607,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["IssueTypeResponse"][];
+                };
+            };
+        };
+    };
+    linkTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LinkTypeResponse"][];
                 };
             };
         };
@@ -2271,6 +2675,27 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["PageResponseUserResponse"];
                 };
+            };
+        };
+    };
+    deleteLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+                linkId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

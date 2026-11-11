@@ -32,12 +32,15 @@ import { useIssue, useIssueTypes, useProjectPermissions, useTransitions } from '
 import type { IssueResponse, TransitionResponse } from '../api/types';
 import { CreateIssueModal } from '../components/CreateIssueModal';
 import { EditIssueModal } from '../components/EditIssueModal';
+import { IssueComments } from '../components/IssueComments';
 import { IssueHistory } from '../components/IssueHistory';
+import { IssueLinks } from '../components/IssueLinks';
 import { IssueTypeIcon, PriorityLabel, StatusBadge } from '../components/IssueIcons';
 import { ErrorAlert, isNotFound, PageLoader } from '../components/QueryState';
 import { TransitionModal } from '../components/TransitionModal';
 import { UserLabel } from '../components/UserLabel';
 import { UserPicker } from '../components/UserPicker';
+import { WatchButton } from '../components/WatchButton';
 import { formatDate, formatDateTime } from '../lib/format';
 import { childTypes } from '../lib/issueTypes';
 import { NotFoundPage } from './NotFoundPage';
@@ -144,6 +147,7 @@ function IssueView({ issue }: { issue: IssueResponse }) {
               {tr.name}
             </Button>
           ))}
+        <WatchButton issueKey={issue.key} />
         {permissions.has('DELETE_ISSUE') && (
           <Menu position="bottom-end">
             <Menu.Target>
@@ -200,10 +204,16 @@ function IssueView({ issue }: { issue: IssueResponse }) {
               </Section>
             )}
 
-            <Tabs defaultValue="history">
+            <IssueLinks issueKey={issue.key} canLink={permissions.has('LINK_ISSUE')} />
+
+            <Tabs defaultValue="comments" keepMounted={false}>
               <Tabs.List>
+                <Tabs.Tab value="comments">{t('comment.title')}</Tabs.Tab>
                 <Tabs.Tab value="history">{t('history.title')}</Tabs.Tab>
               </Tabs.List>
+              <Tabs.Panel value="comments" pt="md">
+                <IssueComments issueKey={issue.key} canAdd={permissions.has('ADD_COMMENT')} />
+              </Tabs.Panel>
               <Tabs.Panel value="history" pt="md">
                 <IssueHistory issueKey={issue.key} />
               </Tabs.Panel>

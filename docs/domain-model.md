@@ -172,6 +172,10 @@ which also prepares for deeper hierarchies later.
 ### `comment`
 `(id, issue_id, author_id, body (Markdown), created_at, updated_at, update_author_id, version, search_vector)`
 
+A new comment sets the issue's `updated_at` but not its `version`, so it never makes a
+concurrent edit of the issue fail. Editing or deleting needs `EDIT_/DELETE_ALL_COMMENTS`, or the
+`_OWN_` variant for one's own comments.
+
 *(later)* `visibility_role_id` / `visibility_group_id` for restricted comments; the
 columns can be added without changing existing rows.
 
@@ -190,7 +194,8 @@ implementation: local filesystem under the data directory, path derived from
   `(link_type_id, source_issue_id, target_issue_id)`.
 
 ### `watcher`
-`(issue_id, user_id, created_at)` — PK `(issue_id, user_id)`. Reporter and creator are added automatically.
+`(issue_id, user_id, created_at)` — PK `(issue_id, user_id)`. Reporter, creator and commenters are added automatically.
+Everyone who can browse an issue may watch it; seeing who watches and adding or removing others requires `MANAGE_WATCHERS`.
 
 ## 7. Workflow and permissions (data-driven, fixed content in v1)
 
@@ -252,8 +257,10 @@ groups added to a role when a project is created (seeded: `users` → Users,
 - `change_item(id, change_group_id, field_key, field_kind, old_value, old_text, new_value, new_text)`
   - `field_key`: field identifier. System fields: `summary`, `description`, `issuetype`, `priority`,
     `assignee`, `reporter`, `duedate`, `labels`, `component`, `version` (affects version),
-    `fixversion`; from the workflow step: `status`, `resolution`. These match Jira's field ids
-    where possible, so imported history needs little mapping.
+    `fixversion`, `parent`; from the workflow step: `status`, `resolution`; for issue links:
+    `link` (value = the other issue's key, text = the phrase from this issue's side, e.g.
+    "blocks BUG-2"; recorded on both issues). These match Jira's field ids where possible, so
+    imported history needs little mapping.
   - Single-valued fields produce one item per change. `labels` produces one item with the full
     old and new label list (space-separated). `component`, `version` and `fixversion` produce one
     item per added or removed value, as Jira does.

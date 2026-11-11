@@ -44,7 +44,8 @@ export async function api<T>(method: Method, path: string, options: { body?: unk
 export const get = <T>(path: string, query?: Query) => api<T>('GET', path, { query });
 export const post = <T>(path: string, body?: unknown) => api<T>('POST', path, { body });
 export const patch = <T>(path: string, body: unknown) => api<T>('PATCH', path, { body });
-export const del = (path: string) => api<void>('DELETE', path);
+export const put = <T>(path: string, body?: unknown) => api<T>('PUT', path, { body });
+export const del = <T = void>(path: string) => api<T>('DELETE', path);
 
 async function csrfToken(): Promise<string> {
   const existing = readCookie(document.cookie, CSRF_COOKIE);

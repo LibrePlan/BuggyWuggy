@@ -13,6 +13,10 @@
     <artifactId>buggywuggy-server</artifactId>
     <name>BuggyWuggy Server</name>
 
+    <properties>
+        <spring-boot.run.skip>false</spring-boot.run.skip>
+    </properties>
+
     <dependencies>
         <!-- The web UI, as static resources (classpath:/static). -->
         <dependency>

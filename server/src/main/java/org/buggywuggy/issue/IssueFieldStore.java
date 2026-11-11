@@ -93,6 +93,28 @@ public class IssueFieldStore {
                         .addValue("at", java.sql.Timestamp.from(at)));
     }
 
+    public void removeWatcher(long issueId, long userId) {
+        jdbc.update("delete from watcher where issue_id = :issue and user_id = :user",
+                Map.of("issue", issueId, "user", userId));
+    }
+
+    public boolean isWatching(long issueId, long userId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject(
+                "select exists (select 1 from watcher where issue_id = :issue and user_id = :user)",
+                Map.of("issue", issueId, "user", userId), Boolean.class));
+    }
+
+    // --- timestamps ------------------------------------------------------------------
+
+    /**
+     * Sets {@code updated_at} of an issue without changing its version, for activity around the
+     * issue (comments, links) that must not make concurrent edits of the issue fail.
+     */
+    public void touch(long issueId, java.time.Instant at) {
+        jdbc.update("update issue set updated_at = greatest(updated_at, :at) where id = :issue",
+                new MapSqlParameterSource().addValue("issue", issueId).addValue("at", java.sql.Timestamp.from(at)));
+    }
+
     // --- helpers ---------------------------------------------------------------------
 
     private Set<Long> idsInProject(String table, long projectId, Collection<Long> ids) {

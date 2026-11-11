@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springdoc.core.customizers.PropertyCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -38,16 +39,22 @@ public class OpenApiConfiguration {
                 .license(new License().name("AGPL-3.0-or-later").url("https://www.gnu.org/licenses/agpl-3.0.html")));
     }
 
+    /**
+     * Schema properties ({@code Schema.property}) annotated with {@link ApiNullable}. Collected
+     * while the schemas are built and applied afterwards: during building, the call for a list
+     * property cannot be told apart from the call for its items.
+     */
+    private final Set<String> nullableProperties = ConcurrentHashMap.newKeySet();
+
     @Bean
     PropertyCustomizer nullablePropertyCustomizer() {
         return (property, type) -> {
             Annotation[] annotations = type.getCtxAnnotations();
-            if (annotations == null || property == null) {
-                return property;
-            }
-            for (Annotation annotation : annotations) {
-                if (annotation instanceof ApiNullable) {
-                    return nullable(property);
+            if (annotations != null && type.getParent() != null && type.getPropertyName() != null) {
+                for (Annotation annotation : annotations) {
+                    if (annotation instanceof ApiNullable) {
+                        nullableProperties.add(type.getParent().getName() + "." + type.getPropertyName());
+                    }
                 }
             }
             return property;
@@ -55,6 +62,7 @@ public class OpenApiConfiguration {
     }
 
     @Bean
+    @SuppressWarnings({"rawtypes", "unchecked"})
     OpenApiCustomizer requiredResponseFieldsCustomizer() {
         return openApi -> {
             if (openApi.getComponents() == null || openApi.getComponents().getSchemas() == null) {
@@ -62,10 +70,18 @@ public class OpenApiConfiguration {
             }
             for (Map.Entry<String, Schema> entry : openApi.getComponents().getSchemas().entrySet()) {
                 Schema<?> schema = entry.getValue();
-                if (entry.getKey().endsWith("Request") || schema.getProperties() == null) {
+                if (schema.getProperties() == null) {
                     continue;
                 }
-                schema.setRequired(new ArrayList<>(schema.getProperties().keySet()));
+                Map<String, Schema> properties = (Map) schema.getProperties();
+                for (Map.Entry<String, Schema> property : properties.entrySet()) {
+                    if (nullableProperties.contains(entry.getKey() + "." + property.getKey())) {
+                        property.setValue(nullable(property.getValue()));
+                    }
+                }
+                if (!entry.getKey().endsWith("Request")) {
+                    schema.setRequired(new ArrayList<>(properties.keySet()));
+                }
             }
         };
     }
@@ -78,6 +94,9 @@ public class OpenApiConfiguration {
             wrapper.setOneOf(List.of(new Schema().$ref(property.get$ref()), new Schema().types(Set.of("null"))));
             wrapper.setDescription(property.getDescription());
             return wrapper;
+        }
+        if (property.getOneOf() != null || property.getTypes() != null && property.getTypes().contains("null")) {
+            return property;
         }
         if (property.getTypes() != null) {
             property.addType("null");

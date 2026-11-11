@@ -6,7 +6,11 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ApiError } from '../lib/apiError';
 import { get, seg } from './client';
 import type {
+  CommentResponse,
   ComponentResponse,
+  IssueLinkResponse,
+  LinkTypeResponse,
+  WatchersResponse,
   HistoryEntry,
   IssuePage,
   IssueResponse,
@@ -37,6 +41,9 @@ export const keys = {
   issue: (key: string) => ['issue', key] as const,
   transitions: (key: string) => ['issue', key, 'transitions'] as const,
   history: (key: string) => ['issue', key, 'history'] as const,
+  comments: (key: string) => ['issue', key, 'comments'] as const,
+  links: (key: string) => ['issue', key, 'links'] as const,
+  watchers: (key: string) => ['issue', key, 'watchers'] as const,
 };
 
 const LOOKUP_STALE = 5 * 60_000;
@@ -160,6 +167,35 @@ export function useResolutions() {
   return useQuery({
     queryKey: ['lookup', 'resolutions'],
     queryFn: () => get<ResolutionResponse[]>('/api/v1/resolutions'),
+    staleTime: LOOKUP_STALE,
+  });
+}
+
+export function useComments(key: string) {
+  return useQuery({
+    queryKey: keys.comments(key),
+    queryFn: () => get<CommentResponse[]>(`/api/v1/issues/${seg(key)}/comments`),
+  });
+}
+
+export function useLinks(key: string) {
+  return useQuery({
+    queryKey: keys.links(key),
+    queryFn: () => get<IssueLinkResponse[]>(`/api/v1/issues/${seg(key)}/links`),
+  });
+}
+
+export function useWatchers(key: string) {
+  return useQuery({
+    queryKey: keys.watchers(key),
+    queryFn: () => get<WatchersResponse>(`/api/v1/issues/${seg(key)}/watchers`),
+  });
+}
+
+export function useLinkTypes() {
+  return useQuery({
+    queryKey: ['lookup', 'link-types'],
+    queryFn: () => get<LinkTypeResponse[]>('/api/v1/issue-link-types'),
     staleTime: LOOKUP_STALE,
   });
 }
