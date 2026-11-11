@@ -50,6 +50,8 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /api/docs
+    csrf:
+      enabled: true  # Swagger UI sends the XSRF-TOKEN cookie as header, so "Try it out" works
 
 management:
   endpoints:

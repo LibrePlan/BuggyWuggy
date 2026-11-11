@@ -43,7 +43,7 @@ public class SecurityConfiguration {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
-                        .requestMatchers("/api/openapi/**", "/api/docs", "/swagger-ui/**").permitAll()
+                        .requestMatchers("/api/openapi/**", "/api/docs", "/api/swagger-ui/**").permitAll()
                         .requestMatchers("/api/v1/setup/**").permitAll()
                         .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/admin/**")
