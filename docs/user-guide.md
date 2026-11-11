@@ -1,0 +1,320 @@
+# BuggyWuggy User Guide
+
+BuggyWuggy is an issue tracker: a place where a team records, discusses and follows up bugs,
+tasks and other work. If you have used Jira, most of it will feel familiar.
+
+> BuggyWuggy is in early development. This guide describes what works today. Features that
+> are not there yet are listed at the end.
+
+## Contents
+
+1. [Concepts](#concepts)
+2. [Logging in and out](#logging-in-and-out)
+3. [Finding your way around](#finding-your-way-around)
+4. [Projects](#projects)
+5. [Creating an issue](#creating-an-issue)
+6. [The issue page](#the-issue-page)
+7. [Working on an issue](#working-on-an-issue)
+8. [Sub-tasks and epics](#sub-tasks-and-epics)
+9. [Comments](#comments)
+10. [Linking issues](#linking-issues)
+11. [Watching issues](#watching-issues)
+12. [Searching for issues](#searching-for-issues)
+13. [Saved filters](#saved-filters)
+14. [Permissions: why can't I…?](#permissions-why-cant-i)
+15. [Not available yet](#not-available-yet)
+
+## Concepts
+
+| Term | Meaning |
+|---|---|
+| **Project** | A collection of issues, for example one product or team. Every project has a short **key**, such as `BUG`. |
+| **Issue** | One piece of work: a bug, a task, a story… Each issue has a **key** made of the project key and a number, for example `BUG-12`. |
+| **Issue type** | The kind of issue: **Epic**, **Story**, **Task**, **Bug** or **Sub-task**. |
+| **Status** | Where the issue is in its life: **Open**, **In Progress**, **Reopened**, **Resolved** or **Closed**. |
+| **Resolution** | *Why* an issue is done: **Fixed**, **Won't Fix**, **Duplicate**, **Cannot Reproduce** or **Done**. An issue without a resolution is *unresolved*. |
+| **Priority** | How important the issue is: **Highest**, **High**, **Medium** (the default), **Low**, **Lowest**. |
+| **Assignee** | The person who works on the issue. |
+| **Reporter** | The person who reported the issue (normally whoever created it). |
+| **Watcher** | Someone who follows an issue. |
+| **Labels, components, versions** | Optional ways to group issues. Labels are free words; components (parts of the product) and versions are defined per project by its administrators. |
+
+## Logging in and out
+
+Open BuggyWuggy in your browser and log in with the username and password your administrator
+gave you. If you try to open a page while not logged in, you are taken to that page right
+after logging in.
+
+To log out, click your name in the top-right corner and choose **Log out**. A login stays
+valid for a number of hours of inactivity (8 by default); after that you are asked to log
+in again.
+
+After several failed login attempts, logging in is blocked for a while. Wait 15 minutes or
+ask your administrator to reset your password.
+
+## Finding your way around
+
+The bar at the top of every page contains:
+
+- **BuggyWuggy** (the logo): back to the start page.
+- **Projects**: all projects you can see.
+- **Issues**: the search page, opened with the issues assigned to you that are not yet resolved.
+- **The search box**: type an issue key such as `BUG-12` and press Enter to open that issue
+  straight away. Type anything else to search for it.
+- **Your name**: the menu with **Log out**.
+
+Every issue and every search has its own address (URL). You can bookmark it or send it to
+a colleague.
+
+## Projects
+
+**Projects** lists the projects you have access to. Use the search field to find a project by
+name or key, and click a project to open it.
+
+A project page shows the project's name, key, lead and description, and its issues with the
+most recently updated first. From here you can:
+
+- **Create issue**: create a new issue in this project.
+- **Search issues**: open the search page for this project, showing its unresolved issues.
+
+### Creating a project
+
+If you are allowed to create projects (by default only administrators), the **Projects** page
+has a **Create project** button. Enter:
+
+- **Name**: for example *Customer Portal*.
+- **Key**: 2–10 characters; a letter first, then letters, digits or `_`. BuggyWuggy suggests a
+  key from the name (*Customer Portal* → `CP`), which you can change. The key becomes part
+  of every issue key, so keep it short.
+- **Description** (optional).
+
+You become the project lead.
+
+## Creating an issue
+
+Choose **Create issue** on a project page. Fill in:
+
+| Field | |
+|---|---|
+| **Type** | Required. Task is preselected. |
+| **Summary** | Required. One line that says what the issue is about. |
+| **Description** | Details: steps to reproduce, expected and actual behaviour, background. |
+| **Priority** | Medium unless you choose otherwise. |
+| **Assignee** | Only shown if you may assign issues. Leave empty to leave the issue unassigned. |
+| **Labels** | Free words without spaces. Press Enter, space or comma after each label. |
+| **Components**, **Fix versions** | Only shown when the project has them. |
+| **Due date** | Optional. |
+
+Choose **Create**. The new issue opens, with status **Open**. You and the reporter
+automatically watch it.
+
+## The issue page
+
+An issue page shows:
+
+- **Breadcrumbs** at the top: project, the parent issue (for sub-tasks and issues in an epic),
+  and the issue key.
+- The **summary** as the title.
+- **Action buttons**: Edit, workflow steps such as *Start Progress*, Watch, and more. You only
+  see the buttons for things you are allowed to do.
+- **Description**.
+- **Sub-tasks** or **Issues in this epic**, if there are any.
+- **Linked issues**.
+- **Comments** and **History** tabs.
+- On the right, the **details**: status and resolution, type, priority, assignee, reporter,
+  labels, components, versions, due date, and when the issue was created, last updated and
+  resolved.
+
+The **History** tab lists every change ever made to the issue: who changed which field, when,
+from what and to what. This includes status changes and links. History cannot be edited.
+
+Issue keys keep working when a project's key changes: `OLD-12` then takes you to `NEW-12`.
+
+## Working on an issue
+
+### Editing
+
+Choose **Edit** to change the summary, description, priority, labels, components, affects
+versions, fix versions and due date. Choose **Save**. Only fields you actually changed are
+saved and recorded in the history.
+
+If someone else changed the issue while you were editing, your change is not saved. You see
+the message *Changed by someone else*, and the page shows the latest version. Make your change
+again. This way nobody overwrites someone else's work by accident.
+
+### Assigning
+
+If you may assign issues, the **Assignee** field on the right is a drop-down. Type part of a
+name to search, and choose a person or **Unassigned**. The change is saved immediately. Only
+people who may work on issues in the project (by default the *Developers* and *Administrators*
+of the project) can be assigned.
+
+### Moving through the workflow
+
+The workflow buttons move the issue to another status:
+
+| Button | From | To |
+|---|---|---|
+| **Start Progress** | Open, Reopened | In Progress |
+| **Stop Progress** | In Progress | Open |
+| **Resolve Issue** | Open, In Progress, Reopened | Resolved |
+| **Close Issue** | Open, In Progress, Reopened, Resolved | Closed |
+| **Reopen Issue** | Resolved, Closed | Reopened |
+
+When you resolve or close an issue, BuggyWuggy asks for the **resolution** (Done is
+preselected). When an issue is reopened, its resolution is cleared, so it counts as unresolved
+again. Resolved issues are shown with their key struck through in issue lists.
+
+### Deleting
+
+If you may delete issues, the **⋯** menu next to the action buttons has **Delete**. Deleting
+cannot be undone:
+
+- Deleting an issue also deletes its sub-tasks.
+- Deleting an epic keeps the issues in it; they just no longer belong to an epic.
+
+## Sub-tasks and epics
+
+Issues can be organised in three levels:
+
+```
+Epic                  – a large piece of work
+ └── Story, Task, Bug – a standard issue
+      └── Sub-task    – a small step of a standard issue
+```
+
+- On a **standard issue**, choose **Create sub-task** to split the work into steps.
+- On an **epic**, choose **Add issue to epic** to create a story, task or bug in it.
+
+The children are listed on the parent's page with their status, and the parent is shown in
+the breadcrumbs of each child.
+
+## Comments
+
+The **Comments** tab shows the discussion on an issue, oldest first.
+
+- **Add a comment**: type in the box at the bottom and choose **Add comment**, or press
+  **Ctrl+Enter** (**⌘+Enter** on a Mac). You then automatically watch the issue.
+- **Edit or delete** your own comment with the **⋯** menu on the comment. Edited comments are
+  marked *edited*. Project administrators can edit and delete anyone's comments.
+
+Comments are shown as plain text: line breaks are kept, formatting is not applied yet.
+
+Adding a comment updates the issue's *Updated* time, but never interferes with someone who is
+editing the issue at the same time.
+
+## Linking issues
+
+Links show how issues relate to each other, also across projects. The available relations are:
+
+| Relation | Seen from the other issue |
+|---|---|
+| blocks | is blocked by |
+| relates to | relates to |
+| duplicates | is duplicated by |
+| clones | is cloned by |
+
+To add a link, choose **Link issue** in the *Linked issues* section:
+
+1. Choose the relation, as seen from this issue. For example: *this issue* **blocks** …
+2. In **Issue**, type the other issue's key or some words from its summary, and pick it from
+   the suggestions.
+3. Choose **Link**.
+
+The link appears on both issues, phrased from each side (*blocks BUG-2* on one, *is blocked by
+BUG-1* on the other), and is recorded in the history of both. Remove a link with the **✕**
+next to it.
+
+You only see links to issues you have access to.
+
+## Watching issues
+
+Choose **Watch** on an issue to follow it, and **Stop watching** to stop. The number next to
+the button shows how many people watch the issue. If you may manage watchers, hovering over
+the button shows their names.
+
+You automatically watch issues you create, issues you are the reporter of, and issues you
+comment on.
+
+> E-mail notifications for watched issues are not available yet; see
+> [Not available yet](#not-available-yet).
+
+## Searching for issues
+
+Open **Issues** in the top bar. The page shows a list of issues and, above it, the search
+conditions. Every change is applied immediately.
+
+| Condition | |
+|---|---|
+| **Text** | Words to search for in the summary, description and comments. Every word must occur; words also match as the start of a longer word (`migr` finds *migration*). An issue key such as `BUG-12` finds that issue. |
+| **Project, Type, Status, Priority** | Choose one or more values. |
+| **Assignee** | **Current user** (whoever uses the search), **Unassigned**, or named people. |
+| **Resolution** | **Unresolved** (still open work), **Resolved**, or any. |
+| **Labels** | One or more labels; issues with any of them match. |
+| **More** | **Reporter**, and date ranges for **Created** and **Updated**. |
+
+Within one condition, the values are alternatives (status *Open* **or** *Reopened*). Different
+conditions must all match (status … **and** assignee …).
+
+**Sort by** chooses the order: relevance (when searching for text), updated, created, key,
+priority, status or due date. The button next to it switches between ascending and descending.
+**Clear conditions** removes all conditions.
+
+The search conditions are part of the page address, so you can bookmark a search or send its
+link to a colleague. They will see the same search, limited to the projects they have access to.
+
+You only ever find issues in projects you may see.
+
+## Saved filters
+
+A **filter** is a saved search.
+
+- **Save a search**: set up the conditions, choose **Save filter**, enter a name, choose
+  who may use it, and choose **Save**:
+  - **Only me**
+  - **All logged-in users**
+  - **Members of a project**: everyone who can see the chosen project.
+- **Use a filter**: open the **Filters** menu. It lists *My filters* and the filters others
+  shared with you.
+- **Change a filter**: open it and change the conditions. The title shows *Modified*.
+  - **Save changes** stores the new conditions in your filter.
+  - **Discard changes** restores the saved conditions.
+  - **Save as…** stores the conditions as a new filter. This also works for filters someone
+    else shared with you.
+- **Rename, share or delete** your own filter with the **⋯** menu next to its title.
+
+A filter with **Assignee: Current user** shows each person their own issues. One shared filter
+such as *My open issues* therefore works for everybody.
+
+## Permissions: why can't I…?
+
+What you can do depends on your role in each project. Buttons for things you may not do are
+not shown. With the default settings:
+
+| You want to… | Who can |
+|---|---|
+| See a project and its issues, create issues, comment | Everyone in the project's *Users* role (by default all users) |
+| Edit, assign, transition and link issues; be assigned issues; manage watchers | *Developers* and *Administrators* of the project |
+| Delete issues; edit or delete other people's comments | *Administrators* of the project |
+| Create projects | BuggyWuggy administrators |
+
+If you need to do more in a project, ask your BuggyWuggy administrator to add you to the
+project's *Developers* role.
+
+A project or issue you have no access to looks exactly like one that does not exist
+(*Not found*). This is deliberate: it does not reveal what exists.
+
+## Not available yet
+
+These features are planned but not available in the current version:
+
+- Attachments (files and screenshots on issues)
+- E-mail notifications
+- Administration screens in the web interface (administrators use the API for now; see the
+  [Installation Guide](installation.md#administration))
+- Editing your own profile and password in the web interface
+- Formatted text (Markdown) in descriptions and comments
+- Boards (Kanban/Scrum), dashboards and reports
+- A text query language like Jira's JQL
+- Importing data from Jira
+- Other languages than English
