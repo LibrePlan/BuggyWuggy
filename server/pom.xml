@@ -14,6 +14,12 @@
     <name>BuggyWuggy Server</name>
 
     <dependencies>
+        <!-- The web UI, as static resources (classpath:/static). -->
+        <dependency>
+            <groupId>org.buggywuggy</groupId>
+            <artifactId>buggywuggy-web</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>

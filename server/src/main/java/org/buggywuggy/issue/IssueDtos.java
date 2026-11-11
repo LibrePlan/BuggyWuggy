@@ -5,6 +5,7 @@
  */
 package org.buggywuggy.issue;
 
+import org.buggywuggy.common.ApiNullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -28,7 +29,7 @@ public final class IssueDtos {
     public record ProjectRef(long id, String key, String name) {
     }
 
-    public record IssueTypeRef(long id, String name, String icon, int hierarchyLevel) {
+    public record IssueTypeRef(long id, String name, @ApiNullable String icon, int hierarchyLevel) {
         static IssueTypeRef of(IssueType t) {
             return new IssueTypeRef(t.getId(), t.getName(), t.getIcon(), t.getHierarchyLevel());
         }
@@ -40,7 +41,7 @@ public final class IssueDtos {
         }
     }
 
-    public record PriorityRef(long id, String name, String icon, String color) {
+    public record PriorityRef(long id, String name, @ApiNullable String icon, @ApiNullable String color) {
         static PriorityRef of(Priority p) {
             return p == null ? null : new PriorityRef(p.getId(), p.getName(), p.getIcon(), p.getColor());
         }
@@ -64,15 +65,16 @@ public final class IssueDtos {
 
     public record IssueResponse(
             long id, String key, ProjectRef project, IssueTypeRef issueType, StatusRef status,
-            PriorityRef priority, ResolutionRef resolution, String summary, String description,
-            UserRef reporter, UserRef assignee, UserRef creator, List<String> labels, List<Named> components,
-            List<Named> affectsVersions, List<Named> fixVersions, LocalDate dueDate,
-            IssueRef parent, List<ChildIssueRef> children,
-            Instant createdAt, Instant updatedAt, Instant resolvedAt, long version) {
+            @ApiNullable PriorityRef priority, @ApiNullable ResolutionRef resolution, String summary,
+            @ApiNullable String description, @ApiNullable UserRef reporter, @ApiNullable UserRef assignee,
+            @ApiNullable UserRef creator, List<String> labels, List<Named> components,
+            List<Named> affectsVersions, List<Named> fixVersions, @ApiNullable LocalDate dueDate,
+            @ApiNullable IssueRef parent, List<ChildIssueRef> children,
+            Instant createdAt, Instant updatedAt, @ApiNullable Instant resolvedAt, long version) {
     }
 
     public record IssueSummaryResponse(long id, String key, String summary, IssueTypeRef issueType,
-            StatusRef status, PriorityRef priority, UserRef assignee, Instant updatedAt) {
+            StatusRef status, @ApiNullable PriorityRef priority, @ApiNullable UserRef assignee, Instant updatedAt) {
     }
 
     /**
@@ -148,14 +150,15 @@ public final class IssueDtos {
 
     // --- lookups ---------------------------------------------------------------------
 
-    public record IssueTypeResponse(long id, String name, String description, String icon, int hierarchyLevel) {
+    public record IssueTypeResponse(long id, String name, @ApiNullable String description, @ApiNullable String icon, int hierarchyLevel) {
         static IssueTypeResponse of(IssueType t) {
             return new IssueTypeResponse(t.getId(), t.getName(), t.getDescription(), t.getIcon(),
                     t.getHierarchyLevel());
         }
     }
 
-    public record PriorityResponse(long id, String name, String description, String icon, String color,
+    public record PriorityResponse(long id, String name, @ApiNullable String description, @ApiNullable String icon,
+            @ApiNullable String color,
             boolean isDefault) {
         static PriorityResponse of(Priority p) {
             return new PriorityResponse(p.getId(), p.getName(), p.getDescription(), p.getIcon(), p.getColor(),
@@ -163,13 +166,13 @@ public final class IssueDtos {
         }
     }
 
-    public record StatusResponse(long id, String name, String description, Status.Category category) {
+    public record StatusResponse(long id, String name, @ApiNullable String description, Status.Category category) {
         static StatusResponse of(Status s) {
             return new StatusResponse(s.getId(), s.getName(), s.getDescription(), s.getCategory());
         }
     }
 
-    public record ResolutionResponse(long id, String name, String description, boolean isDefault) {
+    public record ResolutionResponse(long id, String name, @ApiNullable String description, boolean isDefault) {
         static ResolutionResponse of(Resolution r) {
             return new ResolutionResponse(r.getId(), r.getName(), r.getDescription(), r.isDefault());
         }

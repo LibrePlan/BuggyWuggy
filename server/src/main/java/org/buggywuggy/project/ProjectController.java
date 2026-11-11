@@ -9,6 +9,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.net.URI;
+import java.util.List;
+import org.buggywuggy.user.UserDtos.UserRef;
 import org.buggywuggy.common.PageResponse;
 import org.buggywuggy.project.ProjectDtos.CreateProjectRequest;
 import org.buggywuggy.project.ProjectDtos.MyProjectPermissionsResponse;
@@ -72,6 +74,14 @@ public class ProjectController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@AuthenticationPrincipal BuggyWuggyPrincipal user, @PathVariable String idOrKey) {
         projectService.delete(user, idOrKey);
+    }
+
+    /** Users who can be assigned issues in this project (for assignee pickers). */
+    @GetMapping("/{idOrKey}/assignable-users")
+    public List<UserRef> assignableUsers(@AuthenticationPrincipal BuggyWuggyPrincipal user,
+            @PathVariable String idOrKey, @RequestParam(required = false) String query,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit) {
+        return projectService.assignableUsers(user, idOrKey, query, limit);
     }
 
     /** The current user's permissions in this project, e.g. to show or hide UI actions. */

@@ -3,7 +3,7 @@
 BuggyWuggy is an open source, self-hosted issue tracker — a familiar home for teams
 coming from a self-hosted Jira installation.
 
-> **Status:** early development. Not usable yet.
+> **Status:** early development. Projects and issues work; much of Jira's feature set is still to come.
 
 - Scope and decisions: [docs/scope.md](docs/scope.md)
 - Domain model: [docs/domain-model.md](docs/domain-model.md)
@@ -14,7 +14,9 @@ coming from a self-hosted Jira installation.
 - PostgreSQL 16 or newer
 - Docker (optional) — for the development database and for running tests with Testcontainers
 
-Maven does not need to be installed; use the included wrapper (`./mvnw`).
+Maven and Node.js do not need to be installed: use the included wrapper (`./mvnw`); the
+Maven build downloads its own Node.js for the web UI. For working on the UI itself, a local
+Node.js 26 (e.g. via nvm) is convenient.
 
 ## Development setup
 
@@ -37,10 +39,10 @@ sudo -u postgres psql -c "create database buggywuggy_test owner buggywuggy"
 ### 2. Run
 
 ```sh
-./mvnw -pl server spring-boot:run
+./mvnw -pl server -am spring-boot:run      # -am also builds the web UI
 ```
 
-The application starts on <http://localhost:8080>; health check at
+The application, including the web UI, starts on <http://localhost:8080>; health check at
 <http://localhost:8080/actuator/health>. The database schema is created automatically
 by Flyway on startup.
 
@@ -48,8 +50,9 @@ API documentation (OpenAPI / Swagger UI): <http://localhost:8080/api/docs>
 
 ### First-time setup
 
-On a fresh installation the server log shows a **setup token**. Use it to create the
-first system administrator (until the web UI exists, with `curl`):
+On a fresh installation the server log shows a **setup token**. Open
+<http://localhost:8080>: the web UI asks for the token and creates the first system
+administrator. Without a browser, the same works with `curl`:
 
 ```sh
 # 1. Fetch a CSRF token (stored in cookies.txt)
@@ -92,6 +95,21 @@ BUGGYWUGGY_TEST_TESTCONTAINERS=false \
 BUGGYWUGGY_DB_URL=jdbc:postgresql://localhost:5432/buggywuggy_test \
 ./mvnw test
 ```
+
+### Working on the web UI
+
+The UI (`web/`) is React + TypeScript, built with Vite. With the server running on port 8080:
+
+```sh
+cd web
+npm ci
+npm run dev          # http://localhost:5173, with API calls forwarded to :8080
+npm test             # unit tests
+npm run api:types    # regenerate src/api/schema.d.ts from the running server's OpenAPI document
+```
+
+Set `BUGGYWUGGY_API_URL` to use a server on another address. To build only the server,
+skipping the UI build: `./mvnw -Dskip.npm ...`.
 
 ## Building
 

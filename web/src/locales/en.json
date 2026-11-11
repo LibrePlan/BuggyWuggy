@@ -1,0 +1,128 @@
+{
+  "app": { "name": "BuggyWuggy" },
+  "nav": { "projects": "Projects", "userMenu": "User menu", "logout": "Log out" },
+  "common": {
+    "cancel": "Cancel",
+    "create": "Create",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "more": "More actions",
+    "nothingFound": "Nothing found"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "unknown": "An unexpected error occurred.",
+    "home": "Go to the start page"
+  },
+  "notFound": {
+    "title": "Not found",
+    "text": "This page does not exist, or you do not have access to it.",
+    "back": "Back to projects"
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Enter a valid email address",
+    "passwordLength": "Use at least {{min}} characters",
+    "passwordMismatch": "The passwords do not match",
+    "projectKey": "2–10 characters: a letter first, then letters, digits or _"
+  },
+  "setup": {
+    "title": "Welcome to BuggyWuggy",
+    "intro": "Create the first administrator account to get started.",
+    "token": "Setup token",
+    "tokenHelp": "Printed in the server log at startup (or set with BUGGYWUGGY_SETUP_TOKEN).",
+    "submit": "Create administrator",
+    "done": "The administrator has been created. You can log in now."
+  },
+  "login": { "title": "Log in", "submit": "Log in" },
+  "user": {
+    "username": "Username",
+    "displayName": "Full name",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password"
+  },
+  "projects": {
+    "title": "Projects",
+    "create": "Create project",
+    "search": "Search projects",
+    "empty": "There are no projects yet.",
+    "keyHelp": "Used in issue keys, e.g. KEY-123."
+  },
+  "project": {
+    "name": "Name",
+    "key": "Key",
+    "lead": "Lead",
+    "description": "Description",
+    "notFound": "This project does not exist, or you do not have access to it.",
+    "noIssues": "This project has no issues yet.",
+    "issueCount_one": "{{count}} issue",
+    "issueCount_other": "{{count}} issues"
+  },
+  "issue": {
+    "create": "Create issue",
+    "createChild": "Create issue under {{parent}}",
+    "createSubtask": "Create sub-task",
+    "addChildIssue": "Add issue to epic",
+    "editTitle": "Edit {{key}}",
+    "deleteTitle": "Delete {{key}}?",
+    "deleteConfirm": "The issue and its history are deleted permanently.",
+    "deleteConfirmWithSubtasks_one": "The issue, its sub-task and their history are deleted permanently.",
+    "deleteConfirmWithSubtasks_other": "The issue, its {{count}} sub-tasks and their history are deleted permanently.",
+    "deleteConfirmEpic_one": "The epic is deleted permanently. The issue in it is kept, but no longer belongs to an epic.",
+    "deleteConfirmEpic_other": "The epic is deleted permanently. The {{count}} issues in it are kept, but no longer belong to an epic.",
+    "deleted": "{{key}} has been deleted.",
+    "notFound": "This issue does not exist, or you do not have access to it.",
+    "conflictTitle": "Changed by someone else",
+    "conflict": "This issue was changed in the meantime. The latest version is shown now; please try again.",
+    "key": "Key",
+    "type": "Type",
+    "summary": "Summary",
+    "description": "Description",
+    "noDescription": "No description.",
+    "status": "Status",
+    "resolution": "Resolution",
+    "priority": "Priority",
+    "assignee": "Assignee",
+    "unassigned": "Unassigned",
+    "reporter": "Reporter",
+    "labels": "Labels",
+    "labelsHelp": "Press Enter, space or comma after each label.",
+    "components": "Components",
+    "affectsVersions": "Affects versions",
+    "fixVersions": "Fix versions",
+    "dueDate": "Due date",
+    "created": "Created",
+    "updated": "Updated",
+    "resolved": "Resolved",
+    "subtasks": "Sub-tasks",
+    "issuesInEpic": "Issues in this epic",
+    "transitionTo": "Moves the issue to"
+  },
+  "history": {
+    "title": "History",
+    "empty": "No changes yet.",
+    "system": "System",
+    "madeChanges": "made changes",
+    "fieldHeader": "Field",
+    "from": "Original value",
+    "to": "New value",
+    "field": {
+      "summary": "Summary",
+      "description": "Description",
+      "issuetype": "Issue type",
+      "priority": "Priority",
+      "assignee": "Assignee",
+      "reporter": "Reporter",
+      "duedate": "Due date",
+      "labels": "Labels",
+      "component": "Component",
+      "version": "Affects version",
+      "fixversion": "Fix version",
+      "parent": "Parent",
+      "status": "Status",
+      "resolution": "Resolution"
+    }
+  }
+}

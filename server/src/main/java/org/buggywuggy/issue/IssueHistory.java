@@ -5,6 +5,7 @@
  */
 package org.buggywuggy.issue;
 
+import org.buggywuggy.common.ApiNullable;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -45,10 +46,11 @@ public class IssueHistory {
         }
     }
 
-    public record Item(String field, String from, String fromText, String to, String toText) {
+    public record Item(String field, @ApiNullable String from, @ApiNullable String fromText, @ApiNullable String to,
+            @ApiNullable String toText) {
     }
 
-    public record Entry(long id, UserRef author, Instant createdAt, List<Item> items) {
+    public record Entry(long id, @ApiNullable UserRef author, Instant createdAt, List<Item> items) {
     }
 
     /** Collects the changes of one update. Items that do not change anything are ignored. */

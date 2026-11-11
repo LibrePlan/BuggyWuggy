@@ -5,6 +5,7 @@
  */
 package org.buggywuggy.project;
 
+import org.buggywuggy.common.ApiNullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -24,7 +25,8 @@ public final class ProjectDtos {
 
     // --- projects --------------------------------------------------------------------
 
-    public record ProjectResponse(long id, String key, String name, String description, UserRef lead,
+    public record ProjectResponse(long id, String key, String name, @ApiNullable String description,
+            @ApiNullable UserRef lead,
             Project.DefaultAssignee defaultAssignee, boolean archived, Instant createdAt) {
 
         public static ProjectResponse of(Project p) {
@@ -56,7 +58,7 @@ public final class ProjectDtos {
 
     // --- components ------------------------------------------------------------------
 
-    public record ComponentResponse(long id, String name, String description, UserRef lead,
+    public record ComponentResponse(long id, String name, @ApiNullable String description, @ApiNullable UserRef lead,
             ProjectComponent.DefaultAssignee defaultAssignee) {
 
         public static ComponentResponse of(ProjectComponent c) {
@@ -83,8 +85,8 @@ public final class ProjectDtos {
 
     // --- versions --------------------------------------------------------------------
 
-    public record VersionResponse(long id, String name, String description, LocalDate startDate,
-            LocalDate releaseDate, boolean released, boolean archived, int position) {
+    public record VersionResponse(long id, String name, @ApiNullable String description,
+            @ApiNullable LocalDate startDate, @ApiNullable LocalDate releaseDate, boolean released, boolean archived, int position) {
 
         public static VersionResponse of(ProjectVersion v) {
             return new VersionResponse(v.getId(), v.getName(), v.getDescription(), v.getStartDate(),
@@ -120,14 +122,14 @@ public final class ProjectDtos {
 
     // --- roles -----------------------------------------------------------------------
 
-    public record ProjectRoleResponse(long id, String name, String description) {
+    public record ProjectRoleResponse(long id, String name, @ApiNullable String description) {
 
         public static ProjectRoleResponse of(ProjectRole r) {
             return new ProjectRoleResponse(r.getId(), r.getName(), r.getDescription());
         }
     }
 
-    public record ProjectRoleMembersResponse(long id, String name, String description, List<UserRef> users,
+    public record ProjectRoleMembersResponse(long id, String name, @ApiNullable String description, List<UserRef> users,
             List<GroupRef> groups) {
     }
 }

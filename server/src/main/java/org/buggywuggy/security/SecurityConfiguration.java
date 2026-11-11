@@ -49,7 +49,9 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/admin/**")
                         .hasAnyAuthority(Authorities.SYSTEM_ADMIN, Authorities.ADMINISTER)
                         .requestMatchers("/error").permitAll()
-                        .anyRequest().authenticated())
+                        .requestMatchers("/api/**", "/actuator/**").authenticated()
+                        // The web UI's static files and routes; the UI itself asks the API who is logged in.
+                        .anyRequest().permitAll())
                 // Cookie-based CSRF protection for the browser SPA: the XSRF-TOKEN cookie must be
                 // echoed in the X-XSRF-TOKEN header on every state-changing request.
                 .csrf(csrf -> csrf.spa().csrfTokenRepository(csrfTokenRepository))

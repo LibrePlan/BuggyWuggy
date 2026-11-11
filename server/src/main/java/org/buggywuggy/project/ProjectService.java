@@ -26,6 +26,7 @@ import org.buggywuggy.project.ProjectDtos.UpdateProjectRequest;
 import org.buggywuggy.security.Authorities;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
 import org.buggywuggy.user.UserAccount;
+import org.buggywuggy.user.UserDtos.UserRef;
 import org.buggywuggy.user.UserGroupRepository;
 import org.buggywuggy.user.UserService;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -134,6 +135,32 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public Set<ProjectPermission> myPermissions(BuggyWuggyPrincipal user, String idOrKey) {
         return access(user, idOrKey).permissions();
+    }
+
+    /** Active users who may be assigned issues in the project, optionally filtered by name or e-mail. */
+    @Transactional(readOnly = true)
+    public List<UserRef> assignableUsers(BuggyWuggyPrincipal user, String idOrKey, String query, int limit) {
+        ProjectAccess access = access(user, idOrKey).require(ProjectPermission.BROWSE_PROJECT);
+        Map<String, Object> params = new HashMap<>();
+        params.put("projectId", access.projectId());
+        params.put("limit", limit);
+        String filter = "";
+        if (query != null && !query.isBlank()) {
+            filter = """
+                     and (lower(u.username) like :pattern escape '\\'
+                          or lower(u.display_name) like :pattern escape '\\'
+                          or lower(u.email) like :pattern escape '\\')""";
+            params.put("pattern", SqlLike.containsPattern(query));
+        }
+        return jdbc.query("""
+                select u.id, u.username, u.display_name from user_account u
+                where u.active and not u.placeholder
+                  and exists (select 1 from project p
+                              join permission_grant pg on pg.permission_scheme_id = p.permission_scheme_id
+                              where p.id = :projectId and pg.permission = 'ASSIGNABLE_USER'
+                                and """ + ProjectPermissionService.GRANT_APPLIES_TO_USER.replace(":userId", "u.id") + ")"
+                + filter + " order by lower(u.display_name), u.id limit :limit",
+                params, (rs, n) -> new UserRef(rs.getLong(1), rs.getString(2), rs.getString(3)));
     }
 
     public ProjectResponse create(BuggyWuggyPrincipal user, CreateProjectRequest request) {

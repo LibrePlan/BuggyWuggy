@@ -5,10 +5,11 @@
  */
 package org.buggywuggy.user;
 
+import org.buggywuggy.common.ApiNullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public record GroupResponse(long id, String name, String description, int memberCount) {
+public record GroupResponse(long id, String name, @ApiNullable String description, int memberCount) {
 
     public record CreateGroupRequest(@NotBlank @Size(max = 255) String name, @Size(max = 2000) String description) {
     }

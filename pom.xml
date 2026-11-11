@@ -27,6 +27,7 @@
     </licenses>
 
     <modules>
+        <module>web</module>
         <module>server</module>
     </modules>
 

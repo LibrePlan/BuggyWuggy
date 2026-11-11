@@ -5,9 +5,6 @@
  */
 package org.buggywuggy.common;
 
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.info.License;
 import java.time.Clock;
 import java.time.Duration;
 import org.springframework.context.annotation.Bean;
@@ -24,13 +21,5 @@ public class CommonConfiguration {
     @Bean
     Clock clock() {
         return Clock.tick(Clock.systemUTC(), Duration.ofNanos(1_000));
-    }
-
-    @Bean
-    OpenAPI openApi() {
-        return new OpenAPI().info(new Info()
-                .title("BuggyWuggy API")
-                .version("v1")
-                .license(new License().name("AGPL-3.0-or-later").url("https://www.gnu.org/licenses/agpl-3.0.html")));
     }
 }

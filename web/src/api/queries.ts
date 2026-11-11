@@ -1,0 +1,165 @@
+// BuggyWuggy — open source, self-hosted issue tracker
+// Copyright (C) 2026 The BuggyWuggy contributors
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { ApiError } from '../lib/apiError';
+import { get, seg } from './client';
+import type {
+  ComponentResponse,
+  HistoryEntry,
+  IssuePage,
+  IssueResponse,
+  IssueTypeResponse,
+  MyselfResponse,
+  PriorityResponse,
+  ProjectPage,
+  ProjectPermission,
+  ProjectResponse,
+  ResolutionResponse,
+  TransitionResponse,
+  UserRef,
+  VersionResponse,
+} from './types';
+
+/** Query keys, so mutations can invalidate exactly what they changed. */
+export const keys = {
+  setup: ['setup'] as const,
+  myself: ['myself'] as const,
+  projects: (query: string, page: number) => ['projects', query, page] as const,
+  allProjects: ['projects'] as const,
+  project: (key: string) => ['project', key] as const,
+  projectPermissions: (key: string) => ['project', key, 'permissions'] as const,
+  projectIssues: (key: string, page: number) => ['project', key, 'issues', page] as const,
+  components: (key: string) => ['project', key, 'components'] as const,
+  versions: (key: string) => ['project', key, 'versions'] as const,
+  assignable: (key: string, query: string) => ['project', key, 'assignable', query] as const,
+  issue: (key: string) => ['issue', key] as const,
+  transitions: (key: string) => ['issue', key, 'transitions'] as const,
+  history: (key: string) => ['issue', key, 'history'] as const,
+};
+
+const LOOKUP_STALE = 5 * 60_000;
+
+export function useSetupStatus() {
+  return useQuery({
+    queryKey: keys.setup,
+    queryFn: () => get<{ setupRequired: boolean }>('/api/v1/setup'),
+    staleTime: Infinity,
+  });
+}
+
+/** The logged-in user, or {@code null} when nobody is logged in. */
+export function useMyself() {
+  return useQuery({
+    queryKey: keys.myself,
+    queryFn: async () => {
+      try {
+        return await get<MyselfResponse>('/api/v1/myself');
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 401) return null;
+        throw e;
+      }
+    },
+    staleTime: 60_000,
+  });
+}
+
+export function useProjects(query: string, page: number) {
+  return useQuery({
+    queryKey: keys.projects(query, page),
+    queryFn: () => get<ProjectPage>('/api/v1/projects', { query, page, size: 50 }),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useProject(key: string) {
+  return useQuery({ queryKey: keys.project(key), queryFn: () => get<ProjectResponse>(`/api/v1/projects/${seg(key)}`) });
+}
+
+export function useProjectPermissions(key: string | undefined) {
+  return useQuery({
+    queryKey: keys.projectPermissions(key ?? ''),
+    queryFn: async () => {
+      const r = await get<{ permissions: ProjectPermission[] }>(`/api/v1/projects/${seg(key!)}/my-permissions`);
+      return new Set(r.permissions);
+    },
+    enabled: !!key,
+  });
+}
+
+export function useProjectIssues(key: string, page: number, size = 50) {
+  return useQuery({
+    queryKey: keys.projectIssues(key, page),
+    queryFn: () => get<IssuePage>(`/api/v1/projects/${seg(key)}/issues`, { page, size }),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useComponents(key: string | undefined) {
+  return useQuery({
+    queryKey: keys.components(key ?? ''),
+    queryFn: () => get<ComponentResponse[]>(`/api/v1/projects/${seg(key!)}/components`),
+    enabled: !!key,
+  });
+}
+
+export function useVersions(key: string | undefined) {
+  return useQuery({
+    queryKey: keys.versions(key ?? ''),
+    queryFn: () => get<VersionResponse[]>(`/api/v1/projects/${seg(key!)}/versions`),
+    enabled: !!key,
+  });
+}
+
+export function useAssignableUsers(key: string | undefined, query: string, enabled = true) {
+  return useQuery({
+    queryKey: keys.assignable(key ?? '', query),
+    queryFn: () => get<UserRef[]>(`/api/v1/projects/${seg(key!)}/assignable-users`, { query, limit: 20 }),
+    enabled: enabled && !!key,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useIssue(key: string) {
+  return useQuery({ queryKey: keys.issue(key), queryFn: () => get<IssueResponse>(`/api/v1/issues/${seg(key)}`) });
+}
+
+export function useTransitions(key: string, enabled: boolean) {
+  return useQuery({
+    queryKey: keys.transitions(key),
+    queryFn: () => get<TransitionResponse[]>(`/api/v1/issues/${seg(key)}/transitions`),
+    enabled,
+  });
+}
+
+export function useHistory(key: string) {
+  return useQuery({
+    queryKey: keys.history(key),
+    queryFn: () => get<HistoryEntry[]>(`/api/v1/issues/${seg(key)}/history`),
+  });
+}
+
+export function useIssueTypes() {
+  return useQuery({
+    queryKey: ['lookup', 'issue-types'],
+    queryFn: () => get<IssueTypeResponse[]>('/api/v1/issue-types'),
+    staleTime: LOOKUP_STALE,
+  });
+}
+
+export function usePriorities() {
+  return useQuery({
+    queryKey: ['lookup', 'priorities'],
+    queryFn: () => get<PriorityResponse[]>('/api/v1/priorities'),
+    staleTime: LOOKUP_STALE,
+  });
+}
+
+export function useResolutions() {
+  return useQuery({
+    queryKey: ['lookup', 'resolutions'],
+    queryFn: () => get<ResolutionResponse[]>('/api/v1/resolutions'),
+    staleTime: LOOKUP_STALE,
+  });
+}

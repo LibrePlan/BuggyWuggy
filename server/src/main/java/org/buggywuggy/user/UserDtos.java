@@ -5,6 +5,7 @@
  */
 package org.buggywuggy.user;
 
+import org.buggywuggy.common.ApiNullable;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -73,8 +74,9 @@ public final class UserDtos {
     }
 
     public record UserResponse(
-            long id, String username, String displayName, String email, boolean active, boolean systemAdmin,
-            String locale, String timeZone, Instant createdAt, Instant lastLoginAt, List<GroupRef> groups) {
+            long id, String username, String displayName, @ApiNullable String email, boolean active,
+            boolean systemAdmin, @ApiNullable String locale, @ApiNullable String timeZone, Instant createdAt,
+            @ApiNullable Instant lastLoginAt, List<GroupRef> groups) {
 
         public static UserResponse of(UserAccount u) {
             List<GroupRef> groups = u.getGroups().stream()
@@ -88,7 +90,7 @@ public final class UserDtos {
 
     /** The logged-in user, including the global permissions of the current session. */
     public record MyselfResponse(
-            long id, String username, String displayName, String email, boolean systemAdmin,
-            String locale, String timeZone, Set<String> globalPermissions) {
+            long id, String username, String displayName, @ApiNullable String email, boolean systemAdmin,
+            @ApiNullable String locale, @ApiNullable String timeZone, Set<String> globalPermissions) {
     }
 }

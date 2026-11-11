@@ -179,4 +179,27 @@ class ProjectIntegrationTest extends IntegrationTest {
         assertThat((List<String>) admin.get("/api/v1/projects").json("$.items[*].key"))
                 .containsExactly("APP", "WEB");
     }
+
+    @Test
+    void listsAssignableUsersFilteredByQuery() {
+        ApiClient admin = setupAndLoginAdmin();
+        createProject(admin, "BUG", "Bug Tracker");
+        long devId = createUser(admin, "devon", "devon-password-1");
+        createUser(admin, "otto", "otto-password-12");
+        admin.put("/api/v1/projects/BUG/roles/" + roleId("Developers") + "/users/" + devId, null);
+
+        // Developers and Administrators are assignable by default; plain users are not.
+        ApiClient otto = loginAs("otto", "otto-password-12");
+        assertThat((List<String>) otto.get("/api/v1/projects/BUG/assignable-users").json("$[*].username"))
+                .containsExactlyInAnyOrder(ADMIN, "devon");
+        assertThat((List<String>) otto.get("/api/v1/projects/BUG/assignable-users?query=DEV").json("$[*].username"))
+                .containsExactly("devon");
+        assertThat((List<String>) admin.get("/api/v1/projects/BUG/assignable-users?limit=1").json("$[*].id"))
+                .hasSize(1);
+
+        admin.patch("/api/v1/admin/users/" + devId, """
+                {"active": false}""");
+        assertThat((List<String>) otto.get("/api/v1/projects/BUG/assignable-users").json("$[*].username"))
+                .containsExactly(ADMIN);
+    }
 }
