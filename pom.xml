@@ -36,5 +36,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <bouncycastle.version>1.87</bouncycastle.version>
         <springdoc.version>3.2.0</springdoc.version>
+        <!-- Only the server module is an application; see server/pom.xml. -->
+        <spring-boot.run.skip>true</spring-boot.run.skip>
     </properties>
 </project>

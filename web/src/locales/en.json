@@ -5,7 +5,9 @@
   "nav": {
     "projects": "Projects",
     "userMenu": "User menu",
-    "logout": "Log out"
+    "logout": "Log out",
+    "issues": "Issues",
+    "quickSearch": "Search or jump to BUG-12"
   },
   "common": {
     "cancel": "Cancel",
@@ -67,7 +69,8 @@
     "notFound": "This project does not exist, or you do not have access to it.",
     "noIssues": "This project has no issues yet.",
     "issueCount_one": "{{count}} issue",
-    "issueCount_other": "{{count}} issues"
+    "issueCount_other": "{{count}} issues",
+    "searchIssues": "Search issues"
   },
   "issue": {
     "create": "Create issue",
@@ -107,7 +110,8 @@
     "resolved": "Resolved",
     "subtasks": "Sub-tasks",
     "issuesInEpic": "Issues in this epic",
-    "transitionTo": "Moves the issue to"
+    "transitionTo": "Moves the issue to",
+    "project": "Project"
   },
   "history": {
     "title": "History",
@@ -152,14 +156,66 @@
     "empty": "No linked issues.",
     "thisIssue": "This issue",
     "otherIssue": "Issue",
-    "keyInvalid": "Enter an issue key such as BUG-123",
     "submit": "Link",
-    "remove": "Remove link to {{key}}"
+    "remove": "Remove link to {{key}}",
+    "otherIssuePlaceholder": "Type a key or words to search"
   },
   "watch": {
     "start": "Watch",
     "stop": "Stop watching",
     "count_one": "{{count}} watcher",
     "count_other": "{{count}} watchers"
+  },
+  "search": {
+    "title": "Issues",
+    "noResults": "No issues match these conditions."
+  },
+  "filter": {
+    "text": "Text",
+    "textPlaceholder": "Words or issue key",
+    "sort": "Sort by",
+    "sortField": {
+      "RELEVANCE": "Relevance",
+      "UPDATED": "Updated",
+      "CREATED": "Created",
+      "KEY": "Key",
+      "PRIORITY": "Priority",
+      "STATUS": "Status",
+      "DUE_DATE": "Due date"
+    },
+    "ascending": "Ascending",
+    "descending": "Descending",
+    "clear": "Clear conditions",
+    "currentUser": "Current user",
+    "nobody": "Nobody",
+    "unresolved": "Unresolved",
+    "resolved": "Resolved",
+    "any": "Any",
+    "more": "More",
+    "moreCount": "More ({{count}})",
+    "from": "from",
+    "to": "to",
+    "filters": "Filters",
+    "myFilters": "My filters",
+    "sharedFilters": "Shared with me",
+    "noFilters": "No saved filters yet.",
+    "save": "Save filter",
+    "saveAs": "Save as…",
+    "saveTitle": "Save filter",
+    "saveChanges": "Save changes",
+    "discard": "Discard changes",
+    "modified": "Modified",
+    "edit": "Filter settings",
+    "delete": "Delete filter",
+    "deleteConfirm": "Delete the filter \"{{name}}\"?",
+    "saved": "Filter \"{{name}}\" saved.",
+    "deleted": "Filter \"{{name}}\" deleted.",
+    "name": "Name",
+    "sharedWith": "Shared with",
+    "share": {
+      "PRIVATE": "Only me",
+      "LOGGED_IN": "All logged-in users",
+      "PROJECT": "Members of a project"
+    }
   }
 }

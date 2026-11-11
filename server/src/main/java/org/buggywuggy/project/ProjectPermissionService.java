@@ -43,7 +43,7 @@ public class ProjectPermissionService {
                           or a.group_id in (select m.group_id from group_membership m where m.user_id = :userId)))))""";
 
     /** SQL condition: project {@code p} may be browsed by user {@code :userId}. */
-    static final String PROJECT_BROWSABLE = """
+    public static final String PROJECT_BROWSABLE = """
             exists (select 1 from permission_grant pg
                     where pg.permission_scheme_id = p.permission_scheme_id
                       and pg.permission = 'BROWSE_PROJECT'

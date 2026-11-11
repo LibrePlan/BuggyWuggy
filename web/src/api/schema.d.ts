@@ -244,6 +244,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/issues/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["search"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/filters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["filters"];
+        put?: never;
+        post: operations["createFilter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -388,6 +420,22 @@ export interface paths {
         patch: operations["updateComment"];
         trace?: never;
     };
+    "/api/v1/filters/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["filter"];
+        put?: never;
+        post?: never;
+        delete: operations["deleteFilter"];
+        options?: never;
+        head?: never;
+        patch: operations["updateFilter"];
+        trace?: never;
+    };
     "/api/v1/admin/users/{id}": {
         parameters: {
             query?: never;
@@ -418,6 +466,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["update_6"];
+        trace?: never;
+    };
+    "/api/v1/users/picker": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["picker"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/statuses": {
@@ -556,6 +620,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["priorities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/labels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["labels"];
         put?: never;
         post?: never;
         delete?: never;
@@ -953,6 +1033,80 @@ export interface components {
             canEdit: boolean;
             canDelete: boolean;
         };
+        IssueQuery: {
+            text?: string;
+            projectIds?: number[];
+            issueTypeIds?: number[];
+            statusIds?: number[];
+            priorityIds?: number[];
+            assignees?: string[];
+            reporters?: string[];
+            /** @enum {string} */
+            resolution?: "UNRESOLVED" | "RESOLVED";
+            labels?: string[];
+            /** Format: date */
+            createdFrom?: string;
+            /** Format: date */
+            createdTo?: string;
+            /** Format: date */
+            updatedFrom?: string;
+            /** Format: date */
+            updatedTo?: string;
+            /** @enum {string} */
+            sort?: "RELEVANCE" | "KEY" | "CREATED" | "UPDATED" | "PRIORITY" | "STATUS" | "DUE_DATE";
+            /** @enum {string} */
+            direction?: "ASC" | "DESC";
+        };
+        IssueSummaryResponse: {
+            /** Format: int64 */
+            id: number;
+            key: string;
+            project: components["schemas"]["ProjectRef"];
+            summary: string;
+            issueType: components["schemas"]["IssueTypeRef"];
+            status: components["schemas"]["StatusRef"];
+            priority: components["schemas"]["PriorityRef"] | null;
+            resolution: components["schemas"]["ResolutionRef"] | null;
+            assignee: components["schemas"]["UserRef"] | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        PageResponseIssueSummaryResponse: {
+            items: components["schemas"]["IssueSummaryResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            total: number;
+        };
+        CreateFilterRequest: {
+            name: string;
+            description?: string;
+            query: components["schemas"]["IssueQuery"];
+            /** @enum {string} */
+            sharedWith?: "PRIVATE" | "LOGGED_IN" | "PROJECT";
+            /** Format: int64 */
+            projectId?: number;
+        };
+        FilterResponse: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            description: string | null;
+            query: components["schemas"]["IssueQuery"];
+            /** @enum {string} */
+            sharedWith: "PRIVATE" | "LOGGED_IN" | "PROJECT";
+            project: components["schemas"]["ProjectRef"] | null;
+            owner: components["schemas"]["UserRef"];
+            mine: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
         LoginRequest: {
             username: string;
             password: string;
@@ -1055,6 +1209,15 @@ export interface components {
             /** Format: int64 */
             version?: number;
         };
+        UpdateFilterRequest: {
+            name?: string;
+            description?: string;
+            query?: components["schemas"]["IssueQuery"];
+            /** @enum {string} */
+            sharedWith?: "PRIVATE" | "LOGGED_IN" | "PROJECT";
+            /** Format: int64 */
+            projectId?: number;
+        };
         UpdateUserRequest: {
             displayName?: string;
             /** Format: email */
@@ -1088,27 +1251,6 @@ export interface components {
         };
         PageResponseProjectResponse: {
             items: components["schemas"]["ProjectResponse"][];
-            /** Format: int32 */
-            page: number;
-            /** Format: int32 */
-            size: number;
-            /** Format: int64 */
-            total: number;
-        };
-        IssueSummaryResponse: {
-            /** Format: int64 */
-            id: number;
-            key: string;
-            summary: string;
-            issueType: components["schemas"]["IssueTypeRef"];
-            status: components["schemas"]["StatusRef"];
-            priority: components["schemas"]["PriorityRef"] | null;
-            assignee: components["schemas"]["UserRef"] | null;
-            /** Format: date-time */
-            updatedAt: string;
-        };
-        PageResponseIssueSummaryResponse: {
-            items: components["schemas"]["IssueSummaryResponse"][];
             /** Format: int32 */
             page: number;
             /** Format: int32 */
@@ -1794,6 +1936,77 @@ export interface operations {
             };
         };
     };
+    search: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueQuery"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageResponseIssueSummaryResponse"];
+                };
+            };
+        };
+    };
+    filters: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FilterResponse"][];
+                };
+            };
+        };
+    };
+    createFilter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFilterRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FilterResponse"];
+                };
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;
@@ -2237,6 +2450,74 @@ export interface operations {
             };
         };
     };
+    filter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FilterResponse"];
+                };
+            };
+        };
+    };
+    deleteFilter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateFilter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateFilterRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FilterResponse"];
+                };
+            };
+        };
+    };
     get_3: {
         parameters: {
             query?: never;
@@ -2349,6 +2630,29 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["GroupResponse"];
+                };
+            };
+        };
+    };
+    picker: {
+        parameters: {
+            query?: {
+                query?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserRef"][];
                 };
             };
         };
@@ -2543,6 +2847,29 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PriorityResponse"][];
+                };
+            };
+        };
+    };
+    labels: {
+        parameters: {
+            query?: {
+                query?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string[];
                 };
             };
         };

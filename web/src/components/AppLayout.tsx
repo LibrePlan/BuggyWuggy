@@ -2,14 +2,16 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Anchor, AppShell, Avatar, Group, Menu, Text, UnstyledButton } from '@mantine/core';
+import { Anchor, AppShell, Avatar, Group, Menu, Text, TextInput, UnstyledButton } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconChevronDown, IconLogout } from '@tabler/icons-react';
+import { IconChevronDown, IconLogout, IconSearch } from '@tabler/icons-react';
+import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import { post } from '../api/client';
 import { keys, useMyself } from '../api/queries';
+import { normalizeIssueKey } from '../lib/links';
 import { initials } from './UserLabel';
 
 export function AppLayout() {
@@ -38,7 +40,7 @@ export function AppLayout() {
             <Anchor component={Link} to="/" underline="never" c="inherit">
               <Group gap={8} wrap="nowrap">
                 <img src="/favicon.svg" alt="" width={26} height={26} />
-                <Text fw={700} size="lg">
+                <Text fw={700} size="lg" visibleFrom="sm">
                   {t('app.name')}
                 </Text>
               </Group>
@@ -46,35 +48,66 @@ export function AppLayout() {
             <Anchor component={NavLink} to="/projects" c="inherit" fw={500}>
               {t('nav.projects')}
             </Anchor>
+            <Anchor component={NavLink} to="/issues?resolution=unresolved&assignee=me" c="inherit" fw={500}>
+              {t('nav.issues')}
+            </Anchor>
           </Group>
-          {myself && (
-            <Menu position="bottom-end" withinPortal>
-              <Menu.Target>
-                <UnstyledButton aria-label={t('nav.userMenu')}>
-                  <Group gap={6} wrap="nowrap">
-                    <Avatar size="sm" radius="xl" color="blue">
-                      {initials(myself.displayName)}
-                    </Avatar>
-                    <Text size="sm" visibleFrom="xs">
-                      {myself.displayName}
-                    </Text>
-                    <IconChevronDown size={14} />
-                  </Group>
-                </UnstyledButton>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Label>{myself.username}</Menu.Label>
-                <Menu.Item leftSection={<IconLogout size={16} />} onClick={() => void logout()}>
-                  {t('nav.logout')}
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          )}
+          <Group gap="sm" wrap="nowrap">
+            <QuickSearch />
+            {myself && (
+              <Menu position="bottom-end" withinPortal>
+                <Menu.Target>
+                  <UnstyledButton aria-label={t('nav.userMenu')}>
+                    <Group gap={6} wrap="nowrap">
+                      <Avatar size="sm" radius="xl" color="blue">
+                        {initials(myself.displayName)}
+                      </Avatar>
+                      <Text size="sm" visibleFrom="xs">
+                        {myself.displayName}
+                      </Text>
+                      <IconChevronDown size={14} />
+                    </Group>
+                  </UnstyledButton>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Label>{myself.username}</Menu.Label>
+                  <Menu.Item leftSection={<IconLogout size={16} />} onClick={() => void logout()}>
+                    {t('nav.logout')}
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            )}
+          </Group>
         </Group>
       </AppShell.Header>
       <AppShell.Main>
         <Outlet />
       </AppShell.Main>
     </AppShell>
+  );
+}
+
+/** Jumps to an issue when a key is typed, otherwise searches for the text. */
+function QuickSearch() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [value, setValue] = useState('');
+  return (
+    <TextInput
+      size="xs"
+      w={{ base: 140, sm: 220 }}
+      placeholder={t('nav.quickSearch')}
+      aria-label={t('nav.quickSearch')}
+      leftSection={<IconSearch size={14} />}
+      value={value}
+      onChange={(e) => setValue(e.currentTarget.value)}
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter' || !value.trim()) return;
+        const key = normalizeIssueKey(value);
+        navigate(key && !/^\d+$/.test(key) ? `/browse/${key}` : `/issues?q=${encodeURIComponent(value.trim())}`);
+        setValue('');
+        e.currentTarget.blur();
+      }}
+    />
   );
 }

@@ -2,7 +2,7 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { ActionIcon, Anchor, Button, Group, Modal, Select, Stack, Table, Text, TextInput, Title } from '@mantine/core';
+import { ActionIcon, Anchor, Button, Group, Modal, Select, Stack, Table, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { IconLink, IconX } from '@tabler/icons-react';
@@ -16,6 +16,7 @@ import type { IssueLinkResponse } from '../api/types';
 import { ApiError } from '../lib/apiError';
 import { groupByDescription, linkOptions, normalizeIssueKey } from '../lib/links';
 import { IssueTypeIcon, StatusBadge } from './IssueIcons';
+import { IssuePicker } from './IssuePicker';
 
 function useInvalidateLinks(issueKey: string) {
   const queryClient = useQueryClient();
@@ -160,16 +161,16 @@ function AddLinkModal({ issueKey, opened, onClose }: { issueKey: string; opened:
             onChange={setChoice}
             allowDeselect={false}
           />
-          <TextInput
+          <IssuePicker
             label={t('link.otherIssue')}
-            placeholder="BUG-123"
+            placeholder={t('link.otherIssuePlaceholder')}
             value={other}
-            data-autofocus
-            onChange={(e) => {
-              setOther(e.currentTarget.value);
+            exclude={issueKey}
+            onChange={(value) => {
+              setOther(value);
               setError(null);
             }}
-            error={error ?? (other.trim() && !otherKey ? t('link.keyInvalid') : null)}
+            error={error}
           />
           <Group justify="flex-end">
             <Button variant="default" onClick={close}>

@@ -7,6 +7,7 @@ import { fieldErrorMap, toApiError } from './apiError';
 import { readCookie } from './cookies';
 import { changedFields, formatDate } from './format';
 import { childTypes, topLevelTypes } from './issueTypes';
+import { hasConditions, paramsToQuery, queryToParams, sameQuery, type IssueQuery } from './issueQuery';
 import { groupByDescription, linkOptions, normalizeIssueKey } from './links';
 import { suggestProjectKey } from './projectKey';
 import { withQuery } from '../api/client';
@@ -127,5 +128,41 @@ describe('issue links', () => {
     expect(normalizeIssueKey('42')).toBe('42');
     expect(normalizeIssueKey('BUG-')).toBe('');
     expect(normalizeIssueKey('hello')).toBe('');
+  });
+});
+
+describe('issue query in the URL', () => {
+  it('round-trips a full query', () => {
+    const query: IssueQuery = {
+      text: 'login crash',
+      projectIds: [3, 1],
+      statusIds: [2],
+      assignees: ['me', 'none', '42'],
+      labels: ['ui'],
+      resolution: 'UNRESOLVED',
+      createdFrom: '2026-01-01',
+      sort: 'PRIORITY',
+      direction: 'DESC',
+    };
+    const params = queryToParams(query);
+    expect(params.toString()).toBe(
+      'q=login+crash&project=3%2C1&status=2&assignee=me%2Cnone%2C42&label=ui&resolution=unresolved' +
+        '&createdFrom=2026-01-01&sort=priority&dir=desc',
+    );
+    expect(paramsToQuery(params)).toEqual(query);
+  });
+  it('ignores invalid values', () => {
+    const query = paramsToQuery(
+      new URLSearchParams('project=1,x&assignee=bob,me&resolution=maybe&sort=random&createdTo=yesterday&q=%20'),
+    );
+    expect(query).toEqual({ projectIds: [1], assignees: ['me'] });
+  });
+  it('compares queries regardless of list order and empty parts', () => {
+    expect(sameQuery({ projectIds: [2, 1], labels: [] }, { projectIds: [1, 2], text: ' ' })).toBe(true);
+    expect(sameQuery({ projectIds: [1] }, { projectIds: [1], sort: 'KEY' })).toBe(false);
+  });
+  it('knows whether there are conditions', () => {
+    expect(hasConditions({ sort: 'KEY', labels: [] })).toBe(false);
+    expect(hasConditions({ resolution: 'RESOLVED' })).toBe(true);
   });
 });

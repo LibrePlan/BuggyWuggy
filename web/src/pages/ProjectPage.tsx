@@ -2,22 +2,20 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Anchor, Breadcrumbs, Button, Group, Pagination, Stack, Table, Text, Title } from '@mantine/core';
+import { Anchor, Breadcrumbs, Button, Group, Pagination, Stack, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPlus } from '@tabler/icons-react';
+import { IconPlus, IconSearch } from '@tabler/icons-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useProject, useProjectIssues, useProjectPermissions } from '../api/queries';
 import { CreateIssueModal } from '../components/CreateIssueModal';
-import { IssueTypeIcon, PriorityIcon, StatusBadge } from '../components/IssueIcons';
+import { IssueTable } from '../components/IssueTable';
 import { ErrorAlert, isNotFound, PageLoader } from '../components/QueryState';
-import { UserLabel } from '../components/UserLabel';
-import { formatDateTime } from '../lib/format';
 import { NotFoundPage } from './NotFoundPage';
 
 export function ProjectPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const projectKey = useParams().projectKey!;
   const [params, setParams] = useSearchParams();
@@ -55,11 +53,21 @@ export function ProjectPage() {
             {p.lead && ` · ${t('project.lead')}: ${p.lead.displayName}`}
           </Text>
         </div>
-        {permissions?.has('CREATE_ISSUE') && (
-          <Button leftSection={<IconPlus size={16} />} onClick={createModal.open}>
-            {t('issue.create')}
+        <Group gap="xs">
+          <Button
+            variant="default"
+            leftSection={<IconSearch size={16} />}
+            component={Link}
+            to={`/issues?project=${p.id}&resolution=unresolved`}
+          >
+            {t('project.searchIssues')}
           </Button>
-        )}
+          {permissions?.has('CREATE_ISSUE') && (
+            <Button leftSection={<IconPlus size={16} />} onClick={createModal.open}>
+              {t('issue.create')}
+            </Button>
+          )}
+        </Group>
       </Group>
       {p.description && (
         <Text className="bw-pre-wrap" size="sm">
@@ -75,52 +83,7 @@ export function ProjectPage() {
         <Text c="dimmed">{t('project.noIssues')}</Text>
       ) : (
         <>
-          <Table.ScrollContainer minWidth={640}>
-            <Table highlightOnHover verticalSpacing="xs">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th w={36} aria-label={t('issue.type')} />
-                  <Table.Th w={110}>{t('issue.key')}</Table.Th>
-                  <Table.Th>{t('issue.summary')}</Table.Th>
-                  <Table.Th w={140}>{t('issue.status')}</Table.Th>
-                  <Table.Th w={36} aria-label={t('issue.priority')} />
-                  <Table.Th w={180}>{t('issue.assignee')}</Table.Th>
-                  <Table.Th w={170}>{t('issue.updated')}</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {issues.data.items.map((issue) => (
-                  <Table.Tr key={issue.id} className="bw-row-link" onClick={() => navigate(`/browse/${issue.key}`)}>
-                    <Table.Td>
-                      <IssueTypeIcon type={issue.issueType} />
-                    </Table.Td>
-                    <Table.Td>
-                      <Anchor component={Link} to={`/browse/${issue.key}`} size="sm" onClick={(e) => e.stopPropagation()}>
-                        {issue.key}
-                      </Anchor>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" lineClamp={2}>
-                        {issue.summary}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <StatusBadge status={issue.status} />
-                    </Table.Td>
-                    <Table.Td>{issue.priority && <PriorityIcon priority={issue.priority} />}</Table.Td>
-                    <Table.Td>
-                      <UserLabel user={issue.assignee} />
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" c="dimmed">
-                        {formatDateTime(issue.updatedAt, i18n.language)}
-                      </Text>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
+          <IssueTable issues={issues.data.items} />
           <Group justify="space-between">
             <Text size="sm" c="dimmed">
               {t('project.issueCount', { count: issues.data.total })}

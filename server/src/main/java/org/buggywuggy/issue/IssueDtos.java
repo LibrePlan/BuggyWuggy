@@ -73,8 +73,11 @@ public final class IssueDtos {
             Instant createdAt, Instant updatedAt, @ApiNullable Instant resolvedAt, long version) {
     }
 
-    public record IssueSummaryResponse(long id, String key, String summary, IssueTypeRef issueType,
-            StatusRef status, @ApiNullable PriorityRef priority, @ApiNullable UserRef assignee, Instant updatedAt) {
+    /** An issue in a list or search result. */
+    public record IssueSummaryResponse(long id, String key, ProjectRef project, String summary,
+            IssueTypeRef issueType, StatusRef status, @ApiNullable PriorityRef priority,
+            @ApiNullable ResolutionRef resolution, @ApiNullable UserRef assignee, Instant createdAt,
+            Instant updatedAt) {
     }
 
     /**

@@ -6,7 +6,7 @@ import org.buggywuggy.ApiClient;
 import org.buggywuggy.IntegrationTest;
 
 /** Helpers shared by issue-related integration tests. */
-abstract class IssueTestSupport extends IntegrationTest {
+public abstract class IssueTestSupport extends IntegrationTest {
 
     protected String createIssue(ApiClient client, String project, String type, String summary) {
         return createIssue(client, project, type, summary, null);

@@ -3,7 +3,8 @@
 BuggyWuggy is an open source, self-hosted issue tracker — a familiar home for teams
 coming from a self-hosted Jira installation.
 
-> **Status:** early development. Projects and issues work; much of Jira's feature set is still to come.
+> **Status:** early development. Projects, issues, comments, links, watchers, search and saved
+> filters work; much of Jira's feature set is still to come.
 
 - Scope and decisions: [docs/scope.md](docs/scope.md)
 - Domain model: [docs/domain-model.md](docs/domain-model.md)

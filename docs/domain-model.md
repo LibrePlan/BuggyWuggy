@@ -296,16 +296,28 @@ timestamps), except for attachment deletions, which are recorded so the history 
 - `comment.search_vector` — generated from `body`, weight `C`, same two configurations.
 - GIN index on both `search_vector` columns.
 - `pg_trgm` GIN index on `issue.summary` for partial and typo-tolerant matching.
-- Text search matches issues whose own vector or any comment's vector matches; ranking via `ts_rank` on the best match.
-- Structured filters (project, status, assignee, labels, versions, dates, …) are plain SQL
-  with B-tree indexes on the filtered foreign keys and dates.
+- Text search: the words of the search text (letters and digits only, at most 8) become a
+  `simple` tsquery in which every word is a prefix (`migr:*`) and all words must match. An issue
+  matches when its own vector or any comment's vector matches, when its summary contains the
+  text (`ILIKE`, served by the trigram index), or when the text is its key. Ranking: an exact
+  key match first, then `ts_rank` on the issue's vector.
+- Structured filters (project, type, status, priority, assignee, reporter, resolution, labels,
+  created/updated dates) are plain SQL with B-tree indexes on the filtered foreign keys and dates.
+  Within one condition values are OR-ed, conditions are AND-ed. User conditions accept user ids,
+  `me` (whoever runs the search) and `none`.
+- Every search is limited to projects the user may browse (`BROWSE_PROJECT`), in the same SQL.
+- The query is a JSON object (`IssueQuery`), sent with `POST /api/v1/issues/search` and stored as is
+  in saved filters. In the web UI it is also encoded in the URL, so a search can be shared as a link.
 
 Indexes are maintained transactionally by PostgreSQL; no re-indexing is ever needed.
 
 ## 10. Other tables
 
 - `saved_filter(id, owner_id, name, description, query jsonb, shared_with text, created_at, updated_at)` —
-  `query` holds the structured filter definition; `shared_with` ∈ `PRIVATE`, `LOGGED_IN`, `PROJECT` (with project_id).
+  `query` holds the structured filter definition (`IssueQuery`, without empty parts); `shared_with` ∈
+  `PRIVATE`, `LOGGED_IN`, `PROJECT` (with project_id; visible to everyone who can browse that project).
+  Filter names are unique per owner (case-insensitive). Only the owner changes a filter; global
+  administrators may also delete it.
   *(later)* a text query language stored alongside.
 - `outbox_event(id, event_type, payload jsonb, created_at, processed_at, attempts, last_error)` —
   transactional outbox. Domain events (issue created, updated, commented, …) are written in the same

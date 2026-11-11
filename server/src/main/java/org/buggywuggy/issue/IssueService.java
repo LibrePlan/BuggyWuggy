@@ -47,6 +47,8 @@ import org.buggywuggy.project.ProjectComponent;
 import org.buggywuggy.project.ProjectPermission;
 import org.buggywuggy.project.ProjectPermissionService;
 import org.buggywuggy.project.ProjectService;
+import org.buggywuggy.search.IssueQuery;
+import org.buggywuggy.search.IssueSearchService;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
 import org.buggywuggy.user.UserAccount;
 import org.buggywuggy.user.UserAccountRepository;
@@ -93,12 +95,13 @@ public class IssueService {
     private final IssueHistory history;
     private final NamedParameterJdbcTemplate jdbc;
     private final Clock clock;
+    private final IssueSearchService search;
 
     public IssueService(IssueRepository issues, IssueTypeRepository issueTypes, PriorityRepository priorities,
             StatusRepository statuses, ComponentRepository components, ProjectService projects,
             ProjectPermissionService permissions, UserService userService, UserAccountRepository users,
             WorkflowService workflows, IssueFieldStore fields, IssueHistory history,
-            NamedParameterJdbcTemplate jdbc, Clock clock) {
+            NamedParameterJdbcTemplate jdbc, Clock clock, IssueSearchService search) {
         this.issues = issues;
         this.issueTypes = issueTypes;
         this.priorities = priorities;
@@ -113,6 +116,7 @@ public class IssueService {
         this.history = history;
         this.jdbc = jdbc;
         this.clock = clock;
+        this.search = search;
     }
 
     // --- access ------------------------------------------------------------------------
@@ -155,16 +159,12 @@ public class IssueService {
         return toResponse(access(user, idOrKey));
     }
 
-    /** Issues of a project, newest first. Searching and filtering follow in a later step. */
+    /** Issues of a project, most recently updated first. */
     @Transactional(readOnly = true)
     public PageResponse<IssueSummaryResponse> listByProject(BuggyWuggyPrincipal user, String projectIdOrKey,
             int page, int size) {
         ProjectAccess access = projects.access(user, projectIdOrKey).require(ProjectPermission.BROWSE_PROJECT);
-        String projectKey = access.project().getProjectKey();
-        return PageResponse.of(issues.findByProject(access.projectId(), PageRequest.of(page, size)),
-                i -> new IssueSummaryResponse(i.getId(), projectKey + "-" + i.getNumber(), i.getSummary(),
-                        IssueTypeRef.of(i.getIssueType()), StatusRef.of(i.getStatus()),
-                        PriorityRef.of(i.getPriority()), UserRef.of(i.getAssignee()), i.getUpdatedAt()));
+        return search.search(user, IssueQuery.ofProject(access.projectId()), page, size);
     }
 
     @Transactional(readOnly = true)

@@ -11,6 +11,7 @@ import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ProjectPage } from './pages/ProjectPage';
 import { ProjectsPage } from './pages/ProjectsPage';
+import { SearchPage } from './pages/SearchPage';
 import { SetupPage } from './pages/SetupPage';
 
 export const router = createBrowserRouter([
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
           { path: '/projects', element: <ProjectsPage /> },
           { path: '/projects/:projectKey', element: <ProjectPage /> },
           { path: '/browse/:issueKey', element: <IssuePage /> },
+          { path: '/issues', element: <SearchPage /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

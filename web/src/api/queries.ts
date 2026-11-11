@@ -4,9 +4,12 @@
 
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ApiError } from '../lib/apiError';
-import { get, seg } from './client';
+import { get, post, seg } from './client';
+import type { IssueQuery } from '../lib/issueQuery';
 import type {
   CommentResponse,
+  FilterResponse,
+  StatusResponse,
   ComponentResponse,
   IssueLinkResponse,
   LinkTypeResponse,
@@ -44,6 +47,10 @@ export const keys = {
   comments: (key: string) => ['issue', key, 'comments'] as const,
   links: (key: string) => ['issue', key, 'links'] as const,
   watchers: (key: string) => ['issue', key, 'watchers'] as const,
+  search: (query: IssueQuery, page: number, size: number) => ['search', query, page, size] as const,
+  allSearches: ['search'] as const,
+  filters: ['filters'] as const,
+  filter: (id: number) => ['filters', id] as const,
 };
 
 const LOOKUP_STALE = 5 * 60_000;
@@ -197,5 +204,75 @@ export function useLinkTypes() {
     queryKey: ['lookup', 'link-types'],
     queryFn: () => get<LinkTypeResponse[]>('/api/v1/issue-link-types'),
     staleTime: LOOKUP_STALE,
+  });
+}
+
+export function useStatuses() {
+  return useQuery({
+    queryKey: ['lookup', 'statuses'],
+    queryFn: () => get<StatusResponse[]>('/api/v1/statuses'),
+    staleTime: LOOKUP_STALE,
+  });
+}
+
+/** All projects the user can see, for pickers (up to 200). */
+export function useAllProjects() {
+  return useQuery({
+    queryKey: ['projects', 'all'],
+    queryFn: () => get<ProjectPage>('/api/v1/projects', { size: 200 }),
+    select: (page) => page.items,
+    staleTime: 60_000,
+  });
+}
+
+export function useIssueSearch(query: IssueQuery, page: number, size = 50, enabled = true) {
+  return useQuery({
+    queryKey: keys.search(query, page, size),
+    queryFn: () => post<IssuePage>(`/api/v1/issues/search?page=${page}&size=${size}`, query),
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+}
+
+export function useFilters() {
+  return useQuery({ queryKey: keys.filters, queryFn: () => get<FilterResponse[]>('/api/v1/filters') });
+}
+
+export function useFilter(id: number | null) {
+  return useQuery({
+    queryKey: keys.filter(id ?? 0),
+    queryFn: () => get<FilterResponse>(`/api/v1/filters/${id}`),
+    enabled: id !== null,
+  });
+}
+
+/** Users by name (needs the BROWSE_USERS permission; otherwise the query fails with 403). */
+export function useUserSearch(query: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['users', 'picker', query],
+    queryFn: () => get<UserRef[]>('/api/v1/users/picker', { query, limit: 20 }),
+    enabled,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+}
+
+export function useUsersByIds(ids: number[]) {
+  const sorted = [...ids].sort((a, b) => a - b);
+  return useQuery({
+    queryKey: ['users', 'ids', sorted],
+    queryFn: () => get<UserRef[]>('/api/v1/users/picker', { ids: sorted.join(','), limit: 100 }),
+    enabled: sorted.length > 0,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+export function useLabelSuggestions(query: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['labels', query],
+    queryFn: () => get<string[]>('/api/v1/labels', { query, limit: 20 }),
+    enabled,
+    placeholderData: keepPreviousData,
   });
 }

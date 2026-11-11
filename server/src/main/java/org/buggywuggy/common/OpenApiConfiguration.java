@@ -25,8 +25,8 @@ import org.springframework.context.annotation.Configuration;
  *
  * <p>Response objects always contain all their fields; fields that can be {@code null} are
  * annotated with {@link ApiNullable}. The document reflects that: every property of a response
- * schema is {@code required}, and nullable ones allow {@code null}. Request schemas (names ending
- * in {@code Request}) are left alone: their optional fields may simply be omitted.
+ * schema is {@code required}, and nullable ones allow {@code null}. Input schemas (names ending
+ * in {@code Request}, and {@code IssueQuery}) are left alone: their optional fields may simply be omitted.
  */
 @Configuration(proxyBeanMethods = false)
 public class OpenApiConfiguration {
@@ -79,11 +79,16 @@ public class OpenApiConfiguration {
                         property.setValue(nullable(property.getValue()));
                     }
                 }
-                if (!entry.getKey().endsWith("Request")) {
+                if (!isInput(entry.getKey())) {
                     schema.setRequired(new ArrayList<>(properties.keySet()));
                 }
             }
         };
+    }
+
+    /** Input schemas: requests, and the issue query (also used inside saved filters, sparsely). */
+    private static boolean isInput(String schemaName) {
+        return schemaName.endsWith("Request") || schemaName.equals("IssueQuery");
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
