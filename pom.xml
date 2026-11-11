@@ -33,5 +33,7 @@
     <properties>
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <bouncycastle.version>1.87</bouncycastle.version>
+        <springdoc.version>3.2.0</springdoc.version>
     </properties>
 </project>

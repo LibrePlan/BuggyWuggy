@@ -57,7 +57,7 @@ erDiagram
 | username | text, unique (case-insensitive) | Login name; immutable after creation in v1 |
 | display_name | text | |
 | email | text, unique (case-insensitive), nullable | Nullable for placeholder users |
-| password_hash | text, nullable | Argon2id. Null for placeholder users and (later) SSO-only users |
+| password_hash | text, nullable | Argon2id, stored with an `{id}` prefix (e.g. `{argon2}…`), so hashes in other formats — such as Jira's `{PKCS5S2}…` after an import — can be verified and upgraded on login. Null for placeholder users and (later) SSO-only users |
 | active | boolean | Inactive users cannot log in but remain visible in history |
 | placeholder | boolean | Created by an importer for authors without an account (§8) |
 | system_admin | boolean | Global administrator |
@@ -73,7 +73,7 @@ Case-insensitive uniqueness via a unique index on `lower(username)` / `lower(ema
 
 ### Authentication support tables
 - `password_reset_token(id, user_id, token_hash, expires_at, used_at)`
-- Sessions: Spring Session JDBC tables (managed by Spring Session's own schema).
+- Sessions: Spring Session JDBC tables `spring_session` and `spring_session_attributes` (Flyway V10). Sessions survive restarts and can be ended per user (deactivation, password reset, change of global permissions).
 - *(later)* `external_identity(user_id, provider, subject)` for LDAP / OIDC / SAML.
 
 ## 4. Projects
