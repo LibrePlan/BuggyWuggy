@@ -67,13 +67,32 @@ public class ProjectService {
      */
     @Transactional(readOnly = true)
     public ProjectAccess access(BuggyWuggyPrincipal user, String idOrKey) {
-        Project project = resolve(idOrKey).orElseThrow(() -> notFound("project.not-found", idOrKey));
+        Project project = find(idOrKey).orElseThrow(() -> notFound("project.not-found", idOrKey));
+        return access(user, project, idOrKey);
+    }
+
+    /** As {@link #access(BuggyWuggyPrincipal, String)}, for an already loaded project. */
+    @Transactional(readOnly = true)
+    public ProjectAccess access(BuggyWuggyPrincipal user, Project project, String requestedAs) {
         Set<ProjectPermission> granted = permissions.permissionsOf(user, project.getId());
         if (!granted.contains(ProjectPermission.BROWSE_PROJECT)
                 && !granted.contains(ProjectPermission.ADMINISTER_PROJECT)) {
-            throw notFound("project.not-found", idOrKey);
+            throw notFound("project.not-found", requestedAs);
         }
         return new ProjectAccess(project, user, granted);
+    }
+
+    /** Finds a project by numeric id, current key or former key, without any permission check. */
+    @Transactional(readOnly = true)
+    public Optional<Project> find(String idOrKey) {
+        if (NUMERIC.matcher(idOrKey).matches()) {
+            return projects.findById(Long.parseLong(idOrKey));
+        }
+        String key = idOrKey.toUpperCase(Locale.ROOT);
+        return projects.findByKey(key).or(() -> jdbc.queryForList(
+                        "select project_id from project_key_history where old_key = :key",
+                        Map.of("key", key), Long.class)
+                .stream().findFirst().flatMap(projects::findById));
     }
 
     /** Projects the user can browse (global administrators see all projects). */
@@ -186,17 +205,6 @@ public class ProjectService {
     }
 
     // --- helpers ---------------------------------------------------------------------
-
-    private Optional<Project> resolve(String idOrKey) {
-        if (NUMERIC.matcher(idOrKey).matches()) {
-            return projects.findById(Long.parseLong(idOrKey));
-        }
-        String key = idOrKey.toUpperCase(Locale.ROOT);
-        return projects.findByKey(key).or(() -> jdbc.queryForList(
-                        "select project_id from project_key_history where old_key = :key",
-                        Map.of("key", key), Long.class)
-                .stream().findFirst().flatMap(projects::findById));
-    }
 
     private void changeKey(Project project, String newKey, boolean globalAdmin) {
         String oldKey = project.getProjectKey();

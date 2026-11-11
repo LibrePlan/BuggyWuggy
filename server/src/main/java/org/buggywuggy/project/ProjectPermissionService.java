@@ -70,4 +70,18 @@ public class ProjectPermissionService {
         }
         return result;
     }
+
+    /**
+     * Whether active user {@code userId} holds {@code permission} in the project through the
+     * permission scheme. Used for checks about other users, e.g. whether someone is assignable.
+     */
+    public boolean userHas(long userId, long projectId, ProjectPermission permission) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                select exists (
+                    select 1 from project p
+                    join permission_grant pg on pg.permission_scheme_id = p.permission_scheme_id
+                    join user_account u on u.id = :userId and u.active
+                    where p.id = :projectId and pg.permission = :permission and """ + GRANT_APPLIES_TO_USER + ")",
+                Map.of("projectId", projectId, "userId", userId, "permission", permission.name()), Boolean.class));
+    }
 }

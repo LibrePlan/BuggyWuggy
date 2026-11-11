@@ -242,7 +242,14 @@ groups added to a role when a project is created (seeded: `users` → Users,
 ### 8.1 History
 - `change_group(id, issue_id, author_id nullable, created_at)`
 - `change_item(id, change_group_id, field_key, field_kind, old_value, old_text, new_value, new_text)`
-  - `field_key`: field identifier (`status`, `assignee`, `summary`, …).
+  - `field_key`: field identifier. System fields: `summary`, `description`, `issuetype`, `priority`,
+    `assignee`, `reporter`, `duedate`, `labels`, `component`, `version` (affects version),
+    `fixversion`; from the workflow step: `status`, `resolution`. These match Jira's field ids
+    where possible, so imported history needs little mapping.
+  - Single-valued fields produce one item per change. `labels` produces one item with the full
+    old and new label list (space-separated). `component`, `version` and `fixversion` produce one
+    item per added or removed value, as Jira does.
+  - Updates that change nothing produce no change group and leave `updated_at` untouched.
   - `field_kind` ∈ `SYSTEM`, `CUSTOM` (later).
   - `*_value`: machine value (ID or raw value); `*_text`: human-readable value at the time of change.
 
