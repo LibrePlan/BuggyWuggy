@@ -3,7 +3,7 @@
  * Copyright (C) 2026 The BuggyWuggy contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-package org.buggywuggy.importer.forgejo;
+package org.buggywuggy.importer;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -16,10 +16,10 @@ import org.buggywuggy.common.ApiNullable;
 import org.buggywuggy.project.Project;
 import org.buggywuggy.user.UserDtos.UserRef;
 
-/** Requests and responses of the Forgejo import. The token is never part of a response. */
-public final class ForgejoDtos {
+/** Requests and responses of the import wizards, the same for every source. The token is never part of a response. */
+public final class ImportDtos {
 
-    private ForgejoDtos() {
+    private ImportDtos() {
     }
 
     public record ConnectionRequest(@NotBlank @Size(max = 500) String url, @Size(max = 500) String token) {
@@ -40,7 +40,7 @@ public final class ForgejoDtos {
             @NotBlank @Size(max = 300) String repository) {
     }
 
-    /** What a Forgejo label becomes in BuggyWuggy. */
+    /** What a label of the source becomes in BuggyWuggy. */
     public enum LabelTarget { LABEL, ISSUE_TYPE, PRIORITY, IGNORE }
 
     /** {@code id} is the issue type or priority for those targets. */
@@ -66,7 +66,7 @@ public final class ForgejoDtos {
 
     /**
      * Starts an import into {@code projectId}, or into a new project. {@code users} maps
-     * Forgejo user ids to local accounts; other users are matched automatically: by
+     * user ids of the source to local accounts; other users are matched automatically: by
      * e-mail address, and by username unless {@code matchUsernames} is false.
      */
     public record StartRequest(@NotBlank @Size(max = 500) String url, @Size(max = 500) String token,

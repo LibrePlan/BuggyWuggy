@@ -388,23 +388,85 @@ public class ImportWriter {
     /** Links {@code blocker} → blocks → {@code blocked}, with history on both issues. */
     public void blocks(long blockerId, String blockerKey, long blockedId, String blockedKey, Long authorId,
             Instant at) {
-        Map<String, Object> type = jdbc.queryForMap("""
+        link("Blocks", blockerId, blockerKey, blockedId, blockedKey, authorId, at);
+    }
+
+    /**
+     * Links {@code source} → {@code target} with the link type of that name (falling back to
+     * Relates), with history on both issues. Does nothing when the link exists.
+     */
+    public void link(String typeName, long sourceId, String sourceKey, long targetId, String targetKey,
+            Long authorId, Instant at) {
+        Map<String, Object> type = jdbc.queryForList("""
                 select id, outward_description, inward_description from issue_link_type
-                where lower(name) = 'blocks'""", Map.of());
+                where lower(name) in (lower(:name), 'relates') order by lower(name) = lower(:name) desc limit 1""",
+                Map.of("name", typeName)).stream().findFirst()
+                .orElseThrow(() -> new IllegalStateException("No link type " + typeName));
         int added = jdbc.update("""
                 insert into issue_link (link_type_id, source_issue_id, target_issue_id, created_at)
                 values (:type, :source, :target, :at) on conflict do nothing""",
-                new MapSqlParameterSource().addValue("type", type.get("id")).addValue("source", blockerId)
-                        .addValue("target", blockedId).addValue("at", Timestamp.from(at)));
+                new MapSqlParameterSource().addValue("type", type.get("id")).addValue("source", sourceId)
+                        .addValue("target", targetId).addValue("at", Timestamp.from(at)));
         if (added == 0) {
             return;
         }
-        Changes onBlocker = new Changes();
-        onBlocker.record(IssueHistory.Fields.LINK, null, null, blockedKey, type.get("outward_description") + " " + blockedKey);
-        history.record(blockerId, authorId, at, onBlocker);
-        Changes onBlocked = new Changes();
-        onBlocked.record(IssueHistory.Fields.LINK, null, null, blockerKey, type.get("inward_description") + " " + blockerKey);
-        history.record(blockedId, authorId, at, onBlocked);
+        Changes onSource = new Changes();
+        onSource.record(IssueHistory.Fields.LINK, null, null, targetKey, type.get("outward_description") + " " + targetKey);
+        history.record(sourceId, authorId, at, onSource);
+        Changes onTarget = new Changes();
+        onTarget.record(IssueHistory.Fields.LINK, null, null, sourceKey, type.get("inward_description") + " " + sourceKey);
+        history.record(targetId, authorId, at, onTarget);
+    }
+
+    /** What the hierarchy rules need to know about an issue. */
+    public record Hierarchy(long id, long projectId, long typeId, String typeName, int level, long statusId,
+            Long parentId, boolean hasChildren) {
+    }
+
+    public Optional<Hierarchy> hierarchy(long issueId) {
+        return jdbc.query("""
+                select i.id, i.project_id, t.id, t.name, t.hierarchy_level, i.status_id, i.parent_id,
+                       exists (select 1 from issue c where c.parent_id = i.id)
+                from issue i join issue_type t on t.id = i.issue_type_id where i.id = :id""",
+                Map.of("id", issueId), (rs, n) -> new Hierarchy(rs.getLong(1), rs.getLong(2), rs.getLong(3),
+                        rs.getString(4), rs.getInt(5), rs.getLong(6), (Long) rs.getObject(7), rs.getBoolean(8)))
+                .stream().findFirst();
+    }
+
+    /** The first sub-task type, if there is one. */
+    public Optional<Named> subtaskType() {
+        return jdbc.query("select id, name from issue_type where hierarchy_level = -1 order by position, id limit 1",
+                Map.of(), (rs, n) -> new Named(rs.getLong(1), rs.getString(2))).stream().findFirst();
+    }
+
+    /** Whether the workflow of the project for {@code typeId} has {@code statusId}. */
+    public boolean workflowHas(long projectId, long typeId, long statusId) {
+        long scheme = jdbc.queryForObject("select workflow_scheme_id from project where id = :id",
+                Map.of("id", projectId), Long.class);
+        return workflows.containsStatus(workflows.workflowFor(scheme, typeId), statusId);
+    }
+
+    /**
+     * Makes {@code child} a child of {@code parent}, changing its type to {@code newType} when
+     * not null; with history on the child. The caller checks the hierarchy rules.
+     */
+    public void parent(Hierarchy child, long parentId, String parentKey, Named newType, Long authorId, Instant at) {
+        jdbc.update("update issue set parent_id = :parent, issue_type_id = :type where id = :id",
+                Map.of("id", child.id(), "parent", parentId, "type", newType == null ? child.typeId() : newType.id()));
+        Changes changes = new Changes();
+        if (newType != null) {
+            changes.record(IssueHistory.Fields.ISSUE_TYPE, child.typeId(), child.typeName(), newType.id(),
+                    newType.name());
+        }
+        changes.record(IssueHistory.Fields.PARENT, null, null, parentId, parentKey);
+        history.record(child.id(), authorId, at, changes);
+    }
+
+    /** A resolution by name (case-insensitive), else the default one. */
+    public Named resolution(String name) {
+        return jdbc.query("select id, name from resolution where lower(name) = lower(:name)", Map.of("name", name),
+                (rs, n) -> new Named(rs.getLong(1), rs.getString(2))).stream().findFirst()
+                .orElseGet(this::defaultResolution);
     }
 
     public void description(long issueId, String description) {

@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.buggywuggy.common.ApiNullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -38,7 +40,8 @@ public class ImportJobs {
     public record JobResponse(long id, String kind, String baseUrl, String sourcePath, @ApiNullable Long projectId,
             @ApiNullable String projectKey, @ApiNullable String projectName, Status status,
             @ApiNullable String createdBy, Instant createdAt, @ApiNullable Instant finishedAt, Counters counters,
-            @ApiNullable String message, boolean credentialsAvailable) {
+            @ApiNullable String message, boolean credentialsAvailable, @ApiNullable String statusText,
+            @ApiNullable Instant waitingUntil) {
     }
 
     public record LogLine(long id, Instant at, Level level, String message) {
@@ -48,6 +51,9 @@ public class ImportJobs {
     public record Definition(long id, long sourceId, String kind, String baseUrl, String sourcePath, Long projectId,
             String options, Status status) {
     }
+
+    /** The import log also goes to the application log (journalctl, docker logs, …). */
+    private static final Logger log = LoggerFactory.getLogger("org.buggywuggy.import");
 
     private final NamedParameterJdbcTemplate jdbc;
     private final Clock clock;
@@ -61,8 +67,8 @@ public class ImportJobs {
     @EventListener(ApplicationReadyEvent.class)
     public void markInterrupted() {
         jdbc.update("""
-                update import_job set status = 'INTERRUPTED', finished_at = :now,
-                       message = 'BuggyWuggy was stopped while the import ran.'
+                update import_job set status = 'INTERRUPTED', finished_at = :now, status_text = null,
+                       waiting_until = null, message = 'BuggyWuggy was stopped while the import ran.'
                 where status = 'RUNNING'""", Map.of("now", Timestamp.from(clock.instant())));
     }
 
@@ -109,7 +115,19 @@ public class ImportJobs {
                         .addValue("comments", comments).addValue("attachments", attachments).addValue("users", users));
     }
 
+    /** What the job does right now; {@code waitingUntil} when it waits for the server. */
+    public void status(long jobId, String text, Instant waitingUntil) {
+        jdbc.update("update import_job set status_text = :text, waiting_until = :until where id = :id",
+                new MapSqlParameterSource().addValue("id", jobId).addValue("text", text)
+                        .addValue("until", waitingUntil == null ? null : Timestamp.from(waitingUntil)));
+    }
+
     public void log(long jobId, Level level, String message) {
+        switch (level) {
+            case INFO -> log.info("Import job {}: {}", jobId, message);
+            case WARN -> log.warn("Import job {}: {}", jobId, message);
+            case ERROR -> log.error("Import job {}: {}", jobId, message);
+        }
         jdbc.update("insert into import_job_log (job_id, at, level, message) values (:job, :at, :level, :message)",
                 new MapSqlParameterSource().addValue("job", jobId).addValue("at", Timestamp.from(clock.instant()))
                         .addValue("level", level.name()).addValue("message", message));
@@ -120,7 +138,8 @@ public class ImportJobs {
 
     public void finish(long jobId, Status status, String message) {
         jdbc.update("""
-                update import_job set status = :status, finished_at = :now, message = :message
+                update import_job set status = :status, finished_at = :now, message = :message,
+                       status_text = null, waiting_until = null
                 where id = :id and status = 'RUNNING'""",
                 new MapSqlParameterSource().addValue("id", jobId).addValue("status", status.name())
                         .addValue("now", Timestamp.from(clock.instant())).addValue("message", message));
@@ -155,6 +174,15 @@ public class ImportJobs {
                 .stream().findFirst();
     }
 
+    /** All lines, for downloading the log as a file. */
+    public void eachLogLine(long jobId, java.util.function.Consumer<LogLine> line) {
+        jdbc.query("select id, at, level, message from import_job_log where job_id = :job order by id",
+                Map.of("job", jobId), rs -> {
+                    line.accept(new LogLine(rs.getLong(1), rs.getTimestamp(2).toInstant(),
+                            Level.valueOf(rs.getString(3)), rs.getString(4)));
+                });
+    }
+
     public List<LogLine> log(long jobId, long afterId) {
         return jdbc.query("""
                 select id, at, level, message from import_job_log
@@ -167,6 +195,7 @@ public class ImportJobs {
     private static JobResponse toResponse(ResultSet rs, java.util.function.LongPredicate credentials)
             throws SQLException {
         Timestamp finished = rs.getTimestamp("finished_at");
+        Timestamp waiting = rs.getTimestamp("waiting_until");
         long id = rs.getLong("id");
         return new JobResponse(id, rs.getString("kind"), rs.getString("base_url"), rs.getString("project_path"),
                 (Long) rs.getObject("project_id"), rs.getString("project_key"), rs.getString("project_name"),
@@ -175,6 +204,7 @@ public class ImportJobs {
                 new Counters(rs.getInt("issues_total"), rs.getInt("issues_done"), rs.getInt("issues_imported"),
                         rs.getInt("comments"), rs.getInt("attachments"), rs.getInt("users_created"),
                         rs.getInt("warnings")),
-                rs.getString("message"), credentials.test(id));
+                rs.getString("message"), credentials.test(id), rs.getString("status_text"),
+                waiting == null ? null : waiting.toInstant());
     }
 }

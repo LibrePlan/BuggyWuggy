@@ -423,12 +423,15 @@ export function useMailTemplate(key: string, language: string) {
 
 // --- import ---------------------------------------------------------------------------
 
-/** Refreshes every few seconds while an import runs. */
+/**
+ * Refreshes every few seconds while an import runs, and now and then otherwise, so the
+ * status line of the administration notices an import another administrator started.
+ */
 export function useImportJobs() {
   return useQuery({
     queryKey: keys.importJobs,
     queryFn: () => get<ImportJob[]>('/api/v1/admin/import/jobs'),
-    refetchInterval: (query) => (query.state.data?.some((j) => j.status === 'RUNNING') ? 3000 : false),
+    refetchInterval: (query) => (query.state.data?.some((j) => j.status === 'RUNNING') ? 3000 : 30_000),
   });
 }
 

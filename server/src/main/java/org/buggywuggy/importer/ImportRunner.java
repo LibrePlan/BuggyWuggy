@@ -9,6 +9,8 @@ import jakarta.annotation.PreDestroy;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,9 +43,10 @@ public class ImportRunner {
     }
 
     /** What a running job can use. */
-    public final class Context {
+    public final class Context implements ReadOnlyHttp.Waits {
 
         private final long jobId;
+        private volatile String status;
 
         Context(long jobId) {
             this.jobId = jobId;
@@ -63,6 +66,24 @@ public class ImportRunner {
 
         public void warn(String message) {
             jobs.log(jobId, Level.WARN, message);
+        }
+
+        /** The one-line status the administration shows while the job runs. */
+        public void status(String text) {
+            status = text;
+            jobs.status(jobId, text, null);
+        }
+
+        @Override
+        public void waiting(String reason, Instant until) {
+            String time = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(until);
+            info("Waiting until " + time + " for the " + reason + ".");
+            jobs.status(jobId, "Waiting for the " + reason, until);
+        }
+
+        @Override
+        public void resumed() {
+            jobs.status(jobId, status, null);
         }
 
         /** A readable message for an error, in English like the rest of the log. */

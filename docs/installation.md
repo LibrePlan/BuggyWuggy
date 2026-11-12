@@ -426,9 +426,13 @@ that is your only source of it; system administrators always keep every permissi
 ### Importing from other trackers
 
 **Administration → Import** copies issues from another tracker into a BuggyWuggy project, with
-their comments, attachments and history. Forgejo is available now (it also covers
-codeberg.org). Jira (Cloud, or Server / Data Center at your own address), GitLab, GitHub,
-Redmine and Trac are listed but follow later.
+their comments, attachments and history. Forgejo (it also covers Gitea and codeberg.org) and
+GitHub (github.com and GitHub Enterprise Server) are available now. Jira (Cloud, or Server /
+Data Center at your own address), GitLab, Redmine and Trac are listed but follow later.
+
+**An import only reads.** It never changes anything in the source: the importer can only send
+read (GET) requests, so it cannot write, close, comment or label anything there. A token with
+read-only permissions is enough.
 
 #### Forgejo
 
@@ -479,11 +483,68 @@ Not imported: pull requests themselves, reactions, time tracking, project boards
 whether an issue was pinned or locked. Forgejo shows deleted accounts as *Ghost*; they become one
 placeholder named `Ghost`.
 
+**Rate limits.** Forgejo servers can limit the number of requests (codeberg.org allows 2000 per
+10 minutes). BuggyWuggy reads the limit from the server's answers and waits when it is nearly
+used up. An import makes about three requests per issue, plus one per attachment.
+
+#### GitHub
+
+The GitHub import reads one repository through GitHub's REST API, with the same four-step wizard
+as Forgejo.
+
+1. **Connection.** The address is `https://github.com`, or the address of your GitHub
+   Enterprise Server (BuggyWuggy finds its API under `/api/v3`). **A token is required**:
+   without one GitHub allows only 60 requests an hour.
+   - Create a *fine-grained personal access token* under *Settings → Developer settings →
+     Personal access tokens*, for the repository, with read-only access to **Issues** and
+     **Metadata**. A *classic* token needs the `repo` scope for private repositories and no scope
+     for public ones.
+   - The token never needs write access: the importer only reads.
+2. **Repository**, 3. **Mapping** and 4. **Start** work as for Forgejo. GitHub's *issue types*
+   (Bug, Feature, Task, …) are listed with the labels as `type:Bug` etc., so you can map them to
+   a BuggyWuggy issue type. People are matched by the public e-mail address of their GitHub
+   profile, then by username; display names come from their profile.
+
+What is imported, where it differs from Forgejo:
+
+| GitHub | BuggyWuggy |
+|---|---|
+| Closed as *completed* / *not planned* / *duplicate* | Resolution: the default one / *Won't Fix* / *Duplicate* (the default one if those do not exist) |
+| Issue type | The issue type chosen for `type:Name` in the wizard |
+| Sub-issues | A sub-issue of a standard issue becomes its **sub-task**; a sub-issue of an issue that became an epic gets it as parent. Deeper levels, and sub-issues in other repositories, become *relates to* links. |
+| *Blocked by* | *Blocks* links |
+| Images and files in texts (`github.com/user-attachments/…`, `user-images.githubusercontent.com/…`) | Attachments, and the text links to the copy. GitHub has no list of attachments; BuggyWuggy finds them in the texts. |
+| Full links to issues of the repository | The key of the imported issue |
+| Timeline (comments, title, labels, assignees, milestone, close, reopen, references from pull requests) | Comments and history with the original author and date |
+
+GitHub sends files from temporary addresses elsewhere (a redirect); BuggyWuggy downloads them
+**without** the token, which only goes to the API. Files of private repositories can therefore
+often not be copied; the text keeps the link to the original and the log has a warning.
+
+**Rate limits.** With a token GitHub allows 5000 requests an hour. An import makes about two
+requests per issue (more for issues with sub-issues, dependencies or more than 100 timeline
+entries), one per attachment and one per person. When the limit is used up, the import waits
+until GitHub resets it, at most an hour; the status line shows until when.
+
+#### Progress, status line and log
+
+While an import runs, **every administration page shows a status line** with its progress and
+what it is doing, e.g. *Issue 12 of 140: #456*, or *Waiting for the rate limit of api.github.com
+until 14:05*. The import's own page has the counters, a **Cancel import** button and the log.
+
+The log can be downloaded as a text file with **Download log** on the import's page
+(`GET /api/v1/admin/import/jobs/{id}/log.txt`). Every log line is also written to the
+application log, under the logger `org.buggywuggy.import`, so with systemd:
+
+```bash
+journalctl -u buggywuggy | grep "Import job"
+```
+
 Nobody gets e-mail about imported issues. Dates are the original ones; the history entry
 *Imported from* has the date and author of the import.
 
 **Running again.** **Run again** on an import's page repeats it with the same settings. Issues
-that were imported before are not imported again (also not when they changed in Forgejo); only
+that were imported before are not imported again (also not when they changed in the source); only
 their new comments are added, and new issues are imported. When some issues failed, the import
 ends as *Failed* with a warning per issue; running it again imports just those. Issues of a
 deleted project count as not imported.
@@ -491,11 +552,6 @@ deleted project count as not imported.
 **The access token is never stored**: not in the database and not in the log. BuggyWuggy keeps
 it in memory for 24 hours, so **Run again** works without typing it; after a restart you are
 asked for it again.
-
-**Rate limits.** Forgejo servers can limit the number of requests (codeberg.org allows 2000 per
-10 minutes). BuggyWuggy reads the limit from the server's answers and waits when it is nearly
-used up; the log says so. An import makes about three requests per issue, plus one per
-attachment.
 
 ### Automating with the REST API
 
@@ -626,8 +682,19 @@ variable as well (for systemd in `/etc/buggywuggy.env`).
 
 **An import fails with "The server refused the access token" or "may not read".**
 The token is wrong, expired, or lacks read access to repositories or issues. Create a new one in
-Forgejo under *Settings → Applications*. For a private repository the token's user must be able
-to see the repository.
+Forgejo under *Settings → Applications*, or on GitHub under *Settings → Developer settings*. For
+a private repository the token's user must be able to see the repository; for a GitHub
+organisation that requires it, the token must also be approved for (or authorised with SSO by)
+the organisation.
+
+**An import seems to stand still.**
+Look at the status line: it probably waits for the rate limit of the source, and says until
+when. Imports of GitHub wait at most an hour at a time. The log on the import's page, or
+`journalctl -u buggywuggy`, shows what it did last.
+
+**Attachments of a GitHub import were not copied.**
+GitHub only hands out the files of private repositories to a logged-in browser. The texts keep
+the links to the originals; the log lists each file that was not copied.
 
 **An import is "Interrupted".**
 BuggyWuggy was stopped while the import ran. Use **Run again**: what was already imported is

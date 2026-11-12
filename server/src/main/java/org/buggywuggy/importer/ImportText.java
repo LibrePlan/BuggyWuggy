@@ -3,23 +3,24 @@
  * Copyright (C) 2026 The BuggyWuggy contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-package org.buggywuggy.importer.forgejo;
+package org.buggywuggy.importer;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Rewrites Forgejo Markdown for BuggyWuggy. Outside code:
+ * Rewrites imported Markdown for BuggyWuggy. Outside code:
  * <ul>
- * <li>{@code #12} and {@code owner/repo#12} become the key of the imported issue, or a link to
- * the original (an issue or pull request that was not imported);</li>
- * <li>links to attachments ({@code /attachments/<uuid>}) point to the copied attachment, or to
- * the original file when it was not copied;</li>
- * <li>other relative links become absolute links to the Forgejo server.</li>
+ * <li>{@code #12}, {@code owner/repo#12} and bare links to issues of the source become the key
+ * of the imported issue, or a link to the original (an issue or pull request that was not
+ * imported);</li>
+ * <li>links to attachments point to the copied attachment, or to the original file when it was
+ * not copied;</li>
+ * <li>other relative links become absolute links to the source's web address.</li>
  * </ul>
  */
-public final class ForgejoText {
+public final class ImportText {
 
     /** Looks up what an import created. */
     public interface Resolver {
@@ -27,7 +28,8 @@ public final class ForgejoText {
         /** The key of the imported issue; {@code repository} is null for this repository. */
         Optional<String> issueKey(String repository, long number);
 
-        Optional<Long> attachmentId(String uuid);
+        /** The copied attachment for the key the source's attachment pattern found. */
+        Optional<Long> attachmentId(String key);
     }
 
     private static final Pattern CODE = Pattern.compile("(?ms)^( {0,3})(```|~~~).*?^ {0,3}\\2[^\\n]*$|`[^`\\n]+`");
@@ -38,16 +40,23 @@ public final class ForgejoText {
     private static final Pattern LOCAL_REF = Pattern.compile("(?<![\\w&/#\\]])#(\\d+)\\b");
     private static final Pattern RELATIVE_LINK = Pattern.compile("(\\]\\(|src=\"|href=\")/(?!api/v1/attachments/)");
 
-    private final String base;
+    private final String web;
     private final String repository;
     private final Resolver resolver;
     private final Pattern attachment;
+    private final Pattern issueUrl;
 
-    public ForgejoText(String base, String repository, Resolver resolver) {
-        this.base = base;
+    /**
+     * @param web         the web address issues are under, e.g. https://github.com
+     * @param repository  the imported project, e.g. owner/repo
+     * @param attachments attachment links with the key as group 1, or null
+     */
+    public ImportText(String web, String repository, Pattern attachments, Resolver resolver) {
+        this.web = web;
         this.repository = repository;
         this.resolver = resolver;
-        this.attachment = Pattern.compile("(?:" + Pattern.quote(base) + ")?/attachments/([0-9a-fA-F-]{36})\\b");
+        this.attachment = attachments;
+        this.issueUrl = Pattern.compile(Pattern.quote(web) + "/([\\w.\\-]+/[\\w.\\-]+)/issues/(\\d+)/?");
     }
 
     public String rewrite(String text) {
@@ -72,35 +81,41 @@ public final class ForgejoText {
         int last = 0;
         while (link.find()) {
             out.append(references(links(text.substring(last, link.start()))));
-            out.append(links(link.group()));
+            String found = link.group();
+            Matcher issue = issueUrl.matcher(found);
+            Optional<String> key = issue.matches() ? key(issue.group(1), Long.parseLong(issue.group(2)))
+                    : Optional.empty();
+            out.append(key.orElseGet(() -> links(found)));
             last = link.end();
         }
         out.append(references(links(text.substring(last))));
         return out.toString();
     }
 
+    private Optional<String> key(String repo, long number) {
+        return repo.equalsIgnoreCase(repository) ? resolver.issueKey(null, number) : resolver.issueKey(repo, number);
+    }
+
     /** Attachment and relative links. */
     private String links(String text) {
-        String result = attachment.matcher(text).replaceAll(m -> Matcher.quoteReplacement(
-                resolver.attachmentId(m.group(1).toLowerCase(java.util.Locale.ROOT))
+        String result = attachment == null ? text : attachment.matcher(text).replaceAll(m -> Matcher.quoteReplacement(
+                resolver.attachmentId(m.group(1))
                         .map(id -> "/api/v1/attachments/" + id + "/content")
-                        .orElse(base + "/attachments/" + m.group(1))));
-        return RELATIVE_LINK.matcher(result).replaceAll(m -> Matcher.quoteReplacement(m.group(1) + base + "/"));
+                        .orElseGet(() -> m.group().startsWith("/") ? web + m.group() : m.group())));
+        return RELATIVE_LINK.matcher(result).replaceAll(m -> Matcher.quoteReplacement(m.group(1) + web + "/"));
     }
 
     private String references(String text) {
         String result = CROSS_REF.matcher(text).replaceAll(m -> {
             String repo = m.group(1);
             long number = Long.parseLong(m.group(2));
-            Optional<String> key = repo.equalsIgnoreCase(repository) ? resolver.issueKey(null, number)
-                    : resolver.issueKey(repo, number);
-            return Matcher.quoteReplacement(key.orElseGet(() ->
-                    "[" + repo + "#" + number + "](" + base + "/" + repo + "/issues/" + number + ")"));
+            return Matcher.quoteReplacement(key(repo, number).orElseGet(() ->
+                    "[" + repo + "#" + number + "](" + web + "/" + repo + "/issues/" + number + ")"));
         });
         return LOCAL_REF.matcher(result).replaceAll(m -> {
             long number = Long.parseLong(m.group(1));
             return Matcher.quoteReplacement(resolver.issueKey(null, number).orElseGet(() ->
-                    "[#" + number + "](" + base + "/" + repository + "/issues/" + number + ")"));
+                    "[#" + number + "](" + web + "/" + repository + "/issues/" + number + ")"));
         });
     }
 }

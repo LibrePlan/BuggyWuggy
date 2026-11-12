@@ -2,7 +2,7 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Anchor, Badge, Button, Card, Group, Progress, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
+import { Alert, Anchor, Badge, Button, Card, Group, Progress, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { useImportJobs } from '../../api/queries';
@@ -13,9 +13,9 @@ import { formatDateTime } from '../../lib/format';
 /** The trackers BuggyWuggy can import from, now or later. */
 const SOURCES = [
   { kind: 'forgejo', available: true, url: 'https://codeberg.org' },
+  { kind: 'github', available: true, url: 'https://github.com' },
   { kind: 'jira', available: false, url: 'https://your-site.atlassian.net' },
   { kind: 'gitlab', available: false, url: 'https://gitlab.com' },
-  { kind: 'github', available: false, url: 'https://github.com' },
   { kind: 'redmine', available: false, url: '' },
   { kind: 'trac', available: false, url: '' },
 ] as const;
@@ -37,6 +37,39 @@ export function ImportProgress({ job }: { job: ImportJob }) {
   const { issuesDone, issuesTotal } = job.counters;
   const value = issuesTotal ? Math.round((issuesDone / issuesTotal) * 100) : job.status === 'RUNNING' ? 0 : 100;
   return <Progress value={value} animated={job.status === 'RUNNING'} size="sm" />;
+}
+
+/**
+ * One line per running import, shown above every administration page: imports run in the
+ * background, and may wait a long time for the rate limit of the source.
+ */
+export function ImportStatusLine() {
+  const { t, i18n } = useTranslation();
+  const running = (useImportJobs().data ?? []).filter((j) => j.status === 'RUNNING');
+  if (running.length === 0) return null;
+  return (
+    <Stack gap={4}>
+      {running.map((job) => (
+        <Alert key={job.id} color={job.waitingUntil ? 'orange' : 'blue'} p="xs">
+          <Group justify="space-between" wrap="nowrap" gap="sm">
+            <Text size="sm" lineClamp={1}>
+              {t('admin.importer.statusLine.running', {
+                source: job.sourcePath,
+                done: job.counters.issuesDone,
+                total: job.counters.issuesTotal,
+              })}
+              {job.statusText && ` · ${job.statusText}`}
+              {job.waitingUntil &&
+                ` ${t('admin.importer.statusLine.waitingUntil', { time: formatDateTime(job.waitingUntil, i18n.language) })}`}
+            </Text>
+            <Anchor component={Link} to={`/admin/import/jobs/${job.id}`} size="sm" style={{ flexShrink: 0 }}>
+              {t('admin.importer.statusLine.open')}
+            </Anchor>
+          </Group>
+        </Alert>
+      ))}
+    </Stack>
+  );
 }
 
 export function ImportPage() {

@@ -71,6 +71,13 @@ export function ImportJobPage() {
         )}
       </Text>
       <ImportProgress job={j} />
+      {j.status === 'RUNNING' && j.statusText && (
+        <Text size="sm" c={j.waitingUntil ? 'orange' : 'dimmed'}>
+          {j.statusText}
+          {j.waitingUntil &&
+            ` ${t('admin.importer.statusLine.waitingUntil', { time: formatDateTime(j.waitingUntil, i18n.language) })}`}
+        </Text>
+      )}
       <SimpleGrid cols={{ base: 2, sm: 3, md: 6 }}>
         <Fact label={t('admin.importer.job.issues')} value={`${c.issuesDone} / ${c.issuesTotal}`} />
         <Fact label={t('admin.importer.job.imported')} value={c.issuesImported} />
@@ -150,7 +157,7 @@ function JobActions({ job }: { job: ImportJob }) {
         <Stack>
           <Text size="sm">{t('admin.importer.job.tokenAgain')}</Text>
           <PasswordInput
-            label={t('admin.importer.forgejo.token')}
+            label={t('admin.importer.wizard.token')}
             autoComplete="off"
             value={token}
             onChange={(e) => setToken(e.currentTarget.value)}
@@ -212,7 +219,15 @@ function JobLog({ job }: { job: ImportJob }) {
 
   return (
     <Stack gap="xs">
-      <Title order={5}>{t('admin.importer.job.log')}</Title>
+      <Group justify="space-between">
+        <Title order={5}>{t('admin.importer.job.log')}</Title>
+        <Anchor href={`/api/v1/admin/import/jobs/${job.id}/log.txt`} size="sm">
+          {t('admin.importer.job.downloadLog')}
+        </Anchor>
+      </Group>
+      <Text size="xs" c="dimmed">
+        {t('admin.importer.job.logHelp')}
+      </Text>
       {error != null && <ErrorAlert error={error} />}
       <Paper withBorder p={0}>
         <ScrollArea h={360} viewportRef={viewport} p="sm">

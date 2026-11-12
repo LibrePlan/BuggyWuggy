@@ -3,19 +3,22 @@
  * Copyright (C) 2026 The BuggyWuggy contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-package org.buggywuggy.importer.forgejo;
+package org.buggywuggy.importer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
-class ForgejoTextTest {
+class ImportTextTest {
 
     private static final String BASE = "https://code.example.org";
 
-    private final ForgejoText text = new ForgejoText(BASE, "acme/widgets", new ForgejoText.Resolver() {
+    private final ImportText text = new ImportText(BASE, "acme/widgets",
+            Pattern.compile("(?:" + Pattern.quote(BASE) + ")?/attachments/([0-9a-fA-F-]{36})\\b"),
+            new ImportText.Resolver() {
         @Override
         public Optional<String> issueKey(String repository, long number) {
             Map<String, String> keys = repository == null ? Map.of("1", "WID-1", "3", "WID-2")
@@ -35,6 +38,10 @@ class ForgejoTextTest {
                 .isEqualTo("See WID-1, [#2](" + BASE + "/acme/widgets/issues/2) and GEAR-9 or "
                         + "[other/repo#7](" + BASE + "/other/repo/issues/7).");
         assertThat(text.rewrite("acme/widgets#3")).isEqualTo("WID-2");
+        // Bare links to issues of the source too; links with a text keep it.
+        assertThat(text.rewrite("Like " + BASE + "/acme/widgets/issues/1 and [this](" + BASE
+                + "/acme/widgets/issues/1)."))
+                .isEqualTo("Like WID-1 and [this](" + BASE + "/acme/widgets/issues/1).");
     }
 
     @Test

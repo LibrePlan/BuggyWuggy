@@ -296,17 +296,21 @@ the history stays complete after the file is gone.
    `external_ref(id, import_source_id, source_type, source_id, local_type, local_id, imported_at)` —
    unique `(import_source_id, source_type, source_id)`. Makes imports repeatable and
    incremental, and allows links, parents and history to be resolved after all issues exist.
-   `source_type` ∈ `user`, `issue`, `comment`, `attachment` (Forgejo: the attachment UUID). A
+   `source_type` ∈ `user`, `issue`, `comment`, `attachment` (Forgejo: the attachment UUID;
+   GitHub: the attachment's URL). A
    reference counts only while its local row exists, so issues of a deleted project can be
    imported again.
 4. **Sources and jobs.**
    - `import_source(id, kind, base_url, project_path, label, created_at)` — one per tracker,
-     server and project there (e.g. `FORGEJO`, `https://codeberg.org`, `forgejo/website`);
+     server and project there (e.g. `FORGEJO`, `https://codeberg.org`, `forgejo/website`, or
+     `GITHUB`, `https://github.com`, `LibrePlan/LibrePlan`);
      unique `(kind, lower(base_url), lower(project_path))`.
    - `import_job(id, import_source_id, project_id, status, options, created_by, created_at,
-     finished_at, counters…, message)` — `status` ∈ `RUNNING`, `SUCCEEDED`, `FAILED`,
+     finished_at, counters…, message, status_text, waiting_until)` — `status` ∈ `RUNNING`, `SUCCEEDED`, `FAILED`,
      `CANCELLED`, `INTERRUPTED`; `options` is the JSON of the wizard's choices. **Credentials
-     are never stored**; the access token is only kept in memory.
+     are never stored**; the access token is only kept in memory. `status_text` and
+     `waiting_until` describe what a running job does now (for the status line), e.g. waiting
+     for a rate limit.
    - `import_job_log(id, job_id, at, level, message)` — `level` ∈ `INFO`, `WARN`, `ERROR`.
 5. **Origin of an issue.** `issue.origin_source_id`, `origin_key` (e.g. `forgejo/website#12`)
    and `origin_url`. Imported issues get new numbers; the origin is shown on the issue and
@@ -317,6 +321,11 @@ the history stays complete after the file is gone.
    field `remotelink`.
 7. **No notifications.** Importers write history with `IssueHistory.record`, which does not
    create outbox events, so nobody is mailed about imported issues.
+8. **Read-only.** All importers use `ReadOnlyHttp`, which can only send GET requests, and only
+   sends the token to the hosts of the source. The engine (`IssueImporter`) is the same for
+   every kind; a `Connector` per kind turns its API into the neutral model of `Source`.
+9. **Hierarchy.** Sub-issues (GitHub) become sub-tasks of a standard issue, or children of an
+   epic; anything deeper or across projects becomes a *Relates* link.
 
 ## 9. Search (PostgreSQL only)
 

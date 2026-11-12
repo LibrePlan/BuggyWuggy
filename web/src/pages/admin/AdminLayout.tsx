@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { useMyself } from '../../api/queries';
 import { NotFoundPage } from '../NotFoundPage';
+import { ImportStatusLine } from './ImportPage';
 
 const SECTIONS = ['users', 'groups', 'permissions', 'email', 'import'] as const;
 
@@ -31,6 +32,7 @@ export function AdminLayout() {
           ))}
         </Tabs.List>
       </Tabs>
+      <ImportStatusLine />
       <Outlet />
     </Stack>
   );

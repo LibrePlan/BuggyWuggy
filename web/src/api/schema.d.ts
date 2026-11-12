@@ -436,6 +436,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/import/{kind}/repositories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["repositories"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/import/{kind}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/import/{kind}/connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["testConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/import/{kind}/analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["analyze"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/import/jobs/{id}/retry": {
         parameters: {
             query?: never;
@@ -462,70 +526,6 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["cancel"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/import/forgejo/repositories": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["forgejoRepositories"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/import/forgejo/jobs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["startForgejo"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/import/forgejo/connection": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["testForgejo"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/import/forgejo/analysis": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["analyzeForgejo"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1124,6 +1124,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/import/jobs/{id}/log.txt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["logFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/groups/{id}/members": {
         parameters: {
             query?: never;
@@ -1662,46 +1678,6 @@ export interface components {
             enabled: boolean;
             isDefault: boolean;
         };
-        RetryRequest: {
-            token?: string;
-        };
-        Counters: {
-            /** Format: int32 */
-            issuesTotal: number;
-            /** Format: int32 */
-            issuesDone: number;
-            /** Format: int32 */
-            issuesImported: number;
-            /** Format: int32 */
-            comments: number;
-            /** Format: int32 */
-            attachments: number;
-            /** Format: int32 */
-            usersCreated: number;
-            /** Format: int32 */
-            warnings: number;
-        };
-        JobResponse: {
-            /** Format: int64 */
-            id: number;
-            kind: string;
-            baseUrl: string;
-            sourcePath: string;
-            /** Format: int64 */
-            projectId: number | null;
-            projectKey: string | null;
-            projectName: string | null;
-            /** @enum {string} */
-            status: "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED" | "INTERRUPTED";
-            createdBy: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            finishedAt: string | null;
-            counters: components["schemas"]["Counters"];
-            message: string | null;
-            credentialsAvailable: boolean;
-        };
         RepositoryRequest: {
             url: string;
             token?: string;
@@ -1742,6 +1718,46 @@ export interface components {
                 [key: string]: number;
             };
             matchUsernames?: boolean | null;
+        };
+        Counters: {
+            /** Format: int32 */
+            issuesTotal: number;
+            /** Format: int32 */
+            issuesDone: number;
+            /** Format: int32 */
+            issuesImported: number;
+            /** Format: int32 */
+            comments: number;
+            /** Format: int32 */
+            attachments: number;
+            /** Format: int32 */
+            usersCreated: number;
+            /** Format: int32 */
+            warnings: number;
+        };
+        JobResponse: {
+            /** Format: int64 */
+            id: number;
+            kind: string;
+            baseUrl: string;
+            sourcePath: string;
+            /** Format: int64 */
+            projectId: number | null;
+            projectKey: string | null;
+            projectName: string | null;
+            /** @enum {string} */
+            status: "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED" | "INTERRUPTED";
+            createdBy: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            finishedAt: string | null;
+            counters: components["schemas"]["Counters"];
+            message: string | null;
+            credentialsAvailable: boolean;
+            statusText: string | null;
+            /** Format: date-time */
+            waitingUntil: string | null;
         };
         ConnectionRequest: {
             url: string;
@@ -1790,6 +1806,9 @@ export interface components {
             /** Format: int32 */
             issues: number;
             suggestion: components["schemas"]["UserRef"] | null;
+        };
+        RetryRequest: {
+            token?: string;
         };
         CreateGroupRequest: {
             name: string;
@@ -2059,6 +2078,7 @@ export interface components {
             level: "INFO" | "WARN" | "ERROR";
             message: string;
         };
+        StreamingResponseBody: unknown;
         PageResponseGroupResponse: {
             items: components["schemas"]["GroupResponse"][];
             /** Format: int32 */
@@ -3108,6 +3128,110 @@ export interface operations {
             };
         };
     };
+    repositories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RepositoryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RepositoryInfo"][];
+                };
+            };
+        };
+    };
+    start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["JobResponse"];
+                };
+            };
+        };
+    };
+    testConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConnectionResponse"];
+                };
+            };
+        };
+    };
+    analyze: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Analysis"];
+                };
+            };
+        };
+    };
     retry_1: {
         parameters: {
             query?: never;
@@ -3151,102 +3275,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    forgejoRepositories: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RepositoryRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["RepositoryInfo"][];
-                };
-            };
-        };
-    };
-    startForgejo: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StartRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["JobResponse"];
-                };
-            };
-        };
-    };
-    testForgejo: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConnectionRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ConnectionResponse"];
-                };
-            };
-        };
-    };
-    analyzeForgejo: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AnalysisRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["Analysis"];
-                };
             };
         };
     };
@@ -4406,6 +4434,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["LogLine"][];
+                };
+            };
+        };
+    };
+    logFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StreamingResponseBody"];
                 };
             };
         };

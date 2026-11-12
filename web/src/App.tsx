@@ -13,12 +13,12 @@ import { AdminGroupsPage } from './pages/admin/AdminGroupsPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminUserPage } from './pages/admin/AdminUserPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
-import { ForgejoImportPage } from './pages/admin/ForgejoImportPage';
 import { GlobalPermissionsPage } from './pages/admin/GlobalPermissionsPage';
 import { ImportJobPage } from './pages/admin/ImportJobPage';
 import { ImportPage } from './pages/admin/ImportPage';
 import { MailSettingsPage } from './pages/admin/MailSettingsPage';
 import { MailTemplatePage } from './pages/admin/MailTemplatePage';
+import { RepositoryImportPage } from './pages/admin/RepositoryImportPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ProjectPage } from './pages/ProjectPage';
@@ -55,7 +55,8 @@ export const router = createBrowserRouter([
               { path: 'email', element: <MailSettingsPage /> },
               { path: 'email/templates/:templateKey/:language', element: <MailTemplatePage /> },
               { path: 'import', element: <ImportPage /> },
-              { path: 'import/forgejo', element: <ForgejoImportPage /> },
+              { path: 'import/forgejo', element: <RepositoryImportPage key="forgejo" kind="forgejo" /> },
+              { path: 'import/github', element: <RepositoryImportPage key="github" kind="github" /> },
               { path: 'import/jobs/:jobId', element: <ImportJobPage /> },
             ],
           },

@@ -3,48 +3,44 @@
  * Copyright (C) 2026 The BuggyWuggy contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-package org.buggywuggy.importer.forgejo;
+package org.buggywuggy.importer;
 
 import static org.buggywuggy.common.ApiException.badRequest;
 import static org.buggywuggy.common.ApiException.conflict;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.buggywuggy.common.ApiException;
-import org.buggywuggy.importer.ImportJobs;
+import org.buggywuggy.importer.ImportDtos.Analysis;
+import org.buggywuggy.importer.ImportDtos.ConnectionResponse;
+import org.buggywuggy.importer.ImportDtos.Options;
+import org.buggywuggy.importer.ImportDtos.RepositoryInfo;
+import org.buggywuggy.importer.ImportDtos.StartRequest;
 import org.buggywuggy.importer.ImportJobs.Definition;
 import org.buggywuggy.importer.ImportJobs.JobResponse;
-import org.buggywuggy.importer.ImportRunner;
-import org.buggywuggy.importer.forgejo.ForgejoApi.Repository;
-import org.buggywuggy.importer.forgejo.ForgejoApi.SearchResult;
-import org.buggywuggy.importer.forgejo.ForgejoApi.User;
-import org.buggywuggy.importer.forgejo.ForgejoApi.Version;
-import org.buggywuggy.importer.forgejo.ForgejoDtos.Analysis;
-import org.buggywuggy.importer.forgejo.ForgejoDtos.ConnectionResponse;
-import org.buggywuggy.importer.forgejo.ForgejoDtos.Options;
-import org.buggywuggy.importer.forgejo.ForgejoDtos.RepositoryInfo;
-import org.buggywuggy.importer.forgejo.ForgejoDtos.StartRequest;
 import org.buggywuggy.project.ProjectDtos.CreateProjectRequest;
 import org.buggywuggy.project.ProjectService;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
-import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
-/** The steps of the Forgejo import wizard, and starting and retrying its jobs. */
+/** The steps of the import wizard, and starting and retrying jobs, for every kind of source. */
 @Service
-public class ForgejoImportService {
+public class ImportService {
 
-    private final ForgejoImporter importer;
+    private final List<Connector> connectors;
+    private final IssueImporter importer;
     private final ImportJobs jobs;
     private final ImportRunner runner;
     private final ProjectService projects;
     private final NamedParameterJdbcTemplate jdbc;
     private final JsonMapper json;
 
-    public ForgejoImportService(ForgejoImporter importer, ImportJobs jobs, ImportRunner runner,
+    public ImportService(List<Connector> connectors, IssueImporter importer, ImportJobs jobs, ImportRunner runner,
             ProjectService projects, NamedParameterJdbcTemplate jdbc, JsonMapper json) {
+        this.connectors = connectors;
         this.importer = importer;
         this.jobs = jobs;
         this.runner = runner;
@@ -53,72 +49,48 @@ public class ForgejoImportService {
         this.json = json;
     }
 
-    /** Creates the client; tests replace it to talk to a fake server. */
-    protected ForgejoClient client(String url, String token) {
-        return new ForgejoClient(url, token);
+    /** The connector for a kind in a URL (github) or in the database (GITHUB). */
+    public Connector connector(String kind) {
+        return connectors.stream().filter(c -> c.slug().equalsIgnoreCase(kind) || c.kind().equals(kind)).findFirst()
+                .orElseThrow(() -> ApiException.notFound("import.kind-unsupported", kind));
     }
 
-    public ConnectionResponse test(String url, String token) {
-        ForgejoClient client = client(url, token);
-        Version version = client.get("/version", Version.class);
-        User user = client.hasToken() ? client.get("/user", User.class) : null;
-        return new ConnectionResponse(client.baseUrl(), version.version(), user == null ? null : user.login(),
-                user != null && user.isAdmin());
+    public ConnectionResponse test(String kind, String url, String token) {
+        return connector(kind).test(url, token);
     }
 
-    public List<RepositoryInfo> repositories(String url, String token, String query) {
-        ForgejoClient client = client(url, token);
-        String q = query == null ? "" : query.strip();
-        if (q.matches("[\\w.\\-]+/[\\w.\\-]+")) {
-            try {
-                return List.of(ForgejoImporter.info(client.get("/repos/" + q, Repository.class)));
-            } catch (ApiException e) {
-                if (e.status() != HttpStatus.NOT_FOUND) {
-                    throw e;
-                }
-            }
-        }
-        if (q.isEmpty() && client.hasToken()) {
-            return client.page("/user/repos", Map.of(), 1, Repository.class).items().stream()
-                    .map(ForgejoImporter::info).toList();
-        }
-        SearchResult result = client.get("/repos/search?q=" + java.net.URLEncoder.encode(q,
-                java.nio.charset.StandardCharsets.UTF_8) + "&limit=" + ForgejoClient.PAGE_SIZE, SearchResult.class);
-        return result.data() == null ? List.of() : result.data().stream().map(ForgejoImporter::info).toList();
+    public List<RepositoryInfo> repositories(String kind, String url, String token, String query) {
+        return connector(kind).repositories(url, token, query);
     }
 
-    public Analysis analyze(String url, String token, String repository) {
-        return importer.analyze(client(url, token), repository);
+    public Analysis analyze(String kind, String url, String token, String repository) {
+        return importer.analyze(connector(kind).open(url, token, IssueImporter.path(repository)));
     }
 
-    public JobResponse start(BuggyWuggyPrincipal admin, StartRequest request) {
-        String path = ForgejoImporter.path(request.repository());
-        ForgejoClient client = client(request.url(), request.token());
+    public JobResponse start(String kind, BuggyWuggyPrincipal admin, StartRequest request) {
+        Connector connector = connector(kind);
+        String path = IssueImporter.path(request.repository());
         if (jobs.anyRunning()) {
             throw conflict("import.running");
         }
         // Fail early, before a project is created, when the repository cannot be read.
-        ForgejoImporter.repository(client, path);
+        Source source = connector.open(request.url(), request.token(), path);
         Options options = new Options(path, request.issueTypeId(), request.labels(), request.users(),
                 !Boolean.FALSE.equals(request.matchUsernames()));
         validate(options);
         long projectId = project(admin, request);
-        long sourceId = jobs.sourceId(ForgejoImporter.KIND, client.baseUrl(), path);
+        long sourceId = jobs.sourceId(connector.kind(), source.baseUrl(), path);
         long jobId = jobs.create(sourceId, projectId, json.writeValueAsString(options), admin.id());
-        launch(jobId, sourceId, projectId, options, client.baseUrl(), request.token(), admin.id());
+        launch(jobId, connector, sourceId, projectId, options, source.baseUrl(), request.token(), admin.id());
         return jobs.get(jobId, runner::hasToken).orElseThrow();
     }
 
     /** Runs a finished job again with the same settings; only what is new gets imported. */
     public JobResponse retry(BuggyWuggyPrincipal admin, long jobId, String token) {
         Definition old = jobs.definition(jobId).orElseThrow(() -> ApiException.notFound("import.job-not-found", jobId));
-        if (!ForgejoImporter.KIND.equals(old.kind())) {
-            throw badRequest("import.kind-unsupported", old.kind());
-        }
-        if (old.status() == ImportJobs.Status.RUNNING) {
-            throw conflict("import.running");
-        }
-        if (jobs.anyRunning()) {
+        Connector connector = connectors.stream().filter(c -> c.kind().equals(old.kind())).findFirst()
+                .orElseThrow(() -> badRequest("import.kind-unsupported", old.kind()));
+        if (old.status() == ImportJobs.Status.RUNNING || jobs.anyRunning()) {
             throw conflict("import.running");
         }
         if (old.projectId() == null) {
@@ -127,14 +99,14 @@ public class ForgejoImportService {
         String useToken = token != null && !token.isBlank() ? token : runner.token(jobId);
         Options options = json.readValue(old.options(), Options.class);
         long newJob = jobs.create(old.sourceId(), old.projectId(), old.options(), admin.id());
-        launch(newJob, old.sourceId(), old.projectId(), options, old.baseUrl(), useToken, admin.id());
+        launch(newJob, connector, old.sourceId(), old.projectId(), options, old.baseUrl(), useToken, admin.id());
         return jobs.get(newJob, runner::hasToken).orElseThrow();
     }
 
-    private void launch(long jobId, long sourceId, long projectId, Options options, String url, String token,
-            long adminId) {
-        runner.start(jobId, token, context -> importer.run(context, client(url, token), sourceId, projectId, options,
-                adminId));
+    private void launch(long jobId, Connector connector, long sourceId, long projectId, Options options, String url,
+            String token, long adminId) {
+        runner.start(jobId, token, context -> importer.run(context, connector.open(url, token, options.repository()),
+                sourceId, projectId, options, adminId));
     }
 
     private void validate(Options options) {
@@ -163,7 +135,7 @@ public class ForgejoImportService {
             });
         }
         if (options.users() != null) {
-            options.users().values().stream().filter(java.util.Objects::nonNull).forEach(id -> {
+            options.users().values().stream().filter(Objects::nonNull).forEach(id -> {
                 if (!Boolean.TRUE.equals(jdbc.queryForObject(
                         "select exists (select 1 from user_account where id = :id)", Map.of("id", id), Boolean.class))) {
                     throw badRequest("import.user-invalid", id);

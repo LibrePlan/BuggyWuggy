@@ -34,6 +34,8 @@ final class FakeForgejo implements AutoCloseable {
     private final Map<String, byte[]> files = new ConcurrentHashMap<>();
     final List<String> requests = new CopyOnWriteArrayList<>();
     final List<String> authorizations = new CopyOnWriteArrayList<>();
+    /** The HTTP method of every request: an import may only read. */
+    final List<String> methods = new CopyOnWriteArrayList<>();
 
     FakeForgejo() throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -41,6 +43,7 @@ final class FakeForgejo implements AutoCloseable {
             String path = exchange.getRequestURI().getPath();
             String query = exchange.getRequestURI().getQuery() == null ? "" : exchange.getRequestURI().getQuery();
             requests.add(path + (query.isEmpty() ? "" : "?" + query));
+            methods.add(exchange.getRequestMethod());
             String auth = exchange.getRequestHeaders().getFirst("Authorization");
             authorizations.add(path + " " + auth);
             byte[] body;

@@ -213,6 +213,8 @@ class ForgejoImportIntegrationTest extends IssueTestSupport {
                 "%" + FakeForgejo.TOKEN + "%")).isZero();
         // The token goes to the API and the files of the server, and nowhere else.
         assertThat(forgejo.authorizations).allMatch(a -> a.endsWith("token " + FakeForgejo.TOKEN));
+        // Nothing is ever written to the source.
+        assertThat(forgejo.methods).isNotEmpty().containsOnly("GET");
     }
 
     @Test

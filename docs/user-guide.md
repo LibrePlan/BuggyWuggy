@@ -143,7 +143,8 @@ Issue keys keep working when a project's key changes: `OLD-12` then takes you to
 **Imported issues** keep their original authors and dates, and their history from the other
 tracker. They get a new number in the project; the original number is shown as *Imported from*
 and in the history. People who do not have an account in BuggyWuggy are shown by name, from a
-*placeholder* account that cannot log in.
+*placeholder* account that cannot log in. Sub-issues from GitHub become sub-tasks (one level
+deep) or *relates to* links.
 
 ## Working on an issue
 
@@ -408,6 +409,6 @@ These features are planned but not available in the current version:
 - Formatted text (Markdown) in descriptions and comments
 - Boards (Kanban/Scrum), dashboards and reports
 - A text query language like Jira's JQL
-- Importing from Jira, GitLab, GitHub, Redmine and Trac (importing from Forgejo is available;
-  ask your administrator)
+- Importing from Jira, GitLab, Redmine and Trac (importing from Forgejo and GitHub is
+  available; ask your administrator)
 - The web interface in other languages than English (e-mails are available in English and Dutch)

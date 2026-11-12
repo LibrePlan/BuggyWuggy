@@ -30,11 +30,11 @@ import { Link, useNavigate } from 'react-router';
 import { post } from '../../api/client';
 import { keys, useAllProjects, useIssueTypes, usePriorities } from '../../api/queries';
 import type {
-  ForgejoAnalysis,
-  ForgejoConnection,
-  ForgejoRepository,
-  ForgejoStartRequest,
+  ImportAnalysis,
+  ImportConnection,
   ImportJob,
+  ImportRepository,
+  ImportStartRequest,
   LabelRule,
   UserRef,
 } from '../../api/types';
@@ -44,7 +44,13 @@ import { fieldErrorMap } from '../../lib/apiError';
 import { notifyError } from '../../lib/notify';
 import { PROJECT_KEY_PATTERN, suggestProjectKey } from '../../lib/projectKey';
 
-const BASE = '/api/v1/admin/import/forgejo';
+/** The sources with a repository wizard, and what differs between them. */
+export const REPOSITORY_SOURCES = {
+  forgejo: { name: 'Forgejo', url: 'https://codeberg.org', tokenRequired: false },
+  github: { name: 'GitHub', url: 'https://github.com', tokenRequired: true },
+} as const;
+
+export type RepositorySource = keyof typeof REPOSITORY_SOURCES;
 
 /** A label rule as one select value: LABEL, IGNORE, ISSUE_TYPE:3, PRIORITY:2. */
 function ruleValue(rule: LabelRule): string {
@@ -56,17 +62,20 @@ function ruleOf(value: string): LabelRule {
   return { target: target as LabelRule['target'], id: id ? Number(id) : null };
 }
 
-export function ForgejoImportPage() {
+/** The import wizard for trackers with repositories: Forgejo and GitHub. */
+export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
   const { t } = useTranslation();
+  const source = REPOSITORY_SOURCES[kind];
+  const BASE = `/api/v1/admin/import/${kind}`;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
 
   // 1. Connection
-  const [url, setUrl] = useState('https://codeberg.org');
+  const [url, setUrl] = useState<string>(source.url);
   const [token, setToken] = useState('');
   const connect = useMutation({
-    mutationFn: () => post<ForgejoConnection>(`${BASE}/connection`, { url, token: token || null }),
+    mutationFn: () => post<ImportConnection>(`${BASE}/connection`, { url, token: token || null }),
     onSuccess: (c) => setUrl(c.url),
   });
 
@@ -75,7 +84,7 @@ export function ForgejoImportPage() {
   const [repository, setRepository] = useState('');
   const search = useMutation({
     mutationFn: () =>
-      post<ForgejoRepository[]>(`${BASE}/repositories`, { url, token: token || null, query: query || null }),
+      post<ImportRepository[]>(`${BASE}/repositories`, { url, token: token || null, query: query || null }),
   });
   const [target, setTarget] = useState<'new' | 'existing'>('new');
   const [newKey, setNewKey] = useState('');
@@ -85,7 +94,7 @@ export function ForgejoImportPage() {
 
   // 3. Mapping
   const analysis = useMutation({
-    mutationFn: () => post<ForgejoAnalysis>(`${BASE}/analysis`, { url, token: token || null, repository }),
+    mutationFn: () => post<ImportAnalysis>(`${BASE}/analysis`, { url, token: token || null, repository }),
     onSuccess: (a) => {
       setRules(Object.fromEntries(a.labels.map((l) => [l.name, l.suggestion])));
       setUsers(Object.fromEntries(a.users.map((u) => [u.id, u.suggestion])));
@@ -105,18 +114,18 @@ export function ForgejoImportPage() {
   const ruleOptions = useMemo(
     () => [
       {
-        group: t('admin.importer.forgejo.keep'),
+        group: t('admin.importer.wizard.keep'),
         items: [
-          { value: 'LABEL', label: t('admin.importer.forgejo.asLabel') },
-          { value: 'IGNORE', label: t('admin.importer.forgejo.ignore') },
+          { value: 'LABEL', label: t('admin.importer.wizard.asLabel') },
+          { value: 'IGNORE', label: t('admin.importer.wizard.ignore') },
         ],
       },
       {
-        group: t('admin.importer.forgejo.asIssueType'),
+        group: t('admin.importer.wizard.asIssueType'),
         items: issueTypes.map((type) => ({ value: `ISSUE_TYPE:${type.id}`, label: type.name })),
       },
       {
-        group: t('admin.importer.forgejo.asPriority'),
+        group: t('admin.importer.wizard.asPriority'),
         items: priorities.map((p) => ({ value: `PRIORITY:${p.id}`, label: p.name })),
       },
     ],
@@ -125,7 +134,7 @@ export function ForgejoImportPage() {
 
   // 4. Start
   const start = useMutation({
-    mutationFn: (request: ForgejoStartRequest) => post<ImportJob>(`${BASE}/jobs`, request),
+    mutationFn: (request: ImportStartRequest) => post<ImportJob>(`${BASE}/jobs`, request),
     onSuccess: (job) => {
       queryClient.invalidateQueries({ queryKey: keys.importJobs });
       navigate(`/admin/import/jobs/${job.id}`);
@@ -138,7 +147,7 @@ export function ForgejoImportPage() {
   const targetValid = target === 'new' ? keyValid && newName.trim() !== '' : projectId != null;
   const chosenProject = projects.find((p) => String(p.id) === projectId);
 
-  function chooseRepository(r: ForgejoRepository) {
+  function chooseRepository(r: ImportRepository) {
     setRepository(r.fullName);
     const name = r.fullName.split('/')[1] ?? r.fullName;
     setNewName(name);
@@ -158,23 +167,23 @@ export function ForgejoImportPage() {
       labels: rules,
       users: chosen,
       matchUsernames,
-    } as ForgejoStartRequest);
+    } as ImportStartRequest);
   }
 
   return (
     <Stack>
       <Group justify="space-between">
-        <Title order={3}>{t('admin.importer.forgejo.title')}</Title>
+        <Title order={3}>{t(`admin.importer.source.${kind}.title`)}</Title>
         <Anchor component={Link} to="/admin/import" size="sm">
           {t('admin.importer.back')}
         </Anchor>
       </Group>
       <Stepper active={step} onStepClick={(s) => s < step && setStep(s)} allowNextStepsSelect={false}>
-        <Stepper.Step label={t('admin.importer.forgejo.step.connection')}>
+        <Stepper.Step label={t('admin.importer.wizard.step.connection')}>
           <Stack maw={640} mt="md">
             <TextInput
-              label={t('admin.importer.forgejo.url')}
-              description={t('admin.importer.forgejo.urlHelp')}
+              label={t('admin.importer.wizard.url')}
+              description={t(`admin.importer.source.${kind}.urlHelp`)}
               required
               value={url}
               onChange={(e) => {
@@ -183,8 +192,9 @@ export function ForgejoImportPage() {
               }}
             />
             <PasswordInput
-              label={t('admin.importer.forgejo.token')}
-              description={t('admin.importer.forgejo.tokenHelp')}
+              label={t('admin.importer.wizard.token')}
+              required={source.tokenRequired}
+              description={t(`admin.importer.source.${kind}.tokenHelp`)}
               autoComplete="off"
               value={token}
               onChange={(e) => {
@@ -194,15 +204,20 @@ export function ForgejoImportPage() {
             />
             {connect.isError && <ErrorAlert error={connect.error} />}
             {connect.data && (
-              <Alert color="green" title={t('admin.importer.forgejo.connected')}>
+              <Alert color="green" title={t('admin.importer.wizard.connected')}>
                 {connect.data.login
-                  ? t('admin.importer.forgejo.connectedAs', { version: connect.data.version, login: connect.data.login })
-                  : t('admin.importer.forgejo.connectedAnonymous', { version: connect.data.version })}
+                  ? t(`admin.importer.source.${kind}.connectedAs`, { version: connect.data.version, login: connect.data.login })
+                  : t(`admin.importer.source.${kind}.connectedAnonymous`, { version: connect.data.version })}
               </Alert>
             )}
             <Group>
-              <Button variant="default" loading={connect.isPending} onClick={() => connect.mutate()} disabled={!url}>
-                {t('admin.importer.forgejo.test')}
+              <Button
+                variant="default"
+                loading={connect.isPending}
+                onClick={() => connect.mutate()}
+                disabled={!url || (source.tokenRequired && !token)}
+              >
+                {t('admin.importer.wizard.test')}
               </Button>
               <Button disabled={!connect.data} onClick={() => setStep(1)}>
                 {t('admin.importer.next')}
@@ -211,15 +226,15 @@ export function ForgejoImportPage() {
           </Stack>
         </Stepper.Step>
 
-        <Stepper.Step label={t('admin.importer.forgejo.step.repository')}>
+        <Stepper.Step label={t('admin.importer.wizard.step.repository')}>
           <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl" mt="md">
             <Stack>
-              <Title order={5}>{t('admin.importer.forgejo.repository')}</Title>
+              <Title order={5}>{t('admin.importer.wizard.repository')}</Title>
               <Group align="end" wrap="nowrap">
                 <TextInput
                   style={{ flex: 1 }}
-                  label={t('admin.importer.forgejo.search')}
-                  description={t('admin.importer.forgejo.searchHelp')}
+                  label={t('admin.importer.wizard.search')}
+                  description={t(`admin.importer.source.${kind}.searchHelp`)}
                   value={query}
                   onChange={(e) => setQuery(e.currentTarget.value)}
                   onKeyDown={(e) => {
@@ -227,7 +242,7 @@ export function ForgejoImportPage() {
                   }}
                 />
                 <Button variant="default" loading={search.isPending} onClick={() => search.mutate()}>
-                  {t('admin.importer.forgejo.find')}
+                  {t('admin.importer.wizard.find')}
                 </Button>
               </Group>
               {search.isError && <ErrorAlert error={search.error} />}
@@ -251,11 +266,11 @@ export function ForgejoImportPage() {
                         {r.fullName}
                       </Text>
                       <Group gap={4}>
-                        {r.isPrivate && <Badge variant="light">{t('admin.importer.forgejo.private')}</Badge>}
+                        {r.isPrivate && <Badge variant="light">{t('admin.importer.wizard.private')}</Badge>}
                         {r.hasIssues ? (
-                          <Badge variant="outline">{t('admin.importer.forgejo.openIssues', { count: r.openIssues })}</Badge>
+                          <Badge variant="outline">{t('admin.importer.wizard.openIssues', { count: r.openIssues })}</Badge>
                         ) : (
-                          <Badge color="gray">{t('admin.importer.forgejo.noIssues')}</Badge>
+                          <Badge color="gray">{t('admin.importer.wizard.noIssues')}</Badge>
                         )}
                       </Group>
                     </Group>
@@ -269,25 +284,25 @@ export function ForgejoImportPage() {
               </Stack>
             </Stack>
             <Stack>
-              <Title order={5}>{t('admin.importer.forgejo.target')}</Title>
+              <Title order={5}>{t('admin.importer.wizard.target')}</Title>
               <SegmentedControl
                 value={target}
                 onChange={(v) => setTarget(v as 'new' | 'existing')}
                 data={[
-                  { value: 'new', label: t('admin.importer.forgejo.newProject') },
-                  { value: 'existing', label: t('admin.importer.forgejo.existingProject') },
+                  { value: 'new', label: t('admin.importer.wizard.newProject') },
+                  { value: 'existing', label: t('admin.importer.wizard.existingProject') },
                 ]}
               />
               {target === 'new' ? (
                 <>
                   <TextInput
-                    label={t('admin.importer.forgejo.projectName')}
+                    label={t('admin.importer.wizard.projectName')}
                     required
                     value={newName}
                     onChange={(e) => setNewName(e.currentTarget.value)}
                   />
                   <TextInput
-                    label={t('admin.importer.forgejo.projectKey')}
+                    label={t('admin.importer.wizard.projectKey')}
                     required
                     value={newKey}
                     onChange={(e) => setNewKey(e.currentTarget.value.toUpperCase())}
@@ -304,7 +319,7 @@ export function ForgejoImportPage() {
                 />
               )}
               <Text size="sm" c="dimmed">
-                {t('admin.importer.forgejo.numbering')}
+                {t('admin.importer.wizard.numbering')}
               </Text>
             </Stack>
           </SimpleGrid>
@@ -320,18 +335,18 @@ export function ForgejoImportPage() {
               {t('admin.importer.next')}
             </Button>
             {repository && (
-              <Text size="sm">{t('admin.importer.forgejo.chosen', { repository })}</Text>
+              <Text size="sm">{t('admin.importer.wizard.chosen', { repository })}</Text>
             )}
           </Group>
           {analysis.isError && <ErrorAlert error={analysis.error} mt="md" />}
         </Stepper.Step>
 
-        <Stepper.Step label={t('admin.importer.forgejo.step.mapping')}>
+        <Stepper.Step label={t('admin.importer.wizard.step.mapping')}>
           {analysis.data && (
             <Stack mt="md" gap="xl">
               <Group gap="xl">
                 <Text size="sm">
-                  {t('admin.importer.forgejo.found', {
+                  {t('admin.importer.wizard.found', {
                     issues: analysis.data.issues,
                     open: analysis.data.openIssues,
                     closed: analysis.data.closedIssues,
@@ -342,34 +357,34 @@ export function ForgejoImportPage() {
               </Group>
               {analysis.data.alreadyImported > 0 && (
                 <Alert color="blue">
-                  {t('admin.importer.forgejo.alreadyImported', { count: analysis.data.alreadyImported })}
+                  {t('admin.importer.wizard.alreadyImported', { count: analysis.data.alreadyImported })}
                 </Alert>
               )}
               <Select
                 maw={360}
-                label={t('admin.importer.forgejo.issueType')}
-                description={t('admin.importer.forgejo.issueTypeHelp')}
+                label={t('admin.importer.wizard.issueType')}
+                description={t('admin.importer.wizard.issueTypeHelp')}
                 required
                 data={issueTypes.map((type) => ({ value: String(type.id), label: type.name }))}
                 value={issueTypeId}
                 onChange={setIssueTypeId}
               />
               <Stack gap="xs">
-                <Title order={5}>{t('admin.importer.forgejo.labels')}</Title>
+                <Title order={5}>{t('admin.importer.wizard.labels')}</Title>
                 <Text size="sm" c="dimmed">
-                  {t('admin.importer.forgejo.labelsHelp')}
+                  {t('admin.importer.wizard.labelsHelp')}
                 </Text>
                 {analysis.data.labels.length === 0 ? (
                   <Text size="sm" c="dimmed">
-                    {t('admin.importer.forgejo.noLabels')}
+                    {t('admin.importer.wizard.noLabels')}
                   </Text>
                 ) : (
                   <Table maw={760}>
                     <Table.Thead>
                       <Table.Tr>
-                        <Table.Th>{t('admin.importer.forgejo.label')}</Table.Th>
-                        <Table.Th>{t('admin.importer.forgejo.used')}</Table.Th>
-                        <Table.Th>{t('admin.importer.forgejo.becomes')}</Table.Th>
+                        <Table.Th>{t('admin.importer.wizard.label')}</Table.Th>
+                        <Table.Th>{t('admin.importer.wizard.used')}</Table.Th>
+                        <Table.Th>{t('admin.importer.wizard.becomes')}</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
@@ -400,21 +415,21 @@ export function ForgejoImportPage() {
                 )}
               </Stack>
               <Stack gap="xs">
-                <Title order={5}>{t('admin.importer.forgejo.users')}</Title>
+                <Title order={5}>{t('admin.importer.wizard.users')}</Title>
                 <Text size="sm" c="dimmed">
-                  {t('admin.importer.forgejo.usersHelp')}
+                  {t('admin.importer.wizard.usersHelp')}
                 </Text>
                 <Checkbox
-                  label={t('admin.importer.forgejo.matchUsernames')}
+                  label={t('admin.importer.wizard.matchUsernames')}
                   checked={matchUsernames}
                   onChange={(e) => setMatchUsernames(e.currentTarget.checked)}
                 />
                 <Table maw={760}>
                   <Table.Thead>
                     <Table.Tr>
-                      <Table.Th>{t('admin.importer.forgejo.forgejoUser')}</Table.Th>
-                      <Table.Th>{t('admin.importer.forgejo.used')}</Table.Th>
-                      <Table.Th>{t('admin.importer.forgejo.account')}</Table.Th>
+                      <Table.Th>{t('admin.importer.wizard.sourceUser', { source: source.name })}</Table.Th>
+                      <Table.Th>{t('admin.importer.wizard.used')}</Table.Th>
+                      <Table.Th>{t('admin.importer.wizard.account')}</Table.Th>
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
@@ -434,7 +449,7 @@ export function ForgejoImportPage() {
                         <Table.Td>
                           <AnyUserPicker
                             size="xs"
-                            placeholder={t('admin.importer.forgejo.automatic')}
+                            placeholder={t('admin.importer.wizard.automatic')}
                             value={users[u.id] ?? null}
                             onChange={(user) => setUsers((m) => ({ ...m, [u.id]: user }))}
                           />
@@ -456,11 +471,11 @@ export function ForgejoImportPage() {
           )}
         </Stepper.Step>
 
-        <Stepper.Step label={t('admin.importer.forgejo.step.start')}>
+        <Stepper.Step label={t('admin.importer.wizard.step.start')}>
           {analysis.data && (
             <Stack mt="md" maw={720}>
               <Text>
-                {t('admin.importer.forgejo.summary', {
+                {t('admin.importer.wizard.summary', {
                   issues: analysis.data.issues,
                   repository,
                   url,
@@ -468,13 +483,15 @@ export function ForgejoImportPage() {
                 })}
               </Text>
               <List size="sm" spacing={4}>
-                <List.Item>{t('admin.importer.forgejo.willNumber')}</List.Item>
-                <List.Item>{t('admin.importer.forgejo.willHistory')}</List.Item>
-                <List.Item>{t('admin.importer.forgejo.willPullRequests')}</List.Item>
-                <List.Item>{t('admin.importer.forgejo.willNotMail')}</List.Item>
-                <List.Item>{t('admin.importer.forgejo.willNotStoreToken')}</List.Item>
+                <List.Item>{t('admin.importer.wizard.willNumber')}</List.Item>
+                <List.Item>{t('admin.importer.wizard.willHistory')}</List.Item>
+                <List.Item>{t('admin.importer.wizard.willSubIssues')}</List.Item>
+                <List.Item>{t('admin.importer.wizard.willPullRequests')}</List.Item>
+                <List.Item>{t('admin.importer.wizard.willOnlyRead')}</List.Item>
+                <List.Item>{t('admin.importer.wizard.willNotMail')}</List.Item>
+                <List.Item>{t('admin.importer.wizard.willNotStoreToken')}</List.Item>
                 {analysis.data.alreadyImported > 0 && (
-                  <List.Item>{t('admin.importer.forgejo.willSkip', { count: analysis.data.alreadyImported })}</List.Item>
+                  <List.Item>{t('admin.importer.wizard.willSkip', { count: analysis.data.alreadyImported })}</List.Item>
                 )}
               </List>
               {Object.keys(startErrors).length > 0 && (
@@ -485,7 +502,7 @@ export function ForgejoImportPage() {
                   {t('admin.importer.previous')}
                 </Button>
                 <Button loading={start.isPending} onClick={submit}>
-                  {t('admin.importer.forgejo.startImport')}
+                  {t('admin.importer.wizard.startImport')}
                 </Button>
               </Group>
             </Stack>
