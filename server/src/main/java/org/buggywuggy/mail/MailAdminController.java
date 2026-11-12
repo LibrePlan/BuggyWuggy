@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import org.buggywuggy.common.ApiException;
 import org.buggywuggy.common.ApiNullable;
+import org.buggywuggy.common.ConfigFiles;
 import org.buggywuggy.language.LanguageService;
 import org.buggywuggy.mail.MailOutbox.FailedMail;
 import org.buggywuggy.mail.MailOutbox.OutboxStatus;
@@ -49,7 +50,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class MailAdminController {
 
     public record MailStatus(boolean configured, @ApiNullable String host, int port, String security, String from,
-            String baseUrl, OutboxStatus outbox) {
+            String baseUrl, OutboxStatus outbox, List<String> configFiles) {
     }
 
     private final MailTransport transport;
@@ -58,10 +59,11 @@ public class MailAdminController {
     private final LanguageService languages;
     private final MessageSource messages;
     private final JdbcTemplate jdbc;
+    private final ConfigFiles configFiles;
     private final String baseUrl;
 
     public MailAdminController(MailTransport transport, MailOutbox outbox, MailTemplateService templates,
-            LanguageService languages, MessageSource messages, JdbcTemplate jdbc,
+            LanguageService languages, MessageSource messages, JdbcTemplate jdbc, ConfigFiles configFiles,
             @Value("${buggywuggy.base-url}") String baseUrl) {
         this.transport = transport;
         this.outbox = outbox;
@@ -69,6 +71,7 @@ public class MailAdminController {
         this.languages = languages;
         this.messages = messages;
         this.jdbc = jdbc;
+        this.configFiles = configFiles;
         this.baseUrl = baseUrl;
     }
 
@@ -76,7 +79,7 @@ public class MailAdminController {
     public MailStatus status() {
         MailProperties p = transport.properties();
         return new MailStatus(transport.configured(), p.host(), p.port(), p.security().name().toLowerCase(Locale.ROOT),
-                p.from(), baseUrl, outbox.status());
+                p.from(), baseUrl, outbox.status(), configFiles.inUse());
     }
 
     /** Sends the test mail to the administrator, right away, so a configuration error shows immediately. */

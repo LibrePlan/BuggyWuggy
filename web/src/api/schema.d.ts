@@ -1739,6 +1739,7 @@ export interface components {
             from: string;
             baseUrl: string;
             outbox: components["schemas"]["OutboxStatus"];
+            configFiles: string[];
         };
         OutboxStatus: {
             /** Format: int64 */

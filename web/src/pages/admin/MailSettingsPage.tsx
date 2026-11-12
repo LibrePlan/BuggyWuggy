@@ -71,15 +71,20 @@ function MailStatusSection() {
       </Group>
       {!s.configured && (
         <Alert color="yellow" title={t('admin.mail.notConfigured')}>
-          {t('admin.mail.notConfiguredHelp')}
+          {s.configFiles.length
+            ? t('admin.mail.notConfiguredHelp', { file: s.configFiles[0] })
+            : t('admin.mail.notConfiguredNoFile')}
         </Alert>
       )}
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }}>
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
         <Fact label={t('admin.mail.server')}>
           {s.configured ? `${s.host}:${s.port} (${s.security})` : t('admin.mail.none')}
         </Fact>
         <Fact label={t('admin.mail.from')}>{s.from}</Fact>
         <Fact label={t('admin.mail.baseUrl')}>{s.baseUrl}</Fact>
+        <Fact label={t('admin.mail.configFile')}>
+          {s.configFiles.length ? s.configFiles.join(', ') : t('admin.mail.noConfigFile')}
+        </Fact>
         <Fact label={t('admin.mail.queue')}>
           {t('admin.mail.queueCounts', {
             pending: s.outbox.pending,
