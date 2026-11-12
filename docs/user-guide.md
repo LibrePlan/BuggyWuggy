@@ -17,12 +17,13 @@ tasks and other work. If you have used Jira, most of it will feel familiar.
 7. [Working on an issue](#working-on-an-issue)
 8. [Sub-tasks and epics](#sub-tasks-and-epics)
 9. [Comments](#comments)
-10. [Linking issues](#linking-issues)
-11. [Watching issues](#watching-issues)
-12. [Searching for issues](#searching-for-issues)
-13. [Saved filters](#saved-filters)
-14. [Permissions: why can't I…?](#permissions-why-cant-i)
-15. [Not available yet](#not-available-yet)
+10. [Attachments](#attachments)
+11. [Linking issues](#linking-issues)
+12. [Watching issues](#watching-issues)
+13. [Searching for issues](#searching-for-issues)
+14. [Saved filters](#saved-filters)
+15. [Permissions: why can't I…?](#permissions-why-cant-i)
+16. [Not available yet](#not-available-yet)
 
 ## Concepts
 
@@ -119,6 +120,7 @@ An issue page shows:
   see the buttons for things you are allowed to do.
 - **Description**.
 - **Sub-tasks** or **Issues in this epic**, if there are any.
+- **Attachments**.
 - **Linked issues**.
 - **Comments** and **History** tabs.
 - On the right, the **details**: status and resolution, type, priority, assignee, reporter,
@@ -126,7 +128,7 @@ An issue page shows:
   resolved.
 
 The **History** tab lists every change ever made to the issue: who changed which field, when,
-from what and to what. This includes status changes and links. History cannot be edited.
+from what and to what. This includes status changes, links and attachments. History cannot be edited.
 
 Issue keys keep working when a project's key changes: `OLD-12` then takes you to `NEW-12`.
 
@@ -202,6 +204,25 @@ Comments are shown as plain text: line breaks are kept, formatting is not applie
 
 Adding a comment updates the issue's *Updated* time, but never interferes with someone who is
 editing the issue at the same time.
+
+## Attachments
+
+Attach files, such as screenshots, logs or documents, in the *Attachments* section of an issue:
+
+- Choose **Attach files** and select one or more files, or
+- drag files from your computer and drop them on the *Attachments* section.
+
+Images (PNG, JPEG, GIF and WebP) are shown as thumbnails; click one to see it larger. Other
+files are listed with their size, who added them and when; click a name to download it.
+For safety, files such as HTML pages or SVG drawings are always downloaded, never opened in
+BuggyWuggy itself.
+
+There is a maximum size per file (50 MB unless your administrator changed it); the section
+shows the limit while it is empty.
+
+To delete an attachment, choose the bin icon next to it, or in the preview of an image.
+Adding and deleting attachments is recorded in the issue's history. Attachments cannot be
+added to issues of archived projects.
 
 ## Linking issues
 
@@ -293,9 +314,9 @@ not shown. With the default settings:
 
 | You want to… | Who can |
 |---|---|
-| See a project and its issues, create issues, comment | Everyone in the project's *Users* role (by default all users) |
+| See a project and its issues, create issues, comment, attach files, delete your own attachments | Everyone in the project's *Users* role (by default all users) |
 | Edit, assign, transition and link issues; be assigned issues; manage watchers | *Developers* and *Administrators* of the project |
-| Delete issues; edit or delete other people's comments | *Administrators* of the project |
+| Delete issues; edit or delete other people's comments and attachments | *Administrators* of the project |
 | Create projects | BuggyWuggy administrators |
 
 If you need to do more in a project, ask your BuggyWuggy administrator to add you to the
@@ -308,7 +329,6 @@ A project or issue you have no access to looks exactly like one that does not ex
 
 These features are planned but not available in the current version:
 
-- Attachments (files and screenshots on issues)
 - E-mail notifications
 - Administration screens in the web interface (administrators use the API for now; see the
   [Installation Guide](installation.md#administration))

@@ -136,7 +136,8 @@
       "parent": "Parent",
       "status": "Status",
       "resolution": "Resolution",
-      "link": "Link"
+      "link": "Link",
+      "attachment": "Attachment"
     }
   },
   "comment": {
@@ -148,6 +149,18 @@
     "edited": "edited",
     "deleteConfirm": "Delete this comment permanently?",
     "conflict": "This comment was changed in the meantime. The latest version is shown now."
+  },
+  "attachment": {
+    "title": "Attachments",
+    "add": "Attach files",
+    "drop": "Drop files here to attach them.",
+    "maxSize": "Up to {{max}} per file.",
+    "preview": "Show {{name}}",
+    "download": "Download",
+    "delete": "Delete {{name}}",
+    "deleteConfirm": "Delete the attachment {{name}} permanently?",
+    "tooLarge": "{{name}} is too large. Files can be at most {{max}}.",
+    "tooLargeTotal": "These files are too large together. One upload can be at most {{max}}."
   },
   "link": {
     "title": "Linked issues",

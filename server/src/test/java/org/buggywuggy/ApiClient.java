@@ -7,8 +7,10 @@ import java.net.HttpCookie;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -63,6 +65,49 @@ public class ApiClient {
 
     public Response delete(String path) {
         return send(withCsrf(HttpRequest.newBuilder(uri(path)).DELETE()));
+    }
+
+    /** A file for {@link #upload}. */
+    public record FilePart(String fileName, String contentType, byte[] content) {
+    }
+
+    /** A binary response, e.g. a downloaded attachment. */
+    public record Download(int status, java.net.http.HttpHeaders headers, byte[] body) {
+
+        public String header(String name) {
+            return headers.firstValue(name).orElse(null);
+        }
+    }
+
+    /** Sends files as {@code multipart/form-data}, each in a part named {@code file}. */
+    public Response upload(String path, List<FilePart> files) {
+        String boundary = "----BuggyWuggyTest" + System.nanoTime();
+        var body = new java.io.ByteArrayOutputStream();
+        for (FilePart file : files) {
+            body.writeBytes(("--" + boundary + "\r\n"
+                    + "Content-Disposition: form-data; name=\"file\"; filename=\"" + file.fileName() + "\"\r\n"
+                    + "Content-Type: " + file.contentType() + "\r\n\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            body.writeBytes(file.content());
+            body.writeBytes("\r\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+        body.writeBytes(("--" + boundary + "--\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        HttpRequest.Builder builder = HttpRequest.newBuilder(uri(path))
+                .POST(BodyPublishers.ofByteArray(body.toByteArray()))
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary);
+        return send(withCsrf(builder));
+    }
+
+    public Download download(String path) {
+        try {
+            var response = http.send(HttpRequest.newBuilder(uri(path)).GET().build(),
+                    HttpResponse.BodyHandlers.ofByteArray());
+            return new Download(response.statusCode(), response.headers(), response.body());
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
     }
 
     public Response login(String username, String password) {

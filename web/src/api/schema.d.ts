@@ -244,6 +244,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/issues/{idOrKey}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_3"];
+        put?: never;
+        post: operations["upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/issues/search": {
         parameters: {
             query?: never;
@@ -299,7 +315,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_3"];
+        get: operations["list_4"];
         put?: never;
         post: operations["create_4"];
         delete?: never;
@@ -315,7 +331,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_4"];
+        get: operations["list_5"];
         put?: never;
         post: operations["create_5"];
         delete?: never;
@@ -724,6 +740,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/attachments/{attachmentId}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["content"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/attachments/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/groups/{id}/members": {
         parameters: {
             query?: never;
@@ -751,6 +799,22 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["deleteLink"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/issues/{idOrKey}/attachments/{attachmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["delete_5"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1031,6 +1095,19 @@ export interface components {
             /** Format: int64 */
             version: number;
             canEdit: boolean;
+            canDelete: boolean;
+        };
+        AttachmentResponse: {
+            /** Format: int64 */
+            id: number;
+            fileName: string;
+            mediaType: string;
+            /** Format: int64 */
+            size: number;
+            author: components["schemas"]["UserRef"] | null;
+            /** Format: date-time */
+            createdAt: string;
+            previewable: boolean;
             canDelete: boolean;
         };
         IssueQuery: {
@@ -1323,6 +1400,12 @@ export interface components {
         CsrfResponse: {
             headerName: string;
             token: string;
+        };
+        AttachmentSettingsResponse: {
+            /** Format: int64 */
+            maxFileSize: number;
+            /** Format: int64 */
+            maxRequestSize: number;
         };
         PageResponseUserResponse: {
             items: components["schemas"]["UserResponse"][];
@@ -1936,6 +2019,56 @@ export interface operations {
             };
         };
     };
+    list_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AttachmentResponse"][];
+                };
+            };
+        };
+    };
+    upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    file: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AttachmentResponse"][];
+                };
+            };
+        };
+    };
     search: {
         parameters: {
             query?: {
@@ -2031,7 +2164,7 @@ export interface operations {
             };
         };
     };
-    list_3: {
+    list_4: {
         parameters: {
             query?: {
                 query?: string;
@@ -2079,7 +2212,7 @@ export interface operations {
             };
         };
     };
-    list_4: {
+    list_5: {
         parameters: {
             query?: {
                 page?: number;
@@ -2638,6 +2771,7 @@ export interface operations {
         parameters: {
             query?: {
                 query?: string;
+                ids?: number[];
                 limit?: number;
             };
             header?: never;
@@ -2980,6 +3114,48 @@ export interface operations {
             };
         };
     };
+    content: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attachmentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AttachmentSettingsResponse"];
+                };
+            };
+        };
+    };
     members_1: {
         parameters: {
             query?: {
@@ -3012,6 +3188,27 @@ export interface operations {
             path: {
                 idOrKey: string;
                 linkId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    delete_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+                attachmentId: number;
             };
             cookie?: never;
         };

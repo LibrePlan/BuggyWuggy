@@ -70,6 +70,14 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(
+            org.springframework.web.multipart.MaxUploadSizeExceededException ex, HttpHeaders headers,
+            HttpStatusCode status, WebRequest request) {
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE)
+                .body(problem(HttpStatus.CONTENT_TOO_LARGE, "attachment.too-large"));
+    }
+
+    @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         ProblemDetail body = problem(HttpStatus.BAD_REQUEST, "error.validation");

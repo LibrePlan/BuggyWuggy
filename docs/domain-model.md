@@ -183,8 +183,17 @@ columns can be added without changing existing rows.
 `(id, issue_id, author_id, file_name, media_type, size_bytes, sha256, storage_key, created_at)`
 
 File contents are stored outside the database through a `BlobStore` interface. v1
-implementation: local filesystem under the data directory, path derived from
-`storage_key`. *(later)* S3-compatible storage.
+implementation: local filesystem, `<data-dir>/attachments/<xx>/<storage_key>`, where
+`storage_key` is a random 32-hex-digit UUID and `xx` its first two digits (to keep
+directories small). A file is written to a temporary name and moved into place atomically;
+`sha256` is computed while it streams. Files are never changed. They are deleted only after
+the transaction that deletes their attachment (or its issue or project) commits, and a
+failed upload removes the files it wrote. *(later)* S3-compatible storage.
+
+Only PNG, JPEG, GIF and WebP are shown inline; everything else is served as a download with
+`X-Content-Type-Options: nosniff` and a sandboxing `Content-Security-Policy`, so uploaded
+HTML or SVG cannot run scripts in the application's origin. `media_type` is derived from
+the file name, with the type the browser declared as fallback.
 
 ### `issue_link_type` and `issue_link`
 - `issue_link_type(id, name, outward_description, inward_description)` — seeded: Blocks
@@ -272,8 +281,10 @@ This mirrors Jira's `changegroup` / `changeitem` structure, so imported history 
 one-to-one. History rows are append-only: never updated, only deleted together with
 their issue.
 
-Comments and attachments are not tracked in `change_item` (they carry their own
-timestamps), except for attachment deletions, which are recorded so the history stays complete.
+Comments are not tracked in `change_item` (they carry their own timestamps). Attachments
+are: adding one records field `attachment` with `new_value` = attachment id and
+`new_string` = file name; deleting one records the same in `old_value` / `old_string`, so
+the history stays complete after the file is gone.
 
 ### 8.2 Import principles in the model
 1. **Explicit timestamps and authors.** All `created_at` / `updated_at` / `resolved_at` and

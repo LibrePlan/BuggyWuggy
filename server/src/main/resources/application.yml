@@ -17,6 +17,10 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  servlet:
+    multipart:
+      max-file-size: ${BUGGYWUGGY_MAX_ATTACHMENT_SIZE:50MB}
+      max-request-size: ${BUGGYWUGGY_MAX_UPLOAD_SIZE:200MB}
   session:
     jdbc:
       initialize-schema: never  # tables are created by Flyway (V10)
@@ -33,6 +37,8 @@ server:
         secure: ${BUGGYWUGGY_SECURE_COOKIES:false}  # set to true when served over HTTPS
 
 buggywuggy:
+  # Where BuggyWuggy keeps files (attachments). Back it up together with the database.
+  data-dir: ${BUGGYWUGGY_DATA_DIR:data}
   setup:
     # Optional fixed setup token (e.g. for automated installs). When empty, a random
     # token is generated and written to the log at startup while setup is required.

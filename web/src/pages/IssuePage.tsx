@@ -32,6 +32,7 @@ import { useIssue, useIssueTypes, useProjectPermissions, useTransitions } from '
 import type { IssueResponse, TransitionResponse } from '../api/types';
 import { CreateIssueModal } from '../components/CreateIssueModal';
 import { EditIssueModal } from '../components/EditIssueModal';
+import { IssueAttachments } from '../components/IssueAttachments';
 import { IssueComments } from '../components/IssueComments';
 import { IssueHistory } from '../components/IssueHistory';
 import { IssueLinks } from '../components/IssueLinks';
@@ -203,6 +204,8 @@ function IssueView({ issue }: { issue: IssueResponse }) {
                 </Table>
               </Section>
             )}
+
+            <IssueAttachments issueKey={issue.key} canUpload={permissions.has('CREATE_ATTACHMENT')} />
 
             <IssueLinks issueKey={issue.key} canLink={permissions.has('LINK_ISSUE')} />
 

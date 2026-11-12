@@ -41,3 +41,5 @@ export type CreateFilterRequest = Schemas['CreateFilterRequest'];
 export type UpdateFilterRequest = Schemas['UpdateFilterRequest'];
 export type SharedWith = FilterResponse['sharedWith'];
 export type StatusResponse = Schemas['StatusResponse'];
+export type AttachmentResponse = Schemas['AttachmentResponse'];
+export type AttachmentSettings = Schemas['AttachmentSettingsResponse'];

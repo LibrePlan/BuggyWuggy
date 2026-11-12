@@ -5,6 +5,7 @@
  */
 package org.buggywuggy.project;
 
+import org.buggywuggy.attachment.AttachmentFiles;
 import static org.buggywuggy.common.ApiException.conflict;
 import static org.buggywuggy.common.ApiException.forbidden;
 import static org.buggywuggy.common.ApiException.notFound;
@@ -47,10 +48,11 @@ public class ProjectService {
     private final ProjectPermissionService permissions;
     private final NamedParameterJdbcTemplate jdbc;
     private final Clock clock;
+    private final AttachmentFiles attachmentFiles;
 
     public ProjectService(ProjectRepository projects, ProjectRoleRepository roles, ProjectRoleActorRepository actors,
             UserGroupRepository groups, UserService users, ProjectPermissionService permissions,
-            NamedParameterJdbcTemplate jdbc, Clock clock) {
+            NamedParameterJdbcTemplate jdbc, Clock clock, AttachmentFiles attachmentFiles) {
         this.projects = projects;
         this.roles = roles;
         this.actors = actors;
@@ -59,6 +61,7 @@ public class ProjectService {
         this.permissions = permissions;
         this.jdbc = jdbc;
         this.clock = clock;
+        this.attachmentFiles = attachmentFiles;
     }
 
     /**
@@ -228,6 +231,7 @@ public class ProjectService {
         if (!user.hasAuthority(Authorities.ADMINISTER)) {
             throw forbidden("project.global-admin-required");
         }
+        attachmentFiles.deleteAfterCommit(attachmentFiles.keysOfProject(project.getId()));
         projects.delete(project);
     }
 

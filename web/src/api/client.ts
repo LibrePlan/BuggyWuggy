@@ -18,7 +18,9 @@ export type Query = Record<string, string | number | boolean | undefined | null>
  */
 export async function api<T>(method: Method, path: string, options: { body?: unknown; query?: Query } = {}): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' };
-  if (options.body !== undefined) headers['Content-Type'] = 'application/json';
+  const form = options.body instanceof FormData;
+  // For FormData the browser sets the multipart Content-Type with its boundary.
+  if (options.body !== undefined && !form) headers['Content-Type'] = 'application/json';
   if (method !== 'GET') headers[CSRF_HEADER] = await csrfToken();
 
   let response: Response;
@@ -27,7 +29,7 @@ export async function api<T>(method: Method, path: string, options: { body?: unk
       method,
       headers,
       credentials: 'same-origin',
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.body === undefined ? undefined : form ? (options.body as FormData) : JSON.stringify(options.body),
     });
   } catch {
     throw new ApiError(0, 'The server cannot be reached.', 'network');
@@ -46,6 +48,13 @@ export const post = <T>(path: string, body?: unknown) => api<T>('POST', path, { 
 export const patch = <T>(path: string, body: unknown) => api<T>('PATCH', path, { body });
 export const put = <T>(path: string, body?: unknown) => api<T>('PUT', path, { body });
 export const del = <T = void>(path: string) => api<T>('DELETE', path);
+
+/** Uploads files as multipart/form-data, each in a part named {@code file}. */
+export function upload<T>(path: string, files: File[]): Promise<T> {
+  const form = new FormData();
+  for (const file of files) form.append('file', file, file.name);
+  return api<T>('POST', path, { body: form });
+}
 
 async function csrfToken(): Promise<string> {
   const existing = readCookie(document.cookie, CSRF_COOKIE);

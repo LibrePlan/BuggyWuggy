@@ -7,6 +7,8 @@ import { ApiError } from '../lib/apiError';
 import { get, post, seg } from './client';
 import type { IssueQuery } from '../lib/issueQuery';
 import type {
+  AttachmentResponse,
+  AttachmentSettings,
   CommentResponse,
   FilterResponse,
   StatusResponse,
@@ -47,6 +49,7 @@ export const keys = {
   comments: (key: string) => ['issue', key, 'comments'] as const,
   links: (key: string) => ['issue', key, 'links'] as const,
   watchers: (key: string) => ['issue', key, 'watchers'] as const,
+  attachments: (key: string) => ['issue', key, 'attachments'] as const,
   search: (query: IssueQuery, page: number, size: number) => ['search', query, page, size] as const,
   allSearches: ['search'] as const,
   filters: ['filters'] as const,
@@ -274,5 +277,20 @@ export function useLabelSuggestions(query: string, enabled: boolean) {
     queryFn: () => get<string[]>('/api/v1/labels', { query, limit: 20 }),
     enabled,
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useAttachments(key: string) {
+  return useQuery({
+    queryKey: keys.attachments(key),
+    queryFn: () => get<AttachmentResponse[]>(`/api/v1/issues/${seg(key)}/attachments`),
+  });
+}
+
+export function useAttachmentSettings() {
+  return useQuery({
+    queryKey: ['lookup', 'attachment-settings'],
+    queryFn: () => get<AttachmentSettings>('/api/v1/attachments/settings'),
+    staleTime: Infinity,
   });
 }

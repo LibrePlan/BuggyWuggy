@@ -24,6 +24,7 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.buggywuggy.attachment.AttachmentFiles;
 import org.buggywuggy.common.PageResponse;
 import org.buggywuggy.issue.IssueDtos.ChildIssueRef;
 import org.buggywuggy.issue.IssueDtos.CreateIssueRequest;
@@ -96,12 +97,14 @@ public class IssueService {
     private final NamedParameterJdbcTemplate jdbc;
     private final Clock clock;
     private final IssueSearchService search;
+    private final AttachmentFiles attachmentFiles;
 
     public IssueService(IssueRepository issues, IssueTypeRepository issueTypes, PriorityRepository priorities,
             StatusRepository statuses, ComponentRepository components, ProjectService projects,
             ProjectPermissionService permissions, UserService userService, UserAccountRepository users,
             WorkflowService workflows, IssueFieldStore fields, IssueHistory history,
-            NamedParameterJdbcTemplate jdbc, Clock clock, IssueSearchService search) {
+            NamedParameterJdbcTemplate jdbc, Clock clock, IssueSearchService search,
+            AttachmentFiles attachmentFiles) {
         this.issues = issues;
         this.issueTypes = issueTypes;
         this.priorities = priorities;
@@ -117,6 +120,7 @@ public class IssueService {
         this.jdbc = jdbc;
         this.clock = clock;
         this.search = search;
+        this.attachmentFiles = attachmentFiles;
     }
 
     // --- access ------------------------------------------------------------------------
@@ -325,7 +329,13 @@ public class IssueService {
         access.requireWritable();
         Issue issue = access.issue();
         Map<String, Long> params = Map.of("id", issue.getId());
-        if (issue.getIssueType().getHierarchyLevel() == IssueType.EPIC) {
+        boolean epic = issue.getIssueType().getHierarchyLevel() == IssueType.EPIC;
+        // Files of the deleted issue, and of its sub-tasks (deleted too), are removed after commit.
+        // Issues in an epic are kept, and so are their files.
+        attachmentFiles.deleteAfterCommit(epic
+                ? attachmentFiles.keysOfIssue(issue.getId())
+                : attachmentFiles.keysOfIssueAndChildren(issue.getId()));
+        if (epic) {
             jdbc.update("update issue set parent_id = null where parent_id = :id", params);
         } else {
             jdbc.update("delete from issue where parent_id = :id", params);

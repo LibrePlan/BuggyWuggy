@@ -26,8 +26,8 @@ This guide explains how to install, configure, run, back up and upgrade a BuggyW
 ## Overview
 
 BuggyWuggy is a single Java application (one `.jar` file) that contains both the server and
-the web interface. It stores all its data in PostgreSQL. It needs no other services: no search
-engine, no message queue and no cache.
+the web interface. It stores its data in PostgreSQL, and the files attached to issues in a data
+directory on disk. It needs no other services: no search engine, no message queue and no cache.
 
 ```
  Browser ──HTTPS──> reverse proxy (nginx, Apache, Caddy …) ──HTTP──> BuggyWuggy (:8080) ──> PostgreSQL
@@ -107,6 +107,9 @@ BuggyWuggy is configured with environment variables:
 | `BUGGYWUGGY_SESSION_TIMEOUT` | `8h` | How long an idle login stays valid, e.g. `30m`, `8h`, `7d`. |
 | `BUGGYWUGGY_SECURE_COOKIES` | `false` | Set to `true` when users reach BuggyWuggy over HTTPS (recommended). The session cookie is then only sent over HTTPS. |
 | `BUGGYWUGGY_SETUP_TOKEN` | *(random, written to the log)* | Fixed token for first-time setup. Useful for automated installations. |
+| `BUGGYWUGGY_DATA_DIR` | `data` (relative to the working directory) | Directory for attachment files. It is created if needed and must be writable by BuggyWuggy. Use an absolute path in production, e.g. `/var/lib/buggywuggy`. |
+| `BUGGYWUGGY_MAX_ATTACHMENT_SIZE` | `50MB` | Largest file that can be attached, e.g. `10MB`, `1GB`. |
+| `BUGGYWUGGY_MAX_UPLOAD_SIZE` | `200MB` | Largest total size of the files in one upload. |
 
 Because BuggyWuggy is a Spring Boot application, any standard Spring Boot setting can also be
 given as an environment variable. One that is useful behind a reverse proxy:
@@ -124,6 +127,7 @@ same address, further attempts are refused for 15 minutes.
 export BUGGYWUGGY_DB_URL=jdbc:postgresql://localhost:5432/buggywuggy
 export BUGGYWUGGY_DB_USER=buggywuggy
 export BUGGYWUGGY_DB_PASSWORD=choose-a-strong-password
+export BUGGYWUGGY_DATA_DIR=/var/lib/buggywuggy
 java -jar /opt/buggywuggy/buggywuggy.jar
 ```
 
@@ -164,6 +168,7 @@ Create a system user and an environment file:
 ```sh
 sudo useradd --system --home /opt/buggywuggy --shell /usr/sbin/nologin buggywuggy
 sudo install -d -o buggywuggy -g buggywuggy /opt/buggywuggy
+sudo install -d -m 750 -o buggywuggy -g buggywuggy /var/lib/buggywuggy
 sudo install -m 600 -o root -g root /dev/null /etc/buggywuggy.env
 ```
 
@@ -175,6 +180,7 @@ BUGGYWUGGY_DB_USER=buggywuggy
 BUGGYWUGGY_DB_PASSWORD=choose-a-strong-password
 BUGGYWUGGY_PORT=8080
 BUGGYWUGGY_SECURE_COOKIES=true
+BUGGYWUGGY_DATA_DIR=/var/lib/buggywuggy
 SERVER_FORWARD_HEADERS_STRATEGY=framework
 ```
 
@@ -196,12 +202,16 @@ Restart=on-failure
 # Hardening
 NoNewPrivileges=true
 ProtectSystem=strict
+ReadWritePaths=/var/lib/buggywuggy
 ProtectHome=true
 PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
 ```
+
+`ProtectSystem=strict` makes the whole file system read-only for the service;
+`ReadWritePaths` makes an exception for the data directory.
 
 Start it and follow the log (this is also where the setup token appears):
 
@@ -224,7 +234,8 @@ server {
     ssl_certificate     /etc/letsencrypt/live/bugs.example.org/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/bugs.example.org/privkey.pem;
 
-    client_max_body_size 50m;
+    # At least BUGGYWUGGY_MAX_UPLOAD_SIZE, or larger uploads are refused by nginx.
+    client_max_body_size 200m;
 
     location / {
         proxy_pass         http://127.0.0.1:8080;
@@ -302,8 +313,12 @@ Permission changes take effect immediately; users do not need to log in again.
 
 ## Backup and restore
 
-All data lives in the PostgreSQL database, so a database backup is a complete backup.
-(When attachments are added in a future version, their files will need to be backed up too.)
+BuggyWuggy keeps its data in two places, and a complete backup contains both:
+
+- the **PostgreSQL database**: everything except the contents of attached files;
+- the **data directory** (`BUGGYWUGGY_DATA_DIR`): the attached files.
+
+### Database
 
 Back up with `pg_dump`. It produces a consistent snapshot while BuggyWuggy keeps running:
 
@@ -322,6 +337,20 @@ pg_restore --dbname=buggywuggy --host=localhost --username=buggywuggy --no-owner
            buggywuggy-2026-11-11.dump
 sudo systemctl start buggywuggy
 ```
+
+### Attachment files
+
+Files are stored under `<data directory>/attachments/` with generated names; the database
+knows which file belongs to which attachment. Files are only ever added or deleted, never
+changed, so a plain copy is safe while BuggyWuggy runs. Back up the database **first** and the
+files right after; then every attachment in the database backup has its file:
+
+```sh
+rsync -a --delete /var/lib/buggywuggy/ /backup/buggywuggy-files/
+```
+
+Restore the files to the data directory before starting BuggyWuggy, owned by the
+`buggywuggy` user. Files that are in the copy but no longer in the database do no harm.
 
 Test your restore procedure regularly.
 

@@ -39,6 +39,7 @@ public class IssueHistory {
         public static final String AFFECTS_VERSION = "version";
         public static final String FIX_VERSION = "fixversion";
         public static final String LINK = "link";
+        public static final String ATTACHMENT = "attachment";
         public static final String PARENT = "parent";
         public static final String STATUS = "status";
         public static final String RESOLUTION = "resolution";

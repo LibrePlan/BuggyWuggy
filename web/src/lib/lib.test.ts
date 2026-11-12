@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { fieldErrorMap, toApiError } from './apiError';
 import { readCookie } from './cookies';
-import { changedFields, formatDate } from './format';
+import { changedFields, formatBytes, formatDate } from './format';
 import { childTypes, topLevelTypes } from './issueTypes';
 import { hasConditions, paramsToQuery, queryToParams, sameQuery, type IssueQuery } from './issueQuery';
 import { groupByDescription, linkOptions, normalizeIssueKey } from './links';
@@ -164,5 +164,14 @@ describe('issue query in the URL', () => {
   it('knows whether there are conditions', () => {
     expect(hasConditions({ sort: 'KEY', labels: [] })).toBe(false);
     expect(hasConditions({ resolution: 'RESOLVED' })).toBe(true);
+  });
+});
+
+describe('formatBytes', () => {
+  it('uses readable units', () => {
+    expect(formatBytes(0, 'en')).toBe('0 B');
+    expect(formatBytes(512, 'en')).toBe('512 B');
+    expect(formatBytes(1536, 'en')).toBe('1.5 KB');
+    expect(formatBytes(50 * 1024 * 1024, 'en')).toBe('50 MB');
   });
 });
