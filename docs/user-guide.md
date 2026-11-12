@@ -409,6 +409,6 @@ These features are planned but not available in the current version:
 - Formatted text (Markdown) in descriptions and comments
 - Boards (Kanban/Scrum), dashboards and reports
 - A text query language like Jira's JQL
-- Importing from Jira, GitLab, Redmine and Trac (importing from Forgejo and GitHub is
+- Importing from Jira, Redmine and Trac (importing from Forgejo, GitHub and GitLab is
   available; ask your administrator)
 - The web interface in other languages than English (e-mails are available in English and Dutch)

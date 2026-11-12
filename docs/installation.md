@@ -426,9 +426,10 @@ that is your only source of it; system administrators always keep every permissi
 ### Importing from other trackers
 
 **Administration → Import** copies issues from another tracker into a BuggyWuggy project, with
-their comments, attachments and history. Forgejo (it also covers Gitea and codeberg.org) and
-GitHub (github.com and GitHub Enterprise Server) are available now. Jira (Cloud, or Server /
-Data Center at your own address), GitLab, Redmine and Trac are listed but follow later.
+their comments, attachments and history. Forgejo (it also covers Gitea and codeberg.org),
+GitHub (github.com and GitHub Enterprise Server) and GitLab (gitlab.com and self-managed) are
+available now. Jira (Cloud, or Server / Data Center at your own address), Redmine and Trac are
+listed but follow later.
 
 **An import only reads.** It never changes anything in the source: the importer can only send
 read (GET) requests, so it cannot write, close, comment or label anything there. A token with
@@ -525,6 +526,42 @@ often not be copied; the text keeps the link to the original and the log has a w
 requests per issue (more for issues with sub-issues, dependencies or more than 100 timeline
 entries), one per attachment and one per person. When the limit is used up, the import waits
 until GitHub resets it, at most an hour; the status line shows until when.
+
+#### GitLab
+
+The GitLab import reads one project through GitLab's REST API (v4), with the same four-step
+wizard.
+
+1. **Connection.** The address is `https://gitlab.com`, or the address of your own GitLab
+   (including its path, e.g. `https://example.org/gitlab`; BuggyWuggy finds the API under
+   `/api/v4`). A token is optional for public projects.
+   - Create a personal, project or group access token with the **`read_api`** scope under
+     *Preferences → Access tokens*. It never needs more: the importer only reads.
+   - With the token of a GitLab administrator, or for people who made their e-mail address
+     public, BuggyWuggy can match people to existing accounts by e-mail address.
+2. **Repository.** Projects can be in subgroups: search, or type the full path such as
+   `group/subgroup/project`.
+3. **Mapping** and 4. **Start** work as for Forgejo. GitLab's issue types other than *issue*
+   (*incident*, *test case*, *task*) are listed as `type:Incident` etc.; they are left out unless
+   you map them to an issue type.
+
+What is imported, where it differs from Forgejo:
+
+| GitLab | BuggyWuggy |
+|---|---|
+| Notes | Comments. **Internal notes are not imported**: BuggyWuggy has no internal comments, so they would become visible to everyone who can browse the project. |
+| System notes and resource events (labels, milestone, close, reopen, title, assignees, due date) | History with the original author and date. Title, assignee and due date changes are read from GitLab's (English) system notes. |
+| Confidential issues | Issues with the label `confidential`. BuggyWuggy has no confidential issues: restrict who can browse the project if needed. |
+| Linked issues: *is blocked by* / *relates to* | *Blocks* / *Relates* links |
+| Merge requests related to the issue | **External links** to the merge request |
+| Uploads in texts (`/uploads/…`) | Attachments, and the text links to the copy. BuggyWuggy uses the uploads API (GitLab 17.4 and later) and otherwise the project's web address. |
+| `#12`, `group/project#12`, links to `…/-/issues/12` | The key of the imported issue; other references become links to GitLab. `!12` (merge requests) is left as it is. |
+
+Not imported: epics, iterations, weight, time tracking, award emoji and the tasks hierarchy
+(child tasks are imported as separate issues, without a parent).
+
+**Rate limits.** gitlab.com allows about 2000 API requests a minute with a token. An import makes
+about seven requests per issue, plus one per attachment and one per person.
 
 #### Progress, status line and log
 
@@ -682,10 +719,10 @@ variable as well (for systemd in `/etc/buggywuggy.env`).
 
 **An import fails with "The server refused the access token" or "may not read".**
 The token is wrong, expired, or lacks read access to repositories or issues. Create a new one in
-Forgejo under *Settings → Applications*, or on GitHub under *Settings → Developer settings*. For
-a private repository the token's user must be able to see the repository; for a GitHub
-organisation that requires it, the token must also be approved for (or authorised with SSO by)
-the organisation.
+Forgejo under *Settings → Applications*, on GitHub under *Settings → Developer settings*, or in
+GitLab under *Preferences → Access tokens* (scope `read_api`). For a private repository the
+token's user must be able to see the repository; for a GitHub organisation that requires it, the
+token must also be approved for (or authorised with SSO by) the organisation.
 
 **An import seems to stand still.**
 Look at the status line: it probably waits for the rate limit of the source, and says until

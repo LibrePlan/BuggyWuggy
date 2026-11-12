@@ -48,6 +48,7 @@ import { PROJECT_KEY_PATTERN, suggestProjectKey } from '../../lib/projectKey';
 export const REPOSITORY_SOURCES = {
   forgejo: { name: 'Forgejo', url: 'https://codeberg.org', tokenRequired: false },
   github: { name: 'GitHub', url: 'https://github.com', tokenRequired: true },
+  gitlab: { name: 'GitLab', url: 'https://gitlab.com', tokenRequired: false },
 } as const;
 
 export type RepositorySource = keyof typeof REPOSITORY_SOURCES;
@@ -62,7 +63,7 @@ function ruleOf(value: string): LabelRule {
   return { target: target as LabelRule['target'], id: id ? Number(id) : null };
 }
 
-/** The import wizard for trackers with repositories: Forgejo and GitHub. */
+/** The import wizard for trackers with repositories: Forgejo, GitHub and GitLab. */
 export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
   const { t } = useTranslation();
   const source = REPOSITORY_SOURCES[kind];
@@ -149,7 +150,7 @@ export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
 
   function chooseRepository(r: ImportRepository) {
     setRepository(r.fullName);
-    const name = r.fullName.split('/')[1] ?? r.fullName;
+    const name = r.fullName.split('/').at(-1) ?? r.fullName;
     setNewName(name);
     setNewKey(suggestProjectKey(name));
   }

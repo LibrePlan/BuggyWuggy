@@ -175,7 +175,7 @@ final class GitHubSource implements Source {
                 : related(issue, "/dependencies/blocked_by").stream()
                         .map(ref -> new SourceDependency(ref, null, null)).toList();
         List<SourceRef> children = counts != null && counts[0] == 0 ? List.of() : related(issue, "/sub_issues");
-        return new SourceDetails(comments(timeline), events, blockedBy, children);
+        return new SourceDetails(comments(timeline), events, blockedBy, children, List.of());
     }
 
     @Override

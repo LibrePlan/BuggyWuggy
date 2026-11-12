@@ -399,7 +399,13 @@
         },
         "gitlab": {
           "name": "GitLab",
-          "description": "Issues of a project on gitlab.com or a self-managed GitLab."
+          "description": "Issues of a project on gitlab.com or a self-managed GitLab.",
+          "title": "Import from GitLab",
+          "urlHelp": "https://gitlab.com, or the address of your own GitLab (with its path, if it has one).",
+          "tokenHelp": "Optional for public projects; needed for private ones and for e-mail addresses. Create a personal (or project or group) access token with the read_api scope under Preferences → Access tokens. It only needs to read; the importer never changes anything in GitLab. The token is only kept in memory while BuggyWuggy runs, never stored.",
+          "connectedAs": "GitLab {{version}}, logged in as {{login}}.",
+          "connectedAnonymous": "GitLab, without a token: only public projects.",
+          "searchHelp": "Part of the name, or the full path (group/subgroup/project). Empty with a token: your own projects."
         },
         "github": {
           "name": "GitHub",
@@ -480,7 +486,7 @@
         "projectName": "Project name",
         "projectKey": "Project key",
         "numbering": "Imported issues get new numbers in the project, in the order of their original numbers. The original number and a link to it are kept on the issue and in its history.",
-        "found": "{{issues}} issues ({{open}} open, {{closed}} closed), {{comments}} comments, {{milestones}} milestones. Pull requests are not imported.",
+        "found": "{{issues}} issues ({{open}} open, {{closed}} closed), {{comments}} comments, {{milestones}} milestones. Pull and merge requests are not imported.",
         "alreadyImported": "{{count}} of these issues were imported before. They are not imported again; only their new comments are added.",
         "issueType": "Issue type",
         "issueTypeHelp": "For issues without a label that sets the type.",
@@ -503,7 +509,7 @@
         "summary": "{{issues}} issues of {{repository}} on {{url}} will be imported into {{project}}.",
         "willNumber": "Issues get new numbers; the original number is shown on the issue and in its history.",
         "willHistory": "Comments, attachments, watchers, milestones (as fix versions), dependencies, sub-issues and the original history are imported with their original authors and dates.",
-        "willPullRequests": "Pull requests that referenced an issue are kept as links to the original.",
+        "willPullRequests": "Pull requests (merge requests in GitLab) that referenced an issue are kept as links to the original.",
         "willNotMail": "Nobody gets e-mail about imported issues.",
         "willNotStoreToken": "The access token is not stored; you can retry an import without typing it again until BuggyWuggy restarts.",
         "willSkip": "{{count}} issues imported earlier are skipped; only their new comments are added.",

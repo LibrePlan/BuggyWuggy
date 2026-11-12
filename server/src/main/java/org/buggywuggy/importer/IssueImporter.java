@@ -93,6 +93,9 @@ public class IssueImporter {
         this.maxFileSize = maxFileSize.toBytes();
     }
 
+    /** owner/name, or group/subgroup/…/name (GitLab). */
+    public static final String PATH = "[\\w.\\-]+(?:/[\\w.\\-]+)+";
+
     /** {@code owner/name}, or a bad request. */
     public static String path(String repository) {
         String path = repository == null ? "" : repository.strip();
@@ -102,7 +105,7 @@ public class IssueImporter {
         while (path.endsWith("/")) {
             path = path.substring(0, path.length() - 1);
         }
-        if (!path.matches("[\\w.\\-]+/[\\w.\\-]+")) {
+        if (!path.matches(PATH)) {
             throw ApiException.badRequest("import.repository-invalid", repository);
         }
         return path;
@@ -226,7 +229,7 @@ public class IssueImporter {
 
     /** What rounds two and three need of an issue round one created or extended. */
     private record Done(long issueId, String key, SourceIssue issue, boolean isNew, List<Long> commentIds,
-            List<SourceDependency> dependencies, List<SourceRef> children) {
+            List<SourceDependency> dependencies, List<SourceRef> children, List<SourceRef> related) {
     }
 
     /** State of one run. */
@@ -445,6 +448,16 @@ public class IssueImporter {
             public Optional<Long> attachmentId(String key) {
                 return writer.localId(run.sourceId, Ref.ATTACHMENT, run.source.attachmentKey(key));
             }
+
+            @Override
+            public String issueUrl(String repository, long number) {
+                return run.source.issueUrl(repository == null ? run.source.path() : repository, number);
+            }
+
+            @Override
+            public String attachmentUrl(String found) {
+                return run.source.attachmentUrl(found);
+            }
         };
     }
 
@@ -506,7 +519,7 @@ public class IssueImporter {
         origin.record(Fields.IMPORT, null, null, issue.url(),
                 run.source.displayName() + " " + run.origin(issue.number()));
         writer.history(id, run.startedBy, run.now, origin);
-        return new Done(id, key, issue, true, commentIds, details.blockedBy(), details.children());
+        return new Done(id, key, issue, true, commentIds, details.blockedBy(), details.children(), details.related());
     }
 
     /** For an issue an earlier run imported: only comments that are new since then. */
@@ -526,7 +539,7 @@ public class IssueImporter {
         String key = jdbc.queryForObject("""
                 select p.key || '-' || i.number from issue i join project p on p.id = i.project_id where i.id = :id""",
                 Map.of("id", issueId), String.class);
-        return new Done(issueId, key, issue, false, commentIds, List.of(), List.of());
+        return new Done(issueId, key, issue, false, commentIds, List.of(), List.of(), List.of());
     }
 
     private long comment(Run run, long issueId, SourceComment c, int[] counts) {
@@ -609,6 +622,15 @@ public class IssueImporter {
             writer.blocks(blocker.get().id(), blocker.get().name(), d.issueId(), d.key(),
                     dep.author() == null ? run.startedBy : run.id(run.user(dep.author())),
                     dep.at() == null ? run.now : dep.at());
+        }
+        for (SourceRef ref : d.related()) {
+            String repo = ref.repository() == null ? run.source.path() : ref.repository();
+            Optional<Named> other = writer.issueBySource(run.source.kind(), run.source.baseUrl(), repo, ref.number());
+            // Both issues list the link; the second one finds it already there.
+            if (other.isPresent() && other.get().id() != d.issueId() && !writer.linked(d.issueId(), other.get().id())) {
+                writer.link("Relates", d.issueId(), d.key(), other.get().id(), other.get().name(), run.startedBy,
+                        run.now);
+            }
         }
     }
 

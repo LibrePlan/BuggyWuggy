@@ -30,14 +30,22 @@ public final class ImportText {
 
         /** The copied attachment for the key the source's attachment pattern found. */
         Optional<Long> attachmentId(String key);
+
+        /** The web address of an issue that was not imported. */
+        String issueUrl(String repository, long number);
+
+        /** The original of an attachment link that was not copied. */
+        String attachmentUrl(String found);
     }
 
     private static final Pattern CODE = Pattern.compile("(?ms)^( {0,3})(```|~~~).*?^ {0,3}\\2[^\\n]*$|`[^`\\n]+`");
     /** Links and images, autolinks and bare URLs: references inside them are not rewritten. */
     private static final Pattern PROTECTED = Pattern.compile("!?\\[[^\\]\\n]*\\]\\([^)\\s]*(?:\\s+\"[^\"]*\")?\\)"
             + "|<https?://[^>\\s]+>|https?://[^\\s)<>\\]]+");
-    private static final Pattern CROSS_REF = Pattern.compile("(?<![\\w/.\\-])([\\w.\\-]+/[\\w.\\-]+)#(\\d+)\\b");
+    private static final Pattern CROSS_REF =
+            Pattern.compile("(?<![\\w/.\\-])([\\w.\\-]+(?:/[\\w.\\-]+)+)#(\\d+)\\b");
     private static final Pattern LOCAL_REF = Pattern.compile("(?<![\\w&/#\\]])#(\\d+)\\b");
+    private static final Pattern TRAILING = Pattern.compile("[.,;:!?]+$");
     private static final Pattern RELATIVE_LINK = Pattern.compile("(\\]\\(|src=\"|href=\")/(?!api/v1/attachments/)");
 
     private final String web;
@@ -56,7 +64,9 @@ public final class ImportText {
         this.repository = repository;
         this.resolver = resolver;
         this.attachment = attachments;
-        this.issueUrl = Pattern.compile(Pattern.quote(web) + "/([\\w.\\-]+/[\\w.\\-]+)/issues/(\\d+)/?");
+        // GitHub and Forgejo: /owner/repo/issues/12; GitLab: /group/project/-/issues/12
+        this.issueUrl = Pattern.compile(Pattern.quote(web)
+                + "/([\\w.\\-]+(?:/[\\w.\\-]+)+?)/(?:-/)?issues/(\\d+)/?");
     }
 
     public String rewrite(String text) {
@@ -81,11 +91,15 @@ public final class ImportText {
         int last = 0;
         while (link.find()) {
             out.append(references(links(text.substring(last, link.start()))));
-            String found = link.group();
+            String match = link.group();
+            // Like Markdown autolinks: punctuation at the end of a bare URL is not part of it.
+            Matcher trailing = TRAILING.matcher(match);
+            String found = match.startsWith("http") && trailing.find() ? match.substring(0, trailing.start()) : match;
             Matcher issue = issueUrl.matcher(found);
             Optional<String> key = issue.matches() ? key(issue.group(1), Long.parseLong(issue.group(2)))
                     : Optional.empty();
             out.append(key.orElseGet(() -> links(found)));
+            out.append(match.substring(found.length()));
             last = link.end();
         }
         out.append(references(links(text.substring(last))));
@@ -101,7 +115,7 @@ public final class ImportText {
         String result = attachment == null ? text : attachment.matcher(text).replaceAll(m -> Matcher.quoteReplacement(
                 resolver.attachmentId(m.group(1))
                         .map(id -> "/api/v1/attachments/" + id + "/content")
-                        .orElseGet(() -> m.group().startsWith("/") ? web + m.group() : m.group())));
+                        .orElseGet(() -> resolver.attachmentUrl(m.group()))));
         return RELATIVE_LINK.matcher(result).replaceAll(m -> Matcher.quoteReplacement(m.group(1) + web + "/"));
     }
 
@@ -110,12 +124,12 @@ public final class ImportText {
             String repo = m.group(1);
             long number = Long.parseLong(m.group(2));
             return Matcher.quoteReplacement(key(repo, number).orElseGet(() ->
-                    "[" + repo + "#" + number + "](" + web + "/" + repo + "/issues/" + number + ")"));
+                    "[" + repo + "#" + number + "](" + resolver.issueUrl(repo, number) + ")"));
         });
         return LOCAL_REF.matcher(result).replaceAll(m -> {
             long number = Long.parseLong(m.group(1));
             return Matcher.quoteReplacement(resolver.issueKey(null, number).orElseGet(() ->
-                    "[#" + number + "](" + web + "/" + repository + "/issues/" + number + ")"));
+                    "[#" + number + "](" + resolver.issueUrl(repository, number) + ")"));
         });
     }
 }

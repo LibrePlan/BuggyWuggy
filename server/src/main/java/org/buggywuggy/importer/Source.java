@@ -47,6 +47,16 @@ public interface Source {
         return found;
     }
 
+    /** The web address of an issue, for references to issues that were not imported. */
+    default String issueUrl(String repository, long number) {
+        return webUrl() + "/" + repository + "/issues/" + number;
+    }
+
+    /** The original of an attachment link that was not copied, as an absolute link. */
+    default String attachmentUrl(String found) {
+        return found.startsWith("/") ? webUrl() + found : found;
+    }
+
     /** Stops waits and retries when the job is cancelled, and reports waits. */
     void watch(BooleanSupplier cancelled, ReadOnlyHttp.Waits waits);
 
@@ -136,7 +146,8 @@ public interface Source {
     record SourceDependency(SourceRef blocker, SourceUser author, Instant at) {
     }
 
+    /** {@code related}: issues linked as "relates to". */
     record SourceDetails(List<SourceComment> comments, List<SourceEvent> events, List<SourceDependency> blockedBy,
-            List<SourceRef> children) {
+            List<SourceRef> children, List<SourceRef> related) {
     }
 }

@@ -418,6 +418,14 @@ public class ImportWriter {
         history.record(targetId, authorId, at, onTarget);
     }
 
+    /** Whether two issues are linked, in either direction, with any link type. */
+    public boolean linked(long a, long b) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                select exists (select 1 from issue_link where (source_issue_id = :a and target_issue_id = :b)
+                                                       or (source_issue_id = :b and target_issue_id = :a))""",
+                Map.of("a", a, "b", b), Boolean.class));
+    }
+
     /** What the hierarchy rules need to know about an issue. */
     public record Hierarchy(long id, long projectId, long typeId, String typeName, int level, long statusId,
             Long parentId, boolean hasChildren) {

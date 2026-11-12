@@ -297,7 +297,7 @@ the history stays complete after the file is gone.
    unique `(import_source_id, source_type, source_id)`. Makes imports repeatable and
    incremental, and allows links, parents and history to be resolved after all issues exist.
    `source_type` ∈ `user`, `issue`, `comment`, `attachment` (Forgejo: the attachment UUID;
-   GitHub: the attachment's URL). A
+   GitHub: the attachment's URL; GitLab: `<secret>/<file name>` of the upload). A
    reference counts only while its local row exists, so issues of a deleted project can be
    imported again.
 4. **Sources and jobs.**
@@ -325,7 +325,8 @@ the history stays complete after the file is gone.
    sends the token to the hosts of the source. The engine (`IssueImporter`) is the same for
    every kind; a `Connector` per kind turns its API into the neutral model of `Source`.
 9. **Hierarchy.** Sub-issues (GitHub) become sub-tasks of a standard issue, or children of an
-   epic; anything deeper or across projects becomes a *Relates* link.
+   epic; anything deeper or across projects becomes a *Relates* link. Issues the source links
+   as "relates to" (GitLab) get one *Relates* link between them.
 
 ## 9. Search (PostgreSQL only)
 

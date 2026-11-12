@@ -23,6 +23,7 @@ import org.buggywuggy.common.ApiException;
 import org.buggywuggy.importer.Connector;
 import org.buggywuggy.importer.ImportDtos.ConnectionResponse;
 import org.buggywuggy.importer.ImportDtos.RepositoryInfo;
+import org.buggywuggy.importer.IssueImporter;
 import org.buggywuggy.importer.ReadOnlyHttp;
 import org.buggywuggy.importer.Source;
 import org.buggywuggy.importer.forgejo.ForgejoApi.Repository;
@@ -162,7 +163,7 @@ public class ForgejoConnector implements Connector {
     public List<RepositoryInfo> repositories(String url, String token, String query) {
         Api api = api(url, token);
         String q = query == null ? "" : query.strip();
-        if (q.matches("[\\w.\\-]+/[\\w.\\-]+")) {
+        if (q.matches(IssueImporter.PATH)) {
             try {
                 return List.of(ForgejoSource.info(api.get("/repos/" + q, Repository.class)));
             } catch (ApiException e) {

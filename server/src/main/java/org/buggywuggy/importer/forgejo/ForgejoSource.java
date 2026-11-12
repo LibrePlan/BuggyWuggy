@@ -158,7 +158,7 @@ final class ForgejoSource implements Source {
                     blocker.number()), added == null ? null : user(added.user()),
                     added == null ? null : instant(added.createdAt())));
         }
-        return new SourceDetails(comments(issue), events, blockedBy, List.of());
+        return new SourceDetails(comments(issue), events, blockedBy, List.of(), List.of());
     }
 
     @Override

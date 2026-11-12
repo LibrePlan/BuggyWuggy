@@ -30,6 +30,16 @@ class ImportTextTest {
         public Optional<Long> attachmentId(String uuid) {
             return uuid.startsWith("aaaaaaaa") ? Optional.of(42L) : Optional.empty();
         }
+
+        @Override
+        public String issueUrl(String repository, long number) {
+            return BASE + "/" + repository + "/issues/" + number;
+        }
+
+        @Override
+        public String attachmentUrl(String found) {
+            return found.startsWith("/") ? BASE + found : found;
+        }
     });
 
     @Test
@@ -42,6 +52,12 @@ class ImportTextTest {
         assertThat(text.rewrite("Like " + BASE + "/acme/widgets/issues/1 and [this](" + BASE
                 + "/acme/widgets/issues/1)."))
                 .isEqualTo("Like WID-1 and [this](" + BASE + "/acme/widgets/issues/1).");
+    }
+
+    @Test
+    void understandsGitLabPathsWithSubgroups() {
+        assertThat(text.rewrite("See acme/gears#5, other/sub/repo#7 and " + BASE + "/acme/widgets/-/issues/3."))
+                .isEqualTo("See GEAR-9, [other/sub/repo#7](" + BASE + "/other/sub/repo/issues/7) and WID-2.");
     }
 
     @Test

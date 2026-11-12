@@ -57,6 +57,7 @@ export const router = createBrowserRouter([
               { path: 'import', element: <ImportPage /> },
               { path: 'import/forgejo', element: <RepositoryImportPage key="forgejo" kind="forgejo" /> },
               { path: 'import/github', element: <RepositoryImportPage key="github" kind="github" /> },
+              { path: 'import/gitlab', element: <RepositoryImportPage key="gitlab" kind="gitlab" /> },
               { path: 'import/jobs/:jobId', element: <ImportJobPage /> },
             ],
           },
