@@ -13,7 +13,10 @@ import { AdminGroupsPage } from './pages/admin/AdminGroupsPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminUserPage } from './pages/admin/AdminUserPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
+import { ForgejoImportPage } from './pages/admin/ForgejoImportPage';
 import { GlobalPermissionsPage } from './pages/admin/GlobalPermissionsPage';
+import { ImportJobPage } from './pages/admin/ImportJobPage';
+import { ImportPage } from './pages/admin/ImportPage';
 import { MailSettingsPage } from './pages/admin/MailSettingsPage';
 import { MailTemplatePage } from './pages/admin/MailTemplatePage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -51,6 +54,9 @@ export const router = createBrowserRouter([
               { path: 'permissions', element: <GlobalPermissionsPage /> },
               { path: 'email', element: <MailSettingsPage /> },
               { path: 'email/templates/:templateKey/:language', element: <MailTemplatePage /> },
+              { path: 'import', element: <ImportPage /> },
+              { path: 'import/forgejo', element: <ForgejoImportPage /> },
+              { path: 'import/jobs/:jobId', element: <ImportJobPage /> },
             ],
           },
           { path: '/browse/:issueKey', element: <IssuePage /> },

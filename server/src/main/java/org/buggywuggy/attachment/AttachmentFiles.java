@@ -67,7 +67,7 @@ public class AttachmentFiles {
 
     /** Deletes the files if the current transaction rolls back, e.g. for a failed upload. */
     public void deleteOnRollback(Collection<String> keys) {
-        List<String> copy = List.copyOf(keys);
+        // Not copied: callers register the collection first and add keys as they store files.
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             return;
         }
@@ -75,7 +75,7 @@ public class AttachmentFiles {
             @Override
             public void afterCompletion(int status) {
                 if (status != STATUS_COMMITTED) {
-                    copy.forEach(blobs::delete);
+                    List.copyOf(keys).forEach(blobs::delete);
                 }
             }
         });

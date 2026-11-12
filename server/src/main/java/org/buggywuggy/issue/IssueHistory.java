@@ -45,6 +45,10 @@ public class IssueHistory {
         public static final String PARENT = "parent";
         public static final String STATUS = "status";
         public static final String RESOLUTION = "resolution";
+        /** Where an imported issue came from: value = original URL, text = e.g. "Forgejo owner/repo#12". */
+        public static final String IMPORT = "import";
+        /** A link to something outside BuggyWuggy, e.g. a pull request: value = URL, text = title. */
+        public static final String REMOTE_LINK = "remotelink";
 
         private Fields() {
         }
@@ -91,6 +95,15 @@ public class IssueHistory {
         if (changes.isEmpty()) {
             return;
         }
+        record(issueId, authorId, at, changes);
+        events.changed(issueId, authorId, at, changes.items());
+    }
+
+    /** Writes history without notifying anyone, e.g. history taken over by an importer. */
+    public void record(long issueId, Long authorId, Instant at, Changes changes) {
+        if (changes.isEmpty()) {
+            return;
+        }
         Long groupId = jdbc.queryForObject("""
                 insert into change_group (issue_id, author_id, created_at)
                 values (:issue, :author, :at) returning id""",
@@ -105,7 +118,6 @@ public class IssueHistory {
         jdbc.batchUpdate("""
                 insert into change_item (change_group_id, field_key, old_value, old_text, new_value, new_text)
                 values (:group, :field, :from, :fromText, :to, :toText)""", batch);
-        events.changed(issueId, authorId, at, changes.items());
     }
 
     /** The history of an issue, oldest first. */

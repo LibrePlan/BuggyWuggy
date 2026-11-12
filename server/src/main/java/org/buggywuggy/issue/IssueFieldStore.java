@@ -83,6 +83,26 @@ public class IssueFieldStore {
         return idsInProject("project_version", projectId, ids);
     }
 
+    // --- origin of imported issues ----------------------------------------------------
+
+    public IssueDtos.IssueOrigin origin(long issueId) {
+        return jdbc.query("""
+                select s.kind, s.base_url, i.origin_key, i.origin_url from issue i
+                join import_source s on s.id = i.origin_source_id
+                where i.id = :id and i.origin_key is not null""", Map.of("id", issueId),
+                (rs, n) -> new IssueDtos.IssueOrigin(rs.getString(1), rs.getString(2), rs.getString(3),
+                        rs.getString(4)))
+                .stream().findFirst().orElse(null);
+    }
+
+    public List<IssueDtos.RemoteLink> remoteLinks(long issueId) {
+        return jdbc.query("""
+                select id, url, title, relation, created_at from issue_remote_link
+                where issue_id = :id order by created_at, id""", Map.of("id", issueId),
+                (rs, n) -> new IssueDtos.RemoteLink(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                        rs.getTimestamp(5).toInstant()));
+    }
+
     // --- watchers --------------------------------------------------------------------
 
     public void addWatcher(long issueId, long userId, java.time.Instant at) {

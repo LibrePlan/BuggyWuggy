@@ -208,7 +208,7 @@ public class AttachmentService {
      * The file name without any directory part or control characters, at most 255 characters
      * (keeping the extension).
      */
-    static String safeFileName(String original) {
+    public static String safeFileName(String original) {
         String name = original == null ? "" : original;
         name = name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
         name = name.replaceAll("[\\p{Cntrl}]", "").strip();
@@ -227,7 +227,7 @@ public class AttachmentService {
      * The media type, determined from the file name; the browser-declared type is used only
      * when the name says nothing.
      */
-    static String mediaType(String fileName, String declared) {
+    public static String mediaType(String fileName, String declared) {
         return MediaTypeFactory.getMediaType(fileName).map(MediaType::toString)
                 .or(() -> parse(declared))
                 .orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);

@@ -436,6 +436,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/import/jobs/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["retry_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/import/jobs/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/import/forgejo/repositories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["forgejoRepositories"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/import/forgejo/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startForgejo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/import/forgejo/connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["testForgejo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/import/forgejo/analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["analyzeForgejo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/groups": {
         parameters: {
             query?: never;
@@ -980,6 +1076,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/import/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["jobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/import/jobs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["job"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/import/jobs/{id}/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["log"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/groups/{id}/members": {
         parameters: {
             query?: never;
@@ -1235,6 +1379,12 @@ export interface components {
             issueType: components["schemas"]["IssueTypeRef"];
             status: components["schemas"]["StatusRef"];
         };
+        IssueOrigin: {
+            kind: string;
+            baseUrl: string | null;
+            key: string;
+            url: string | null;
+        };
         IssueRef: {
             /** Format: int64 */
             id: number;
@@ -1271,6 +1421,8 @@ export interface components {
             resolvedAt: string | null;
             /** Format: int64 */
             version: number;
+            origin: components["schemas"]["IssueOrigin"] | null;
+            remoteLinks: components["schemas"]["RemoteLink"][];
         };
         IssueTypeRef: {
             /** Format: int64 */
@@ -1297,6 +1449,15 @@ export interface components {
             id: number;
             key: string;
             name: string;
+        };
+        RemoteLink: {
+            /** Format: int64 */
+            id: number;
+            url: string;
+            title: string;
+            relation: string;
+            /** Format: date-time */
+            createdAt: string;
         };
         ResolutionRef: {
             /** Format: int64 */
@@ -1500,6 +1661,135 @@ export interface components {
             name: string;
             enabled: boolean;
             isDefault: boolean;
+        };
+        RetryRequest: {
+            token?: string;
+        };
+        Counters: {
+            /** Format: int32 */
+            issuesTotal: number;
+            /** Format: int32 */
+            issuesDone: number;
+            /** Format: int32 */
+            issuesImported: number;
+            /** Format: int32 */
+            comments: number;
+            /** Format: int32 */
+            attachments: number;
+            /** Format: int32 */
+            usersCreated: number;
+            /** Format: int32 */
+            warnings: number;
+        };
+        JobResponse: {
+            /** Format: int64 */
+            id: number;
+            kind: string;
+            baseUrl: string;
+            sourcePath: string;
+            /** Format: int64 */
+            projectId: number | null;
+            projectKey: string | null;
+            projectName: string | null;
+            /** @enum {string} */
+            status: "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED" | "INTERRUPTED";
+            createdBy: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            finishedAt: string | null;
+            counters: components["schemas"]["Counters"];
+            message: string | null;
+            credentialsAvailable: boolean;
+        };
+        RepositoryRequest: {
+            url: string;
+            token?: string;
+            query?: string;
+        };
+        RepositoryInfo: {
+            fullName: string;
+            description: string | null;
+            isPrivate: boolean;
+            hasIssues: boolean;
+            /** Format: int32 */
+            openIssues: number;
+            htmlUrl: string;
+        };
+        LabelRule: {
+            /** @enum {string} */
+            target: "LABEL" | "ISSUE_TYPE" | "PRIORITY" | "IGNORE";
+            /** Format: int64 */
+            id: number | null;
+        };
+        NewProject: {
+            key: string;
+            name: string;
+        };
+        StartRequest: {
+            url: string;
+            token?: string;
+            repository: string;
+            /** Format: int64 */
+            projectId?: number;
+            newProject?: components["schemas"]["NewProject"];
+            /** Format: int64 */
+            issueTypeId: number;
+            labels?: {
+                [key: string]: components["schemas"]["LabelRule"];
+            };
+            users?: {
+                [key: string]: number;
+            };
+            matchUsernames?: boolean | null;
+        };
+        ConnectionRequest: {
+            url: string;
+            token?: string;
+        };
+        ConnectionResponse: {
+            url: string;
+            version: string;
+            login: string | null;
+            admin: boolean;
+        };
+        AnalysisRequest: {
+            url: string;
+            token?: string;
+            repository: string;
+        };
+        Analysis: {
+            repository: components["schemas"]["RepositoryInfo"];
+            /** Format: int32 */
+            issues: number;
+            /** Format: int32 */
+            openIssues: number;
+            /** Format: int32 */
+            closedIssues: number;
+            /** Format: int32 */
+            comments: number;
+            /** Format: int32 */
+            milestones: number;
+            /** Format: int32 */
+            alreadyImported: number;
+            labels: components["schemas"]["LabelInfo"][];
+            users: components["schemas"]["UserInfo"][];
+        };
+        LabelInfo: {
+            name: string;
+            color: string;
+            description: string | null;
+            /** Format: int32 */
+            issues: number;
+            suggestion: components["schemas"]["LabelRule"];
+        };
+        UserInfo: {
+            id: string;
+            login: string;
+            name: string | null;
+            /** Format: int32 */
+            issues: number;
+            suggestion: components["schemas"]["UserRef"] | null;
         };
         CreateGroupRequest: {
             name: string;
@@ -1759,6 +2049,15 @@ export interface components {
             lastError: string | null;
             /** Format: date-time */
             createdAt: string;
+        };
+        LogLine: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            at: string;
+            /** @enum {string} */
+            level: "INFO" | "WARN" | "ERROR";
+            message: string;
         };
         PageResponseGroupResponse: {
             items: components["schemas"]["GroupResponse"][];
@@ -2805,6 +3104,148 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["LanguageResponse"];
+                };
+            };
+        };
+    };
+    retry_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RetryRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["JobResponse"];
+                };
+            };
+        };
+    };
+    cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    forgejoRepositories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RepositoryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RepositoryInfo"][];
+                };
+            };
+        };
+    };
+    startForgejo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["JobResponse"];
+                };
+            };
+        };
+    };
+    testForgejo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConnectionResponse"];
+                };
+            };
+        };
+    };
+    analyzeForgejo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Analysis"];
                 };
             };
         };
@@ -3899,6 +4340,72 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["FailedMail"][];
+                };
+            };
+        };
+    };
+    jobs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["JobResponse"][];
+                };
+            };
+        };
+    };
+    job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["JobResponse"];
+                };
+            };
+        };
+    };
+    log: {
+        parameters: {
+            query?: {
+                after?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LogLine"][];
                 };
             };
         };

@@ -128,15 +128,22 @@ An issue page shows:
 - **Sub-tasks** or **Issues in this epic**, if there are any.
 - **Attachments**.
 - **Linked issues**.
+- **External links**, such as the pull requests that referred to an imported issue.
 - **Comments** and **History** tabs.
 - On the right, the **details**: status and resolution, type, priority, assignee, reporter,
   labels, components, versions, due date, and when the issue was created, last updated and
-  resolved.
+  resolved. For an issue that was imported from another tracker, *Imported from* shows where
+  it came from, such as `forgejo/website#12`, with a link to the original.
 
 The **History** tab lists every change ever made to the issue: who changed which field, when,
 from what and to what. This includes status changes, links and attachments. History cannot be edited.
 
 Issue keys keep working when a project's key changes: `OLD-12` then takes you to `NEW-12`.
+
+**Imported issues** keep their original authors and dates, and their history from the other
+tracker. They get a new number in the project; the original number is shown as *Imported from*
+and in the history. People who do not have an account in BuggyWuggy are shown by name, from a
+*placeholder* account that cannot log in.
 
 ## Working on an issue
 
@@ -401,5 +408,6 @@ These features are planned but not available in the current version:
 - Formatted text (Markdown) in descriptions and comments
 - Boards (Kanban/Scrum), dashboards and reports
 - A text query language like Jira's JQL
-- Importing data from Jira
+- Importing from Jira, GitLab, GitHub, Redmine and Trac (importing from Forgejo is available;
+  ask your administrator)
 - The web interface in other languages than English (e-mails are available in English and Dutch)

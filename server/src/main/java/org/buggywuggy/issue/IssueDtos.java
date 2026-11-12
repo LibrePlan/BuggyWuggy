@@ -70,7 +70,16 @@ public final class IssueDtos {
             @ApiNullable UserRef creator, List<String> labels, List<Named> components,
             List<Named> affectsVersions, List<Named> fixVersions, @ApiNullable LocalDate dueDate,
             @ApiNullable IssueRef parent, List<ChildIssueRef> children,
-            Instant createdAt, Instant updatedAt, @ApiNullable Instant resolvedAt, long version) {
+            Instant createdAt, Instant updatedAt, @ApiNullable Instant resolvedAt, long version,
+            @ApiNullable IssueOrigin origin, List<RemoteLink> remoteLinks) {
+    }
+
+    /** Where an imported issue came from: e.g. kind FORGEJO, key {@code owner/repo#12}. */
+    public record IssueOrigin(String kind, @ApiNullable String baseUrl, String key, @ApiNullable String url) {
+    }
+
+    /** A link to something outside BuggyWuggy; {@code relation} is PULL_REQUEST or OTHER. */
+    public record RemoteLink(long id, String url, String title, String relation, Instant createdAt) {
     }
 
     /** An issue in a list or search result. */

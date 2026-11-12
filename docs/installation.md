@@ -19,6 +19,7 @@ This guide explains how to install, configure, run, back up and upgrade a BuggyW
 8. [Running as a service (systemd)](#running-as-a-service-systemd)
 9. [HTTPS with a reverse proxy](#https-with-a-reverse-proxy)
 10. [Administration](#administration)
+    - [Importing from other trackers](#importing-from-other-trackers)
 11. [Backup and restore](#backup-and-restore)
 12. [Upgrading](#upgrading)
 13. [Monitoring](#monitoring)
@@ -366,7 +367,7 @@ it under a sub-path such as `https://example.org/bugs/` is not supported yet.
 ## Administration
 
 Users with the global permission *Administer BuggyWuggy* (by default the group
-`administrators`) see **Administration** in the top bar. It has four pages:
+`administrators`) see **Administration** in the top bar. It has five pages:
 
 - **Users**: find, create and edit users. On a user's page you can change the name and
   e-mail, deactivate the account, set a new password and change group memberships. Only
@@ -383,6 +384,8 @@ Users with the global permission *Administer BuggyWuggy* (by default the group
   use, the mail templates, the languages mails are available in, and mails that could not be
   sent. A language can be enabled or disabled, made the default, added and deleted; the
   default language cannot be disabled or deleted. Failed mails can be sent again or discarded.
+- **Import**: copy the issues of another issue tracker into BuggyWuggy; see
+  [Importing from other trackers](#importing-from-other-trackers).
 
 ### Mail templates
 
@@ -419,6 +422,80 @@ permission, or someone joins or leaves such a group, the affected users are logg
 the new permissions when they log in again. This includes you when you change a group you are
 a member of. To prevent lock-outs, you cannot take *Administer BuggyWuggy* away from a group
 that is your only source of it; system administrators always keep every permission.
+
+### Importing from other trackers
+
+**Administration → Import** copies issues from another tracker into a BuggyWuggy project, with
+their comments, attachments and history. Forgejo is available now (it also covers
+codeberg.org). Jira (Cloud, or Server / Data Center at your own address), GitLab, GitHub,
+Redmine and Trac are listed but follow later.
+
+#### Forgejo
+
+The import reads one Forgejo repository through Forgejo's REST API. A wizard takes you through
+four steps:
+
+1. **Connection.** Enter the address of the Forgejo server (e.g. `https://codeberg.org`) and,
+   optionally, an access token, and click **Test connection**.
+   - Without a token only public repositories can be read.
+   - Create a token in Forgejo under *Settings → Applications*, with read access to
+     repositories, issues and users.
+   - With the token of a Forgejo administrator BuggyWuggy also sees e-mail addresses, so more
+     people are matched to their existing BuggyWuggy account.
+2. **Repository.** Search for the repository, or type `owner/repository`, and choose the
+   project to import into: a new project (key and name are filled in from the repository) or
+   an existing one.
+3. **Mapping.** BuggyWuggy counts the issues, comments and milestones, and lists the labels and
+   the people who reported or are assigned to issues.
+   - **Issue type** for issues whose labels do not set one.
+   - **Labels**: each label is kept as a label (spaces become hyphens), sets the issue type or
+     the priority, or is left out. Common names such as `bug`, `kind/bug` or `priority/high`
+     are suggested.
+   - **People**: choose the BuggyWuggy account for each person, or leave it on *Automatic*:
+     BuggyWuggy then looks for an account with the same e-mail address, then with the same
+     username, and otherwise creates a *placeholder*: an inactive account without password or
+     e-mail address, named after the Forgejo user. Commenters are always matched automatically.
+4. **Start.** The import runs in the background; its page shows the progress and a log, and
+   has a **Cancel import** button. Only one import runs at a time.
+
+What is imported:
+
+| Forgejo | BuggyWuggy |
+|---|---|
+| Issue (not pull requests) | Issue with a **new number** in the project, in the order of the Forgejo numbers. The original (e.g. `forgejo/website#12`) with a link is shown as *Imported from* on the issue and in its history. |
+| Title, description, deadline | Summary, description, due date |
+| Open / closed | The project's first status, or *Reopened* when it was reopened; *Closed* with the default resolution. |
+| Author, assignees | Reporter; the first assignee becomes the assignee, all assignees become watchers. |
+| Labels | Labels, issue type or priority, as chosen in the wizard |
+| Milestones | Project versions (closed milestones as released), and the fix version of their issues |
+| Comments | Comments with their original author and date; commenters become watchers. |
+| Attachments of issues and comments | Attachments. Larger files than `BUGGYWUGGY_MAX_ATTACHMENT_SIZE` are not copied; the text keeps a link to the original. |
+| Dependencies | *Blocks* links |
+| Pull requests that referenced the issue | **External links** on the issue, to the pull request on Forgejo |
+| Timeline (title, labels, assignees, milestone, deadline, close, reopen) | History, with the original author and date |
+| `#12`, `owner/repo#12` and attachment links in texts | The key of the imported issue and a link to the copied attachment; other references become links to Forgejo. Code blocks are not changed. |
+
+Not imported: pull requests themselves, reactions, time tracking, project boards, and
+whether an issue was pinned or locked. Forgejo shows deleted accounts as *Ghost*; they become one
+placeholder named `Ghost`.
+
+Nobody gets e-mail about imported issues. Dates are the original ones; the history entry
+*Imported from* has the date and author of the import.
+
+**Running again.** **Run again** on an import's page repeats it with the same settings. Issues
+that were imported before are not imported again (also not when they changed in Forgejo); only
+their new comments are added, and new issues are imported. When some issues failed, the import
+ends as *Failed* with a warning per issue; running it again imports just those. Issues of a
+deleted project count as not imported.
+
+**The access token is never stored**: not in the database and not in the log. BuggyWuggy keeps
+it in memory for 24 hours, so **Run again** works without typing it; after a restart you are
+asked for it again.
+
+**Rate limits.** Forgejo servers can limit the number of requests (codeberg.org allows 2000 per
+10 minutes). BuggyWuggy reads the limit from the server's answers and waits when it is nearly
+used up; the log says so. An import makes about three requests per issue, plus one per
+attachment.
 
 ### Automating with the REST API
 
@@ -546,6 +623,15 @@ Check on **Administration → E-mail** which configuration file is used, that yo
 in front of the setting *and* in front of the keys above it, that the indentation is unchanged,
 and that you restarted BuggyWuggy. Also check that the setting is not set as an environment
 variable as well (for systemd in `/etc/buggywuggy.env`).
+
+**An import fails with "The server refused the access token" or "may not read".**
+The token is wrong, expired, or lacks read access to repositories or issues. Create a new one in
+Forgejo under *Settings → Applications*. For a private repository the token's user must be able
+to see the repository.
+
+**An import is "Interrupted".**
+BuggyWuggy was stopped while the import ran. Use **Run again**: what was already imported is
+skipped.
 
 **I lost the setup token.**
 Restart BuggyWuggy. As long as no administrator has been created, a new token is written to the

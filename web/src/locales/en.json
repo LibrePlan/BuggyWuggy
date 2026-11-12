@@ -116,7 +116,22 @@
     "subtasks": "Sub-tasks",
     "issuesInEpic": "Issues in this epic",
     "transitionTo": "Moves the issue to",
-    "project": "Project"
+    "project": "Project",
+    "origin": "Imported from",
+    "originValue": "{{source}} {{key}}",
+    "originKind": {
+      "FORGEJO": "Forgejo",
+      "JIRA": "Jira",
+      "GITLAB": "GitLab",
+      "GITHUB": "GitHub",
+      "REDMINE": "Redmine",
+      "TRAC": "Trac"
+    },
+    "remoteLinks": "External links",
+    "remoteLink": {
+      "PULL_REQUEST": "Pull request",
+      "OTHER": "Link"
+    }
   },
   "history": {
     "title": "History",
@@ -142,7 +157,9 @@
       "status": "Status",
       "resolution": "Resolution",
       "link": "Link",
-      "attachment": "Attachment"
+      "attachment": "Attachment",
+      "import": "Imported from",
+      "remotelink": "External link"
     }
   },
   "comment": {
@@ -358,6 +375,134 @@
       "problems": "The template contains errors",
       "sampleData": "Shown with sample data.",
       "plainText": "Plain text"
+    },
+    "import": "Import",
+    "importer": {
+      "intro": "Copy the issues of another issue tracker into BuggyWuggy, with their comments, attachments and history. Original authors and dates are kept; nobody is notified by e-mail.",
+      "comingLater": "Coming later",
+      "defaultUrl": "Default address: {{url}} (can be changed)",
+      "start": "Start import",
+      "source": {
+        "forgejo": {
+          "name": "Forgejo",
+          "description": "Issues of a repository on a Forgejo server, such as codeberg.org or your own installation."
+        },
+        "jira": {
+          "name": "Atlassian Jira",
+          "description": "Jira Cloud, or Jira Server / Data Center at your own address."
+        },
+        "gitlab": {
+          "name": "GitLab",
+          "description": "Issues of a project on gitlab.com or a self-managed GitLab."
+        },
+        "github": {
+          "name": "GitHub",
+          "description": "Issues of a repository on github.com or GitHub Enterprise Server."
+        },
+        "redmine": {
+          "name": "Redmine",
+          "description": "Issues of a project in a Redmine installation."
+        },
+        "trac": {
+          "name": "Trac",
+          "description": "Tickets of a Trac installation."
+        }
+      },
+      "history": "Imports",
+      "noJobs": "Nothing has been imported yet.",
+      "started": "Started",
+      "sourceColumn": "Source",
+      "project": "Project",
+      "statusColumn": "Status",
+      "progress": "Progress",
+      "issueCount": "{{done}} of {{total}} issues",
+      "status": {
+        "RUNNING": "Running",
+        "SUCCEEDED": "Finished",
+        "FAILED": "Failed",
+        "CANCELLED": "Cancelled",
+        "INTERRUPTED": "Interrupted"
+      },
+      "back": "Back to imports",
+      "next": "Next",
+      "previous": "Back",
+      "forgejo": {
+        "title": "Import from Forgejo",
+        "step": {
+          "connection": "Connection",
+          "repository": "Repository",
+          "mapping": "Mapping",
+          "start": "Start"
+        },
+        "url": "Server address",
+        "urlHelp": "The address you open Forgejo at, e.g. https://codeberg.org.",
+        "token": "Access token",
+        "tokenHelp": "Optional; needed for private repositories. Create one in Forgejo under Settings → Applications, with read access to repositories, issues and users. An administrator token also shows e-mail addresses, so more people are matched to existing accounts. The token is only kept in memory while BuggyWuggy runs, never stored.",
+        "test": "Test connection",
+        "connected": "Connected",
+        "connectedAs": "Forgejo {{version}}, logged in as {{login}}.",
+        "connectedAnonymous": "Forgejo {{version}}, without a token: only public repositories.",
+        "repository": "Repository",
+        "search": "Search",
+        "searchHelp": "Part of the name, or owner/repository. Empty with a token: your own repositories.",
+        "find": "Find",
+        "private": "Private",
+        "openIssues": "{{count}} open",
+        "noIssues": "No issues",
+        "chosen": "Chosen: {{repository}}",
+        "target": "Import into",
+        "newProject": "New project",
+        "existingProject": "Existing project",
+        "projectName": "Project name",
+        "projectKey": "Project key",
+        "numbering": "Imported issues get new numbers in the project, in the order of their Forgejo numbers. The original number and a link to it are kept on the issue and in its history.",
+        "found": "{{issues}} issues ({{open}} open, {{closed}} closed), {{comments}} comments, {{milestones}} milestones. Pull requests are not imported.",
+        "alreadyImported": "{{count}} of these issues were imported before. They are not imported again; only their new comments are added.",
+        "issueType": "Issue type",
+        "issueTypeHelp": "For issues without a label that sets the type.",
+        "labels": "Labels",
+        "labelsHelp": "Keep a label as label (spaces become hyphens), use it to set the issue type or priority, or leave it out.",
+        "noLabels": "The repository has no labels.",
+        "label": "Label",
+        "used": "Issues",
+        "becomes": "Becomes",
+        "keep": "Label",
+        "asLabel": "Keep as label",
+        "ignore": "Leave out",
+        "asIssueType": "Issue type",
+        "asPriority": "Priority",
+        "users": "People",
+        "usersHelp": "People who reported or are assigned to issues. Choose the BuggyWuggy account for each, or leave it on automatic: first by e-mail address, then by username, otherwise a placeholder account is created (inactive, cannot log in). Commenters are matched automatically.",
+        "matchUsernames": "Also match by username",
+        "forgejoUser": "Forgejo user",
+        "account": "BuggyWuggy account",
+        "automatic": "Automatic",
+        "summary": "{{issues}} issues of {{repository}} on {{url}} will be imported into {{project}}.",
+        "willNumber": "Issues get new numbers; the original number is shown on the issue and in its history.",
+        "willHistory": "Comments, attachments, watchers, milestones (as fix versions), dependencies and the original history are imported with their original authors and dates.",
+        "willPullRequests": "Pull requests that referenced an issue are kept as links to the original.",
+        "willNotMail": "Nobody gets e-mail about imported issues.",
+        "willNotStoreToken": "The access token is not stored; you can retry an import without typing it again until BuggyWuggy restarts.",
+        "willSkip": "{{count}} issues imported earlier are skipped; only their new comments are added.",
+        "startImport": "Start import"
+      },
+      "job": {
+        "title": "Import of {{source}}",
+        "meta": "{{url}} · started {{started}} by {{by}}",
+        "issues": "Issues read",
+        "imported": "Issues imported",
+        "comments": "Comments",
+        "attachments": "Attachments",
+        "users": "Placeholders created",
+        "warnings": "Warnings",
+        "cancel": "Cancel import",
+        "retry": "Run again",
+        "retryHelp": "Runs the import again with the same settings; only what is new is imported. You are asked for the access token again if it was used.",
+        "retryHelpToken": "Runs the import again with the same settings and the token still in memory; only what is new is imported.",
+        "tokenAgain": "The access token is no longer in memory. Enter it again, or leave it empty for a public repository.",
+        "log": "Log",
+        "noLog": "No messages yet."
+      }
     }
   },
   "settings": {

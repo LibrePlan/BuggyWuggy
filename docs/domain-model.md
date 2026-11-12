@@ -291,13 +291,32 @@ the history stays complete after the file is gone.
    author columns are set by the application, never by database defaults, so an importer
    can supply original values.
 2. **Placeholder users.** Unknown authors become `user_account` rows with
-   `placeholder = true, active = false`. An admin can later merge a placeholder into a real account.
+   `placeholder = true, active = false`. *(later)* An admin can merge a placeholder into a real account.
 3. **External references.**
    `external_ref(id, import_source_id, source_type, source_id, local_type, local_id, imported_at)` —
    unique `(import_source_id, source_type, source_id)`. Makes imports repeatable and
    incremental, and allows links, parents and history to be resolved after all issues exist.
-4. *(later)* `import_source(id, kind, base_url, label)` and `import_job(id, import_source_id, status, started_at, finished_at, log)`.
-   `import_source` is created in v1 already because `external_ref` references it.
+   `source_type` ∈ `user`, `issue`, `comment`, `attachment` (Forgejo: the attachment UUID). A
+   reference counts only while its local row exists, so issues of a deleted project can be
+   imported again.
+4. **Sources and jobs.**
+   - `import_source(id, kind, base_url, project_path, label, created_at)` — one per tracker,
+     server and project there (e.g. `FORGEJO`, `https://codeberg.org`, `forgejo/website`);
+     unique `(kind, lower(base_url), lower(project_path))`.
+   - `import_job(id, import_source_id, project_id, status, options, created_by, created_at,
+     finished_at, counters…, message)` — `status` ∈ `RUNNING`, `SUCCEEDED`, `FAILED`,
+     `CANCELLED`, `INTERRUPTED`; `options` is the JSON of the wizard's choices. **Credentials
+     are never stored**; the access token is only kept in memory.
+   - `import_job_log(id, job_id, at, level, message)` — `level` ∈ `INFO`, `WARN`, `ERROR`.
+5. **Origin of an issue.** `issue.origin_source_id`, `origin_key` (e.g. `forgejo/website#12`)
+   and `origin_url`. Imported issues get new numbers; the origin is shown on the issue and
+   recorded in its history as field `import` (value = original URL, text = e.g.
+   "Forgejo forgejo/website#12").
+6. **External links.** `issue_remote_link(id, issue_id, url, title, relation, created_at)` —
+   `relation` ∈ `PULL_REQUEST`, `OTHER`; unique `(issue_id, url)`. Recorded in history as
+   field `remotelink`.
+7. **No notifications.** Importers write history with `IssueHistory.record`, which does not
+   create outbox events, so nobody is mailed about imported issues.
 
 ## 9. Search (PostgreSQL only)
 

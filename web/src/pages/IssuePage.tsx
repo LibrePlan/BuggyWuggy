@@ -21,7 +21,7 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { IconDots, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconDots, IconExternalLink, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -209,6 +209,24 @@ function IssueView({ issue }: { issue: IssueResponse }) {
 
             <IssueLinks issueKey={issue.key} canLink={permissions.has('LINK_ISSUE')} />
 
+            {issue.remoteLinks.length > 0 && (
+              <Section title={t('issue.remoteLinks')}>
+                <Stack gap={4}>
+                  {issue.remoteLinks.map((link) => (
+                    <Group key={link.id} gap={6} wrap="nowrap">
+                      <IconExternalLink size={14} />
+                      <Text size="xs" c="dimmed" w={110}>
+                        {t(`issue.remoteLink.${link.relation}`)}
+                      </Text>
+                      <Anchor href={link.url} target="_blank" rel="noopener noreferrer" size="sm" lineClamp={1}>
+                        {link.title}
+                      </Anchor>
+                    </Group>
+                  ))}
+                </Stack>
+              </Section>
+            )}
+
             <Tabs defaultValue="comments" keepMounted={false}>
               <Tabs.List>
                 <Tabs.Tab value="comments">{t('comment.title')}</Tabs.Tab>
@@ -301,6 +319,20 @@ function IssueView({ issue }: { issue: IssueResponse }) {
               {issue.resolvedAt && (
                 <Field label={t('issue.resolved')}>
                   <Text size="sm">{formatDateTime(issue.resolvedAt, i18n.language)}</Text>
+                </Field>
+              )}
+              {issue.origin && (
+                <Field label={t('issue.origin')}>
+                  {issue.origin.url ? (
+                    <Anchor href={issue.origin.url} target="_blank" rel="noopener noreferrer" size="sm">
+                      {t('issue.originValue', {
+                        source: t(`issue.originKind.${issue.origin.kind}`, { defaultValue: issue.origin.kind }),
+                        key: issue.origin.key,
+                      })}
+                    </Anchor>
+                  ) : (
+                    <Text size="sm">{issue.origin.key}</Text>
+                  )}
                 </Field>
               )}
             </Stack>

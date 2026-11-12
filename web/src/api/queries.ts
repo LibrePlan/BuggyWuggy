@@ -11,6 +11,7 @@ import type {
   AttachmentSettings,
   CommentResponse,
   FilterResponse,
+  ImportJob,
   FailedMail,
   GlobalPermissionResponse,
   LanguageResponse,
@@ -76,6 +77,8 @@ export const keys = {
   failedMails: ['admin', 'mail', 'failed'] as const,
   mailTemplates: ['admin', 'mail', 'templates'] as const,
   mailTemplate: (key: string, language: string) => ['admin', 'mail', 'templates', key, language] as const,
+  importJobs: ['admin', 'import', 'jobs'] as const,
+  importJob: (id: number) => ['admin', 'import', 'jobs', id] as const,
   search: (query: IssueQuery, page: number, size: number) => ['search', query, page, size] as const,
   allSearches: ['search'] as const,
   filters: ['filters'] as const,
@@ -415,5 +418,24 @@ export function useMailTemplate(key: string, language: string) {
   return useQuery({
     queryKey: keys.mailTemplate(key, language),
     queryFn: () => get<TemplateResponse>(`/api/v1/admin/mail/templates/${seg(key)}/${seg(language)}`),
+  });
+}
+
+// --- import ---------------------------------------------------------------------------
+
+/** Refreshes every few seconds while an import runs. */
+export function useImportJobs() {
+  return useQuery({
+    queryKey: keys.importJobs,
+    queryFn: () => get<ImportJob[]>('/api/v1/admin/import/jobs'),
+    refetchInterval: (query) => (query.state.data?.some((j) => j.status === 'RUNNING') ? 3000 : false),
+  });
+}
+
+export function useImportJob(id: number) {
+  return useQuery({
+    queryKey: keys.importJob(id),
+    queryFn: () => get<ImportJob>(`/api/v1/admin/import/jobs/${id}`),
+    refetchInterval: (query) => (query.state.data?.status === 'RUNNING' ? 1500 : false),
   });
 }

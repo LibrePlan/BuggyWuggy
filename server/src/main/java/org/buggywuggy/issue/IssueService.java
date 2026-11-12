@@ -557,6 +557,7 @@ public class IssueService {
                 fields.labels(id), fields.components(id),
                 fields.versions(id, VersionKind.AFFECTS), fields.versions(id, VersionKind.FIX),
                 i.getDueDate(), parent, children,
-                i.getCreatedAt(), i.getUpdatedAt(), i.getResolvedAt(), i.getVersion());
+                i.getCreatedAt(), i.getUpdatedAt(), i.getResolvedAt(), i.getVersion(),
+                fields.origin(id), fields.remoteLinks(id));
     }
 }
