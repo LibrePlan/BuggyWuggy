@@ -311,7 +311,7 @@
       "sendTest": "Send test mail",
       "testSent": "A test mail has been sent to your e-mail address.",
       "notConfigured": "Sending mail is not configured",
-      "notConfiguredHelp": "Set buggywuggy.mail.host and the other mail settings in the configuration file and restart BuggyWuggy. See the Installation Guide.",
+      "notConfiguredHelp": "Set buggywuggy.mail.host and the other mail settings in the configuration file (usually /etc/buggywuggy/application.yml) and restart BuggyWuggy. See the Installation Guide.",
       "server": "Server",
       "none": "—",
       "from": "Sender",
