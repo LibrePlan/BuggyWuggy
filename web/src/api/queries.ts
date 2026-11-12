@@ -11,7 +11,12 @@ import type {
   AttachmentSettings,
   CommentResponse,
   FilterResponse,
+  FailedMail,
   GlobalPermissionResponse,
+  LanguageResponse,
+  MailStatus,
+  TemplateResponse,
+  TemplateSummary,
   GroupPage,
   GroupRef,
   GroupResponse,
@@ -65,6 +70,12 @@ export const keys = {
   adminGroup: (id: number) => ['admin', 'group', id] as const,
   groupMembers: (id: number, page: number) => ['admin', 'group', id, 'members', page] as const,
   globalPermissions: ['admin', 'global-permissions'] as const,
+  languages: ['languages'] as const,
+  adminLanguages: ['admin', 'languages'] as const,
+  mailStatus: ['admin', 'mail', 'status'] as const,
+  failedMails: ['admin', 'mail', 'failed'] as const,
+  mailTemplates: ['admin', 'mail', 'templates'] as const,
+  mailTemplate: (key: string, language: string) => ['admin', 'mail', 'templates', key, language] as const,
   search: (query: IssueQuery, page: number, size: number) => ['search', query, page, size] as const,
   allSearches: ['search'] as const,
   filters: ['filters'] as const,
@@ -367,5 +378,42 @@ export function useGlobalPermissions() {
   return useQuery({
     queryKey: keys.globalPermissions,
     queryFn: () => get<GlobalPermissionResponse[]>('/api/v1/admin/global-permissions'),
+  });
+}
+
+// --- languages and mail ---------------------------------------------------------------
+
+/** Enabled languages, e.g. for the profile. */
+export function useLanguages() {
+  return useQuery({
+    queryKey: keys.languages,
+    queryFn: () => get<LanguageResponse[]>('/api/v1/languages'),
+    staleTime: LOOKUP_STALE,
+  });
+}
+
+export function useAdminLanguages() {
+  return useQuery({ queryKey: keys.adminLanguages, queryFn: () => get<LanguageResponse[]>('/api/v1/admin/languages') });
+}
+
+export function useMailStatus() {
+  return useQuery({ queryKey: keys.mailStatus, queryFn: () => get<MailStatus>('/api/v1/admin/mail/status') });
+}
+
+export function useFailedMails() {
+  return useQuery({ queryKey: keys.failedMails, queryFn: () => get<FailedMail[]>('/api/v1/admin/mail/failed') });
+}
+
+export function useMailTemplates() {
+  return useQuery({
+    queryKey: keys.mailTemplates,
+    queryFn: () => get<TemplateSummary[]>('/api/v1/admin/mail/templates'),
+  });
+}
+
+export function useMailTemplate(key: string, language: string) {
+  return useQuery({
+    queryKey: keys.mailTemplate(key, language),
+    queryFn: () => get<TemplateResponse>(`/api/v1/admin/mail/templates/${seg(key)}/${seg(language)}`),
   });
 }

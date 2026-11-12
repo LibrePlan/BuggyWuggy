@@ -8,7 +8,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router';
 import { useMyself } from '../../api/queries';
 import { NotFoundPage } from '../NotFoundPage';
 
-const SECTIONS = ['users', 'groups', 'permissions'] as const;
+const SECTIONS = ['users', 'groups', 'permissions', 'email'] as const;
 
 /** Frame of the administration pages; only for users with the ADMINISTER permission. */
 export function AdminLayout() {

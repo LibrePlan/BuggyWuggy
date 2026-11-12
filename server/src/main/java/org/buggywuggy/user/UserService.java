@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.List;
 import org.buggywuggy.common.PageResponse;
 import org.buggywuggy.common.SqlLike;
+import org.buggywuggy.notification.NotificationPreferences;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
 import org.buggywuggy.security.SessionInvalidator;
 import org.buggywuggy.user.UserDtos.CreateUserRequest;
@@ -34,6 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class UserService {
 
+    private final NotificationPreferences notifications;
+
     private final UserAccountRepository users;
     private final UserGroupRepository groups;
     private final PasswordEncoder passwordEncoder;
@@ -41,7 +44,8 @@ public class UserService {
     private final Clock clock;
 
     public UserService(UserAccountRepository users, UserGroupRepository groups, PasswordEncoder passwordEncoder,
-            SessionInvalidator sessions, Clock clock) {
+            SessionInvalidator sessions, Clock clock, NotificationPreferences notifications) {
+        this.notifications = notifications;
         this.users = users;
         this.groups = groups;
         this.passwordEncoder = passwordEncoder;
@@ -171,6 +175,7 @@ public class UserService {
         if (request.timeZone() != null) {
             user.setTimeZone(validTimeZone(request.timeZone()));
         }
+        notifications.set(user.getId(), request.emailNotifications(), request.notifyOwnChanges());
         return toMyself(user, principal);
     }
 
@@ -239,8 +244,10 @@ public class UserService {
         return value.isBlank() ? null : value.trim();
     }
 
-    private static MyselfResponse toMyself(UserAccount u, BuggyWuggyPrincipal principal) {
+    private MyselfResponse toMyself(UserAccount u, BuggyWuggyPrincipal principal) {
+        var prefs = notifications.of(u.getId());
         return new MyselfResponse(u.getId(), u.getUsername(), u.getDisplayName(), u.getEmail(), u.isSystemAdmin(),
-                u.getLocale(), u.getTimeZone(), principal.globalPermissions());
+                u.getLocale(), u.getTimeZone(), principal.globalPermissions(), prefs.notifications(),
+                prefs.ownChanges());
     }
 }

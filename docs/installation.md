@@ -13,6 +13,7 @@ This guide explains how to install, configure, run, back up and upgrade a BuggyW
 3. [Preparing the database](#preparing-the-database)
 4. [Building BuggyWuggy](#building-buggywuggy)
 5. [Configuration](#configuration)
+   - [E-mail](#e-mail)
 6. [Running BuggyWuggy](#running-buggywuggy)
 7. [First-time setup](#first-time-setup)
 8. [Running as a service (systemd)](#running-as-a-service-systemd)
@@ -121,6 +122,67 @@ given as an environment variable. One that is useful behind a reverse proxy:
 Login protection is built in: after 5 failed login attempts for the same username from the
 same address, further attempts are refused for 15 minutes.
 
+### Configuration file
+
+Instead of environment variables you can use a configuration file in YAML. Every setting has
+a name in the file; environment variables, when set, take precedence. Point BuggyWuggy to the
+file with:
+
+```sh
+java -jar buggywuggy.jar --spring.config.additional-location=file:/etc/buggywuggy/application.yml
+```
+
+or with the environment variable
+`SPRING_CONFIG_ADDITIONAL_LOCATION=file:/etc/buggywuggy/application.yml`. Example:
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/buggywuggy
+    username: buggywuggy
+    password: choose-a-strong-password
+buggywuggy:
+  data-dir: /var/lib/buggywuggy
+  base-url: https://bugs.example.org
+  mail:
+    host: smtp.example.org
+    port: 587
+    username: bugs@example.org
+    password: the-mail-password
+    security: starttls
+    from: "BuggyWuggy <bugs@example.org>"
+```
+
+The file contains passwords: make it readable only for root and the `buggywuggy` group
+(`chmod 640`, `chown root:buggywuggy`).
+
+### E-mail
+
+BuggyWuggy sends e-mail notifications about issues (see the
+[User Guide](user-guide.md#e-mail-notifications)). Without `buggywuggy.mail.host`, no mail is
+sent. The settings, in the configuration file or as environment variables:
+
+| Setting | Environment variable | Default | Description |
+|---|---|---|---|
+| `buggywuggy.base-url` | `BUGGYWUGGY_BASE_URL` | `http://localhost:8080` | The address users open BuggyWuggy at. Links in mails point here. **Set this when you use mail.** |
+| `buggywuggy.mail.host` | `BUGGYWUGGY_MAIL_HOST` | *(empty: no mail)* | SMTP server. |
+| `buggywuggy.mail.port` | `BUGGYWUGGY_MAIL_PORT` | `587` | SMTP port: usually 587 with `starttls`, 465 with `ssl`, 25 for a local relay. |
+| `buggywuggy.mail.security` | `BUGGYWUGGY_MAIL_SECURITY` | `starttls` | `starttls` (required, not optional), `ssl` or `none`. |
+| `buggywuggy.mail.username` | `BUGGYWUGGY_MAIL_USERNAME` | *(empty: no login)* | SMTP login. |
+| `buggywuggy.mail.password` | `BUGGYWUGGY_MAIL_PASSWORD` | | SMTP password. |
+| `buggywuggy.mail.from` | `BUGGYWUGGY_MAIL_FROM` | `BuggyWuggy <buggywuggy@localhost>` | Sender of the mails. Many mail servers only accept their own addresses here. |
+| `buggywuggy.mail.quiet-period` | | `60s` | Changes by one person to one issue are combined into one mail once nothing happened for this long… |
+| `buggywuggy.mail.max-delay` | | `5m` | …but a mail is never held back longer than this. |
+| `buggywuggy.mail.max-attempts` | | `8` | Attempts to send a mail before it counts as failed. The waiting time doubles after each attempt (1, 2, 4 … minutes, at most an hour). |
+| `buggywuggy.mail.retention` | | `30d` | Sent and failed mails are kept this long, then removed. |
+
+Mails are first stored in the database and then sent by a background job, so a mail server
+that is down does not slow BuggyWuggy down, and no mail is lost by a restart. Several
+BuggyWuggy instances can share one database; each mail is sent once.
+
+After changing the settings, restart BuggyWuggy and use **Send test mail** on the
+**Administration → E-mail** page.
+
 ## Running BuggyWuggy
 
 ```sh
@@ -172,6 +234,13 @@ sudo install -d -m 750 -o buggywuggy -g buggywuggy /var/lib/buggywuggy
 sudo install -m 600 -o root -g root /dev/null /etc/buggywuggy.env
 ```
 
+For mail settings, also create a [configuration file](#configuration-file):
+
+```sh
+sudo install -d -m 750 -o root -g buggywuggy /etc/buggywuggy
+sudo install -m 640 -o root -g buggywuggy /dev/null /etc/buggywuggy/application.yml
+```
+
 `/etc/buggywuggy.env`:
 
 ```sh
@@ -181,7 +250,9 @@ BUGGYWUGGY_DB_PASSWORD=choose-a-strong-password
 BUGGYWUGGY_PORT=8080
 BUGGYWUGGY_SECURE_COOKIES=true
 BUGGYWUGGY_DATA_DIR=/var/lib/buggywuggy
+BUGGYWUGGY_BASE_URL=https://bugs.example.org
 SERVER_FORWARD_HEADERS_STRATEGY=framework
+SPRING_CONFIG_ADDITIONAL_LOCATION=file:/etc/buggywuggy/application.yml
 ```
 
 `/etc/systemd/system/buggywuggy.service`:
@@ -261,7 +332,7 @@ it under a sub-path such as `https://example.org/bugs/` is not supported yet.
 ## Administration
 
 Users with the global permission *Administer BuggyWuggy* (by default the group
-`administrators`) see **Administration** in the top bar. It has three pages:
+`administrators`) see **Administration** in the top bar. It has four pages:
 
 - **Users**: find, create and edit users. On a user's page you can change the name and
   e-mail, deactivate the account, set a new password and change group memberships. Only
@@ -274,6 +345,34 @@ Users with the global permission *Administer BuggyWuggy* (by default the group
   `administrators` and `users` cannot be renamed or deleted.
 - **Global permissions**: which groups may administer BuggyWuggy, create projects and browse
   users.
+- **E-mail**: the mail server status with **Send test mail**, the mail templates, the
+  languages mails are available in, and mails that could not be sent.
+
+### Mail templates
+
+Every mail BuggyWuggy sends has a template per language, which administrators can change on
+**Administration → E-mail**: issue created, updated, assigned, status changed, comment added,
+attachment added, issue deleted, and the test mail. BuggyWuggy comes with templates in English
+and Dutch. Users get mails in the language of their profile; when that language is not
+enabled, or has no template, the default language is used.
+
+A template has a subject and a body in HTML. **Keywords** between double braces, such as
+`{{issue.key}}` or `{{recipient.name}}`, are replaced by information about the issue and the
+recipient. The box next to the editor lists the keywords of the template with an
+explanation, in your own language (choose it in your profile); click one to insert it.
+
+- Values of keywords are inserted as text: HTML in an issue summary is shown, never executed.
+- *Block* keywords, such as `{{changes}}` (a table of what changed) and `{{comments}}`, insert
+  ready-made HTML and can only be used in the body.
+- Unknown keywords and unclosed braces are reported with their line number when you save.
+- Scripts, forms, event handlers and style sheets are removed from the HTML; use `style`
+  attributes for layout. The plain-text part of the mail is made from the HTML automatically.
+- **Preview** shows the mail with sample data, **Send test to me** sends it to your own
+  address, and **Reset to default** brings back the built-in template.
+
+Several changes by one person to one issue within about a minute are sent as one mail. Its
+template is chosen by the most important change: a new issue, then a comment, a status
+change, an assignment, and otherwise *issue updated*.
 
 Project settings (details, components, versions and people in roles) are on each project's
 **Project settings** page; see the [User Guide](user-guide.md#project-settings). Archiving,
@@ -388,6 +487,13 @@ PostgreSQL accepts connections from this host (`pg_hba.conf`).
 **"permission denied to create extension pg_trgm".**
 Enable the extension once as a superuser (see [Preparing the database](#preparing-the-database))
 and start again.
+
+**No e-mails arrive.**
+Open **Administration → E-mail**. If it says that sending mail is not configured, set
+`buggywuggy.mail.host` and restart. Otherwise use **Send test mail**: an error message from the
+mail server is shown right away. Mails that failed repeatedly are listed with their error and
+can be sent again. Also check that users have an e-mail address, did not turn notifications
+off in their profile, and remember that mails are combined and sent after a minute of quiet.
 
 **I lost the setup token.**
 Restart BuggyWuggy. As long as no administrator has been created, a new token is written to the

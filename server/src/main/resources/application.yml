@@ -39,6 +39,22 @@ server:
 buggywuggy:
   # Where BuggyWuggy keeps files (attachments). Back it up together with the database.
   data-dir: ${BUGGYWUGGY_DATA_DIR:data}
+  # The address users open BuggyWuggy at; used for links in e-mails.
+  base-url: ${BUGGYWUGGY_BASE_URL:http://localhost:8080}
+  # E-mail notifications. Without a host, no mail is sent.
+  mail:
+    host: ${BUGGYWUGGY_MAIL_HOST:}
+    port: ${BUGGYWUGGY_MAIL_PORT:587}
+    username: ${BUGGYWUGGY_MAIL_USERNAME:}
+    password: ${BUGGYWUGGY_MAIL_PASSWORD:}
+    security: ${BUGGYWUGGY_MAIL_SECURITY:starttls}  # starttls, ssl or none
+    from: ${BUGGYWUGGY_MAIL_FROM:BuggyWuggy <buggywuggy@localhost>}
+    # Changes by one person to one issue are bundled into one mail once nothing happened for
+    # quiet-period, but are never held back longer than max-delay.
+    quiet-period: 60s
+    max-delay: 5m
+    max-attempts: 8
+    retention: 30d
   setup:
     # Optional fixed setup token (e.g. for automated installs). When empty, a random
     # token is generated and written to the log at startup while setup is required.

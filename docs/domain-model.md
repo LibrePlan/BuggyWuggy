@@ -330,10 +330,28 @@ Indexes are maintained transactionally by PostgreSQL; no re-indexing is ever nee
   Filter names are unique per owner (case-insensitive). Only the owner changes a filter; global
   administrators may also delete it.
   *(later)* a text query language stored alongside.
-- `outbox_event(id, event_type, payload jsonb, created_at, processed_at, attempts, last_error)` —
-  transactional outbox. Domain events (issue created, updated, commented, …) are written in the same
-  transaction; a background worker sends e-mails from them. Later also webhooks.
-- `user_preference(user_id, key, value)` — e.g. e-mail notification opt-outs.
+- `outbox_event(id, event_type, payload jsonb, created_at, processed_at, attempts, last_error,
+  issue_id, actor_id)` — transactional outbox. Issue events are written in the same transaction as
+  the change: `issue.created`, `issue.changed` (payload: the change items, written wherever history
+  is saved), `issue.commented` (comment id) and `issue.deleted` (a snapshot of the issue and the
+  recipients, since the issue is gone afterwards). `issue_id` / `actor_id` have no foreign keys.
+  The notification dispatcher claims events with `FOR UPDATE SKIP LOCKED`, bundles them per
+  (issue, actor) until `quiet-period` passed since the last one (at most `max-delay` after the
+  first), and writes one mail per recipient. *(later)* webhooks as a second consumer, with their
+  own processed marker.
+- `mail_message(id, recipient_id, to_address, subject, html_body, text_body, status, attempts,
+  next_attempt_at, last_error, created_at, sent_at)` — rendered mails; `status` ∈ `PENDING`,
+  `SENT`, `FAILED`. Sent with exponential backoff; removed after `retention`.
+- `language(code, name, enabled, is_default)` — languages mails are available in; seeded `en`
+  (default) and `nl`. Exactly one default, which is always enabled. A user's `locale` is mapped
+  to an enabled language (exact, then base language, then the default).
+- `mail_template(template_key, language_code, subject, body, updated_at, updated_by)` — templates
+  changed by administrators; without a row the built-in file `mail-templates/<lang>/<key>.html`
+  is used (fallback: default language, then English). Bodies are HTML with `{{keyword}}`
+  placeholders, replaced without any template logic; values are HTML-escaped, the result is
+  cleaned with a jsoup safelist, and a plain-text part is derived from it.
+- `user_preference(user_id, key, value)` — `mail.notifications` (default `true`) and
+  `mail.own-changes` (default `false`).
 - `application_setting(key, value jsonb)` — base URL, mail settings, installation defaults.
 
 ## 11. Planned later (designed for, not built)

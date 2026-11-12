@@ -42,7 +42,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     ResponseEntity<ProblemDetail> handleApiException(ApiException ex) {
-        return ResponseEntity.status(ex.status()).body(problem(ex.status(), ex.messageKey(), ex.args()));
+        ProblemDetail body = problem(ex.status(), ex.messageKey(), ex.args());
+        if (!ex.fieldErrors().isEmpty()) {
+            body.setProperty("errors", ex.fieldErrors());
+        }
+        return ResponseEntity.status(ex.status()).body(body);
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)

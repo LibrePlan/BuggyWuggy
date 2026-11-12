@@ -100,6 +100,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/mail/templates/{key}/{language}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["template"];
+        put: operations["save"];
+        post?: never;
+        delete: operations["reset"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/groups/{id}/members/{userId}": {
         parameters: {
             query?: never;
@@ -340,6 +356,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/mail/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sendTest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mail/templates/{key}/{language}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["testTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mail/templates/{key}/{language}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mail/failed/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["retry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/languages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["all"];
+        put?: never;
+        post: operations["create_5"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/groups": {
         parameters: {
             query?: never;
@@ -349,7 +445,7 @@ export interface paths {
         };
         get: operations["list_5"];
         put?: never;
-        post: operations["create_5"];
+        post: operations["create_6"];
         delete?: never;
         options?: never;
         head?: never;
@@ -484,6 +580,22 @@ export interface paths {
         patch: operations["update_5"];
         trace?: never;
     };
+    "/api/v1/admin/languages/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["delete_4"];
+        options?: never;
+        head?: never;
+        patch: operations["update_6"];
+        trace?: never;
+    };
     "/api/v1/admin/groups/{id}": {
         parameters: {
             query?: never;
@@ -494,10 +606,10 @@ export interface paths {
         get: operations["get_4"];
         put?: never;
         post?: never;
-        delete: operations["delete_4"];
+        delete: operations["delete_5"];
         options?: never;
         head?: never;
-        patch: operations["update_6"];
+        patch: operations["update_7"];
         trace?: never;
     };
     "/api/v1/users/picker": {
@@ -660,6 +772,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/languages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["enabled"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/labels": {
         parameters: {
             query?: never;
@@ -804,6 +932,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/mail/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["templates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mail/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["status_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mail/failed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["failed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/groups/{id}/members": {
         parameters: {
             query?: never;
@@ -862,7 +1038,23 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete: operations["delete_5"];
+        delete: operations["delete_6"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mail/failed/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["discard"];
         options?: never;
         head?: never;
         patch?: never;
@@ -907,6 +1099,36 @@ export interface components {
         };
         SetPasswordRequest: {
             password: string;
+        };
+        TemplateRequest: {
+            subject: string;
+            body: string;
+        };
+        KeywordHelp: {
+            title: string;
+            intro: string;
+            insert: string;
+            block: string;
+            html: string;
+        };
+        KeywordInfo: {
+            name: string;
+            description: string;
+            block: boolean;
+        };
+        TemplateResponse: {
+            key: string;
+            name: string;
+            description: string;
+            language: string;
+            subject: string;
+            body: string;
+            customized: boolean;
+            /** Format: date-time */
+            updatedAt: string | null;
+            updatedBy: components["schemas"]["UserRef"] | null;
+            keywords: components["schemas"]["KeywordInfo"][];
+            help: components["schemas"]["KeywordHelp"];
         };
         SetupRequest: {
             setupToken: string;
@@ -1246,6 +1468,8 @@ export interface components {
             locale: string | null;
             timeZone: string | null;
             globalPermissions: string[];
+            emailNotifications: boolean;
+            notifyOwnChanges: boolean;
         };
         CreateUserRequest: {
             username: string;
@@ -1254,6 +1478,28 @@ export interface components {
             email: string;
             password: string;
             systemAdmin?: boolean;
+        };
+        PreviewResponse: {
+            subject: string;
+            html: string;
+            text: string;
+            problems: components["schemas"]["ProblemInfo"][];
+        };
+        ProblemInfo: {
+            field: string;
+            /** Format: int32 */
+            line: number;
+            message: string;
+        };
+        CreateLanguageRequest: {
+            code: string;
+            name: string;
+        };
+        LanguageResponse: {
+            code: string;
+            name: string;
+            enabled: boolean;
+            isDefault: boolean;
         };
         CreateGroupRequest: {
             name: string;
@@ -1305,6 +1551,8 @@ export interface components {
             email?: string;
             locale?: string;
             timeZone?: string;
+            emailNotifications?: boolean;
+            notifyOwnChanges?: boolean;
         };
         UpdateIssueRequest: {
             /** Format: int64 */
@@ -1352,6 +1600,11 @@ export interface components {
             systemAdmin?: boolean;
             locale?: string;
             timeZone?: string;
+        };
+        UpdateLanguageRequest: {
+            name?: string;
+            enabled?: boolean;
+            isDefault?: boolean;
         };
         UpdateGroupRequest: {
             name?: string;
@@ -1464,6 +1717,47 @@ export interface components {
             size: number;
             /** Format: int64 */
             total: number;
+        };
+        TemplateLanguageState: {
+            language: string;
+            customized: boolean;
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        TemplateSummary: {
+            key: string;
+            name: string;
+            description: string;
+            languages: components["schemas"]["TemplateLanguageState"][];
+        };
+        MailStatus: {
+            configured: boolean;
+            host: string | null;
+            /** Format: int32 */
+            port: number;
+            security: string;
+            from: string;
+            baseUrl: string;
+            outbox: components["schemas"]["OutboxStatus"];
+        };
+        OutboxStatus: {
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            failed: number;
+            /** Format: int64 */
+            sentLastDay: number;
+        };
+        FailedMail: {
+            /** Format: int64 */
+            id: number;
+            toAddress: string;
+            subject: string;
+            /** Format: int32 */
+            attempts: number;
+            lastError: string | null;
+            /** Format: date-time */
+            createdAt: string;
         };
         PageResponseGroupResponse: {
             items: components["schemas"]["GroupResponse"][];
@@ -1690,6 +1984,79 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    template: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                language: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TemplateResponse"];
+                };
+            };
+        };
+    };
+    save: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                language: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TemplateResponse"];
+                };
+            };
+        };
+    };
+    reset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                language: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TemplateResponse"];
+                };
             };
         };
     };
@@ -2307,6 +2674,140 @@ export interface operations {
             };
         };
     };
+    sendTest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    testTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                language: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+                language: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PreviewResponse"];
+                };
+            };
+        };
+    };
+    retry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    all: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LanguageResponse"][];
+                };
+            };
+        };
+    };
+    create_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLanguageRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LanguageResponse"];
+                };
+            };
+        };
+    };
     list_5: {
         parameters: {
             query?: {
@@ -2331,7 +2832,7 @@ export interface operations {
             };
         };
     };
-    create_5: {
+    create_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -2795,6 +3296,52 @@ export interface operations {
             };
         };
     };
+    delete_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_6: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLanguageRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LanguageResponse"];
+                };
+            };
+        };
+    };
     get_4: {
         parameters: {
             query?: never;
@@ -2817,7 +3364,7 @@ export interface operations {
             };
         };
     };
-    delete_4: {
+    delete_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -2837,7 +3384,7 @@ export interface operations {
             };
         };
     };
-    update_6: {
+    update_7: {
         parameters: {
             query?: never;
             header?: never;
@@ -3081,6 +3628,26 @@ export interface operations {
             };
         };
     };
+    enabled: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LanguageResponse"][];
+                };
+            };
+        };
+    };
     labels: {
         parameters: {
             query?: {
@@ -3275,6 +3842,66 @@ export interface operations {
             };
         };
     };
+    templates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TemplateSummary"][];
+                };
+            };
+        };
+    };
+    status_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MailStatus"];
+                };
+            };
+        };
+    };
+    failed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FailedMail"][];
+                };
+            };
+        };
+    };
     members_1: {
         parameters: {
             query?: {
@@ -3341,13 +3968,33 @@ export interface operations {
             };
         };
     };
-    delete_5: {
+    delete_6: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 idOrKey: string;
                 attachmentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    discard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
             };
             cookie?: never;
         };

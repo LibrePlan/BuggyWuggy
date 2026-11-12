@@ -51,4 +51,9 @@ public class ApiException extends RuntimeException {
     public Object[] args() {
         return args;
     }
+
+    /** Errors per field ({@code field}, {@code message}), answered as the {@code errors} property. */
+    public java.util.List<java.util.Map<String, String>> fieldErrors() {
+        return java.util.List.of();
+    }
 }

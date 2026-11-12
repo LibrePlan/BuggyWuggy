@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.buggywuggy.notification.IssueEvents;
 import org.buggywuggy.user.UserDtos.UserRef;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Component;
 /**
  * Append-only change history of issues ({@code change_group} / {@code change_item}).
  * Each item has a machine value (e.g. an id) and a human-readable text as it was at the time.
+ * Every saved change is also recorded as an {@link IssueEvents#CHANGED} event for notifications.
  */
 @Component
 public class IssueHistory {
@@ -78,9 +80,11 @@ public class IssueHistory {
     }
 
     private final NamedParameterJdbcTemplate jdbc;
+    private final IssueEvents events;
 
-    public IssueHistory(NamedParameterJdbcTemplate jdbc) {
+    public IssueHistory(NamedParameterJdbcTemplate jdbc, IssueEvents events) {
         this.jdbc = jdbc;
+        this.events = events;
     }
 
     public void save(long issueId, Long authorId, Instant at, Changes changes) {
@@ -101,6 +105,7 @@ public class IssueHistory {
         jdbc.batchUpdate("""
                 insert into change_item (change_group_id, field_key, old_value, old_text, new_value, new_text)
                 values (:group, :field, :from, :fromText, :to, :toText)""", batch);
+        events.changed(issueId, authorId, at, changes.items());
     }
 
     /** The history of an issue, oldest first. */

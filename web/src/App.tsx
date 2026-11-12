@@ -14,6 +14,8 @@ import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminUserPage } from './pages/admin/AdminUserPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { GlobalPermissionsPage } from './pages/admin/GlobalPermissionsPage';
+import { MailSettingsPage } from './pages/admin/MailSettingsPage';
+import { MailTemplatePage } from './pages/admin/MailTemplatePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ProjectPage } from './pages/ProjectPage';
@@ -47,6 +49,8 @@ export const router = createBrowserRouter([
               { path: 'groups', element: <AdminGroupsPage /> },
               { path: 'groups/:groupId', element: <AdminGroupPage /> },
               { path: 'permissions', element: <GlobalPermissionsPage /> },
+              { path: 'email', element: <MailSettingsPage /> },
+              { path: 'email/templates/:templateKey/:language', element: <MailTemplatePage /> },
             ],
           },
           { path: '/browse/:issueKey', element: <IssuePage /> },

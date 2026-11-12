@@ -23,9 +23,10 @@ tasks and other work. If you have used Jira, most of it will feel familiar.
 13. [Searching for issues](#searching-for-issues)
 14. [Saved filters](#saved-filters)
 15. [Your profile](#your-profile)
-16. [Project settings](#project-settings)
-17. [Permissions: why can't I…?](#permissions-why-cant-i)
-18. [Not available yet](#not-available-yet)
+16. [E-mail notifications](#e-mail-notifications)
+17. [Project settings](#project-settings)
+18. [Permissions: why can't I…?](#permissions-why-cant-i)
+19. [Not available yet](#not-available-yet)
 
 ## Concepts
 
@@ -262,8 +263,7 @@ the button shows their names.
 You automatically watch issues you create, issues you are the reporter of, and issues you
 comment on.
 
-> E-mail notifications for watched issues are not available yet; see
-> [Not available yet](#not-available-yet).
+Watchers get [e-mail notifications](#e-mail-notifications) about changes.
 
 ## Searching for issues
 
@@ -317,12 +317,36 @@ such as *My open issues* therefore works for everybody.
 Choose **Profile** in the menu under your name to change:
 
 - your **full name** and **e-mail address**;
-- your **time zone**, for e-mail notifications once they are available (the web interface
-  shows times in the time zone of your browser);
+- your **language**: the language of the e-mails you get (the web interface itself is in
+  English for now);
+- your **time zone** (stored for later use; the web interface shows times in the time zone
+  of your browser);
+- your **e-mail notifications**: see below;
 - your **password**: enter the current one and the new one (at least 12 characters) twice.
   You stay logged in in this browser; your other sessions are logged out.
 
 Your username cannot be changed.
+
+## E-mail notifications
+
+BuggyWuggy mails you when something happens to an issue that you **watch**, **reported** or are
+**assigned** to: when it is created, changed, assigned, moves to another status, gets a comment
+or an attachment, or is deleted. When an issue is assigned to someone else, the previous
+assignee gets a mail too.
+
+- **One mail per burst of changes.** When someone makes several changes to an issue in a short
+  time, for example edits it and then comments, you get one mail with all of them, about a
+  minute after the last change.
+- **Not about your own changes**, unless you turn on *Also about my own changes* in your
+  profile.
+- **Only what you may see.** If you lose access to a project, you no longer get mails about
+  its issues.
+- **Turning mails off:** in your [profile](#your-profile), turn off *Mail me about issues*.
+  Every mail has a link to your profile. To stop mails about one issue only, choose **Stop
+  watching** on that issue.
+
+Mails are in the language of your profile. Administrators can change the text of the mails;
+see the [Installation Guide](installation.md#mail-templates).
 
 ## Project settings
 
@@ -374,9 +398,8 @@ A project or issue you have no access to looks exactly like one that does not ex
 
 These features are planned but not available in the current version:
 
-- E-mail notifications
 - Formatted text (Markdown) in descriptions and comments
 - Boards (Kanban/Scrum), dashboards and reports
 - A text query language like Jira's JQL
 - Importing data from Jira
-- Other languages than English
+- The web interface in other languages than English (e-mails are available in English and Dutch)

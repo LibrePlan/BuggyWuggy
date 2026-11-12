@@ -50,7 +50,9 @@ public final class UserDtos {
             @Size(min = 1, max = 255) String displayName,
             @Email @Size(min = 3, max = 255) String email,
             @Pattern(regexp = LOCALE_PATTERN, message = "{validation.locale.pattern}") String locale,
-            @Size(max = 64) String timeZone) {
+            @Size(max = 64) String timeZone,
+            Boolean emailNotifications,
+            Boolean notifyOwnChanges) {
     }
 
     public record SetPasswordRequest(
@@ -91,6 +93,7 @@ public final class UserDtos {
     /** The logged-in user, including the global permissions of the current session. */
     public record MyselfResponse(
             long id, String username, String displayName, @ApiNullable String email, boolean systemAdmin,
-            @ApiNullable String locale, @ApiNullable String timeZone, Set<String> globalPermissions) {
+            @ApiNullable String locale, @ApiNullable String timeZone, Set<String> globalPermissions,
+            boolean emailNotifications, boolean notifyOwnChanges) {
     }
 }

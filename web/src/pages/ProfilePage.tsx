@@ -2,13 +2,13 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Button, Grid, Group, PasswordInput, Select, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Button, Grid, Group, PasswordInput, Select, Stack, Switch, Text, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { patch, put } from '../api/client';
-import { keys, useMyself } from '../api/queries';
+import { keys, useLanguages, useMyself } from '../api/queries';
 import type { MyselfResponse, UpdateMyselfRequest } from '../api/types';
 import { PageLoader } from '../components/QueryState';
 import { ApiError, fieldErrorMap } from '../lib/apiError';
@@ -24,7 +24,10 @@ export function ProfilePage() {
       <Title order={2}>{t('profile.title')}</Title>
       <Grid gap="xl">
         <Grid.Col span={{ base: 12, md: 6 }}>
-          <ProfileForm myself={myself} />
+          <Stack gap="xl">
+            <ProfileForm myself={myself} />
+            <NotificationSettings myself={myself} />
+          </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 6 }}>
           <PasswordForm />
@@ -47,7 +50,13 @@ function ProfileForm({ myself }: { myself: MyselfResponse }) {
   const queryClient = useQueryClient();
   const zones = useMemo(timeZones, []);
   const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const valuesOf = (m: MyselfResponse) => ({ displayName: m.displayName, email: m.email ?? '', timeZone: m.timeZone ?? '' });
+  const languages = useLanguages().data ?? [];
+  const valuesOf = (m: MyselfResponse) => ({
+    displayName: m.displayName,
+    email: m.email ?? '',
+    timeZone: m.timeZone ?? '',
+    locale: m.locale ?? '',
+  });
   const form = useForm({
     initialValues: valuesOf(myself),
     validate: {
@@ -82,6 +91,7 @@ function ProfileForm({ myself }: { myself: MyselfResponse }) {
         if (v.displayName.trim() !== myself.displayName) request.displayName = v.displayName.trim();
         if (v.email.trim() !== (myself.email ?? '')) request.email = v.email.trim();
         if (v.timeZone !== (myself.timeZone ?? '')) request.timeZone = v.timeZone;
+        if (v.locale !== (myself.locale ?? '')) request.locale = v.locale;
         if (Object.keys(request).length) save.mutate(request);
       })}
     >
@@ -90,6 +100,16 @@ function ProfileForm({ myself }: { myself: MyselfResponse }) {
         <TextInput label={t('admin.user.username')} value={myself.username} disabled readOnly />
         <TextInput label={t('admin.user.displayName')} required {...form.getInputProps('displayName')} />
         <TextInput label={t('admin.user.email')} type="email" required {...form.getInputProps('email')} />
+        <Select
+          label={t('profile.language')}
+          description={t('profile.languageHelp')}
+          clearable
+          placeholder={t('profile.languageDefault')}
+          data={languages.map((l) => ({ value: l.code, label: l.name }))}
+          value={form.values.locale || null}
+          onChange={(v) => form.setFieldValue('locale', v ?? '')}
+          error={form.errors.locale}
+        />
         <Select
           label={t('profile.timeZone')}
           description={t('profile.timeZoneHelp', { zone: browserZone })}
@@ -174,5 +194,35 @@ function PasswordForm() {
         </Group>
       </Stack>
     </form>
+  );
+}
+
+/** Switches that are saved right away. */
+function NotificationSettings({ myself }: { myself: MyselfResponse }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const save = useMutation({
+    mutationFn: (request: UpdateMyselfRequest) => patch<MyselfResponse>('/api/v1/myself', request),
+    onSuccess: (m) => queryClient.setQueryData(keys.myself, m),
+    onError: notifyError,
+  });
+  return (
+    <Stack>
+      <Title order={4}>{t('profile.notifications')}</Title>
+      <Switch
+        label={t('profile.emailNotifications')}
+        description={t('profile.emailNotificationsHelp')}
+        checked={myself.emailNotifications}
+        disabled={save.isPending}
+        onChange={(e) => save.mutate({ emailNotifications: e.currentTarget.checked })}
+      />
+      <Switch
+        label={t('profile.notifyOwnChanges')}
+        description={t('profile.notifyOwnChangesHelp')}
+        checked={myself.notifyOwnChanges}
+        disabled={save.isPending || !myself.emailNotifications}
+        onChange={(e) => save.mutate({ notifyOwnChanges: e.currentTarget.checked })}
+      />
+    </Stack>
   );
 }

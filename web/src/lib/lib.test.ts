@@ -7,6 +7,7 @@ import { fieldErrorMap, toApiError } from './apiError';
 import { readCookie } from './cookies';
 import { changedFields, formatBytes, formatDate } from './format';
 import { moved } from './order';
+import { insertAt } from './text';
 import { childTypes, topLevelTypes } from './issueTypes';
 import { hasConditions, paramsToQuery, queryToParams, sameQuery, type IssueQuery } from './issueQuery';
 import { groupByDescription, linkOptions, normalizeIssueKey } from './links';
@@ -183,5 +184,16 @@ describe('moved', () => {
     expect(moved(['a', 'b', 'c'], 1, 1)).toEqual(['a', 'c', 'b']);
     expect(moved(['a', 'b'], 0, -1)).toEqual(['a', 'b']);
     expect(moved(['a', 'b'], 1, 1)).toEqual(['a', 'b']);
+  });
+});
+
+describe('insertAt', () => {
+  it('replaces the selection and puts the cursor after the insertion', () => {
+    expect(insertAt('Hello world', 6, 11, '{{recipient.name}}')).toEqual({
+      text: 'Hello {{recipient.name}}',
+      cursor: 24,
+    });
+    expect(insertAt('ab', 1, 1, 'X')).toEqual({ text: 'aXb', cursor: 2 });
+    expect(insertAt('ab', 99, 99, 'X')).toEqual({ text: 'abX', cursor: 3 });
   });
 });

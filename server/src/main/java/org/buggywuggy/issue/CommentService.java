@@ -20,6 +20,7 @@ import org.buggywuggy.issue.CollaborationDtos.CommentResponse;
 import org.buggywuggy.issue.CollaborationDtos.CreateCommentRequest;
 import org.buggywuggy.issue.CollaborationDtos.UpdateCommentRequest;
 import org.buggywuggy.issue.IssueService.IssueAccess;
+import org.buggywuggy.notification.IssueEvents;
 import org.buggywuggy.project.ProjectAccess;
 import org.buggywuggy.project.ProjectPermission;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
@@ -38,6 +39,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class CommentService {
 
+    private final IssueEvents events;
+
     private static final String SELECT = """
             select c.id, c.author_id, c.body, c.created_at, c.updated_at, c.update_author_id, c.version,
                    a.username as a_username, a.display_name as a_display_name,
@@ -52,7 +55,9 @@ public class CommentService {
     private final NamedParameterJdbcTemplate jdbc;
     private final Clock clock;
 
-    public CommentService(IssueService issues, IssueFieldStore fields, NamedParameterJdbcTemplate jdbc, Clock clock) {
+    public CommentService(IssueService issues, IssueFieldStore fields, NamedParameterJdbcTemplate jdbc, Clock clock,
+            IssueEvents events) {
+        this.events = events;
         this.issues = issues;
         this.fields = fields;
         this.jdbc = jdbc;
@@ -81,6 +86,7 @@ public class CommentService {
                 Long.class);
         fields.addWatcher(issueId, user.id(), now);
         fields.touch(issueId, now);
+        events.commented(issueId, user.id(), now, id);
         return find(access, id);
     }
 

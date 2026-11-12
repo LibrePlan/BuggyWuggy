@@ -25,6 +25,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.buggywuggy.attachment.AttachmentFiles;
+import org.buggywuggy.notification.IssueEvents;
 import org.buggywuggy.common.PageResponse;
 import org.buggywuggy.issue.IssueDtos.ChildIssueRef;
 import org.buggywuggy.issue.IssueDtos.CreateIssueRequest;
@@ -98,13 +99,14 @@ public class IssueService {
     private final Clock clock;
     private final IssueSearchService search;
     private final AttachmentFiles attachmentFiles;
+    private final IssueEvents events;
 
     public IssueService(IssueRepository issues, IssueTypeRepository issueTypes, PriorityRepository priorities,
             StatusRepository statuses, ComponentRepository components, ProjectService projects,
             ProjectPermissionService permissions, UserService userService, UserAccountRepository users,
             WorkflowService workflows, IssueFieldStore fields, IssueHistory history,
             NamedParameterJdbcTemplate jdbc, Clock clock, IssueSearchService search,
-            AttachmentFiles attachmentFiles) {
+            AttachmentFiles attachmentFiles, IssueEvents events) {
         this.issues = issues;
         this.issueTypes = issueTypes;
         this.priorities = priorities;
@@ -121,6 +123,7 @@ public class IssueService {
         this.clock = clock;
         this.search = search;
         this.attachmentFiles = attachmentFiles;
+        this.events = events;
     }
 
     // --- access ------------------------------------------------------------------------
@@ -229,6 +232,7 @@ public class IssueService {
         if (issue.getReporter() != null) {
             fields.addWatcher(id, issue.getReporter().getId(), now);
         }
+        events.created(id, user.id(), now);
         return toResponse(new IssueAccess(issue, access));
     }
 
@@ -328,6 +332,7 @@ public class IssueService {
         access.project().require(ProjectPermission.DELETE_ISSUE);
         access.requireWritable();
         Issue issue = access.issue();
+        events.deleted(issue.getId(), user.id(), clock.instant());
         Map<String, Long> params = Map.of("id", issue.getId());
         boolean epic = issue.getIssueType().getHierarchyLevel() == IssueType.EPIC;
         // Files of the deleted issue, and of its sub-tasks (deleted too), are removed after commit.
