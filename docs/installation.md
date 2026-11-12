@@ -97,7 +97,7 @@ start their own PostgreSQL container. See the README for running tests without D
 
 ## Configuration
 
-BuggyWuggy is configured with environment variables:
+BuggyWuggy is configured with environment variables or a [configuration file](#configuration-file):
 
 | Variable | Default | Description |
 |---|---|---|
@@ -125,15 +125,40 @@ same address, further attempts are refused for 15 minutes.
 ### Configuration file
 
 Instead of environment variables you can use a configuration file in YAML. Every setting has
-a name in the file; environment variables, when set, take precedence. Point BuggyWuggy to the
-file with:
+a name in the file. BuggyWuggy reads the file from one of these places:
+
+- a location you give with `--spring.config.additional-location=file:<path>` or the
+  environment variable `SPRING_CONFIG_ADDITIONAL_LOCATION=file:<path>`, for example
+  `/etc/buggywuggy/application.yml`;
+- otherwise `config/application.yml` or `application.yml` in the working directory (the
+  directory BuggyWuggy is started from).
+
+**Template.** When BuggyWuggy starts and finds no configuration file, it writes one with every
+setting, its default value and an explanation, all commented out. It goes to the location
+given with `--spring.config.additional-location` if there is one (prefix the location with
+`optional:`, as in `optional:file:/etc/buggywuggy/application.yml`, so BuggyWuggy may start
+while the file does not exist yet), otherwise to `config/application.yml` in the working
+directory. The log names the file. It is readable for its owner and group only, and an
+existing file is never overwritten. When BuggyWuggy may not write there, for example under
+systemd (see below), the log says so and BuggyWuggy starts normally. You can always print the
+template yourself, without starting BuggyWuggy:
 
 ```sh
-java -jar buggywuggy.jar --spring.config.additional-location=file:/etc/buggywuggy/application.yml
+java -jar buggywuggy.jar config-template > application.yml
 ```
 
-or with the environment variable
-`SPRING_CONFIG_ADDITIONAL_LOCATION=file:/etc/buggywuggy/application.yml`. Example:
+To change a setting, remove the `#` in front of it and in front of the keys it belongs to,
+keep the indentation, and restart BuggyWuggy. Lines starting with `##` are explanations. Set
+`BUGGYWUGGY_CONFIG_GENERATE=false` to stop BuggyWuggy from writing the template.
+
+**Which file is used.** **Administration → E-mail** shows the configuration file BuggyWuggy
+actually read, under *Configuration file*.
+
+**File or environment variable.** Set each setting in one place: in the file or as an
+environment variable, not both. When a setting is in both places, which one is used differs
+per setting.
+
+Example:
 
 ```yaml
 spring:
@@ -175,6 +200,9 @@ sent. The settings, in the configuration file or as environment variables:
 | `buggywuggy.mail.max-delay` | | `5m` | …but a mail is never held back longer than this. |
 | `buggywuggy.mail.max-attempts` | | `8` | Attempts to send a mail before it counts as failed. The waiting time doubles after each attempt (1, 2, 4 … minutes, at most an hour). |
 | `buggywuggy.mail.retention` | | `30d` | Sent and failed mails are kept this long, then removed. |
+| `buggywuggy.mail.timeout` | | `30s` | Time-out for connecting to and talking with the mail server. |
+| `buggywuggy.mail.poll-interval` | | `10s` | How often waiting notifications and mails are processed. |
+| `buggywuggy.mail.cleanup-cron` | | `0 17 3 * * *` | When old mails are removed (cron: second, minute, hour, day, month, weekday). |
 
 Mails are first stored in the database and then sent by a background job, so a mail server
 that is down does not slow BuggyWuggy down, and no mail is lost by a restart. Several
@@ -193,8 +221,9 @@ export BUGGYWUGGY_DATA_DIR=/var/lib/buggywuggy
 java -jar /opt/buggywuggy/buggywuggy.jar
 ```
 
-On first start the database schema is created. When the log shows `Started BuggyWuggyApplication`,
-open `http://<server>:8080` in a browser.
+On first start the database schema is created, and a [configuration file](#configuration-file)
+template is written to `config/application.yml` in the working directory. When the log shows
+`Started BuggyWuggyApplication`, open `http://<server>:8080` in a browser.
 
 ## First-time setup
 
@@ -238,8 +267,13 @@ For mail settings, also create a [configuration file](#configuration-file):
 
 ```sh
 sudo install -d -m 750 -o root -g buggywuggy /etc/buggywuggy
-sudo install -m 640 -o root -g buggywuggy /dev/null /etc/buggywuggy/application.yml
+java -jar /opt/buggywuggy/buggywuggy.jar config-template \
+  | sudo install -m 640 -o root -g buggywuggy /dev/stdin /etc/buggywuggy/application.yml
 ```
+
+This fills the file with the commented-out [template](#configuration-file). The service
+cannot write to `/etc` itself (`ProtectSystem=strict` below), so it would not be able to
+create the template on its first start.
 
 `/etc/buggywuggy.env`:
 
@@ -345,8 +379,10 @@ Users with the global permission *Administer BuggyWuggy* (by default the group
   `administrators` and `users` cannot be renamed or deleted.
 - **Global permissions**: which groups may administer BuggyWuggy, create projects and browse
   users.
-- **E-mail**: the mail server status with **Send test mail**, the mail templates, the
-  languages mails are available in, and mails that could not be sent.
+- **E-mail**: the mail server status with **Send test mail** and the configuration file in
+  use, the mail templates, the languages mails are available in, and mails that could not be
+  sent. A language can be enabled or disabled, made the default, added and deleted; the
+  default language cannot be disabled or deleted. Failed mails can be sent again or discarded.
 
 ### Mail templates
 
@@ -463,6 +499,10 @@ Test your restore procedure regularly.
 2. Build or download the new `buggywuggy.jar`.
 3. Stop BuggyWuggy, replace the jar and start it again.
 
+A new version can have new settings. Your configuration file is never changed; to see all
+settings of the new version, print the template with
+`java -jar buggywuggy.jar config-template` and compare.
+
 Database changes are applied automatically at startup and are recorded in the table
 `flyway_schema_history`. Do not downgrade to an older jar after an upgrade has changed the
 database; restore the backup instead.
@@ -494,6 +534,18 @@ Open **Administration → E-mail**. If it says that sending mail is not configur
 mail server is shown right away. Mails that failed repeatedly are listed with their error and
 can be sent again. Also check that users have an e-mail address, did not turn notifications
 off in their profile, and remember that mails are combined and sent after a minute of quiet.
+
+**The log says "a template could not be written".**
+BuggyWuggy found no configuration file and may not create one at the location in the message.
+This is harmless: it starts with the built-in defaults and the environment variables. Create
+the file yourself with `java -jar buggywuggy.jar config-template`, see
+[Configuration file](#configuration-file).
+
+**My changes in the configuration file have no effect.**
+Check on **Administration → E-mail** which configuration file is used, that you removed the `#`
+in front of the setting *and* in front of the keys above it, that the indentation is unchanged,
+and that you restarted BuggyWuggy. Also check that the setting is not set as an environment
+variable as well (for systemd in `/etc/buggywuggy.env`).
 
 **I lost the setup token.**
 Restart BuggyWuggy. As long as no administrator has been created, a new token is written to the

@@ -49,6 +49,11 @@ The application, including the web UI, starts on <http://localhost:8080>; health
 <http://localhost:8080/actuator/health>. The database schema is created automatically
 by Flyway on startup.
 
+On the first start without a configuration file, a template with all settings commented out
+is written to `config/application.yml` in the working directory (`server/` with
+`spring-boot:run`; ignored by git). Print it with `java -jar server/target/buggywuggy.jar
+config-template`. See [Configuration file](docs/installation.md#configuration-file).
+
 API documentation (OpenAPI / Swagger UI): <http://localhost:8080/api/docs>
 
 ### First-time setup

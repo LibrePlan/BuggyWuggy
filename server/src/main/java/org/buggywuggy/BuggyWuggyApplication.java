@@ -17,6 +17,8 @@
  */
 package org.buggywuggy;
 
+import java.util.Arrays;
+import org.buggywuggy.common.ConfigTemplate;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -24,6 +26,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class BuggyWuggyApplication {
 
     public static void main(String[] args) {
+        if (Arrays.asList(args).contains(ConfigTemplate.COMMAND)) {
+            // Print the configuration file template without starting the application.
+            System.out.print(ConfigTemplate.text());
+            return;
+        }
         SpringApplication.run(BuggyWuggyApplication.class, args);
     }
 }

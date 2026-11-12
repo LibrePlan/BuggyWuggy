@@ -1,0 +1,104 @@
+## BuggyWuggy configuration file
+##
+## Every setting is commented out and shows its default value. To change a setting, remove
+## the single "#" in front of it and in front of each line above it that it belongs to (the
+## parent keys, e.g. "buggywuggy:" and "  mail:"), keep the indentation, and restart
+## BuggyWuggy. Lines starting with "##" are explanations.
+##
+## Each setting can also be given as an environment variable (shown in brackets). Set each
+## setting in one place only: either here or as an environment variable.
+##
+## The file can contain passwords: make it readable only for the BuggyWuggy service, e.g.
+##   chmod 640 application.yml && chown root:buggywuggy application.yml
+## Full description: docs/installation.md, section "Configuration".
+
+## --- Database ---------------------------------------------------------------------------
+#spring:
+#  datasource:
+##   JDBC URL of the PostgreSQL database [BUGGYWUGGY_DB_URL]
+#    url: jdbc:postgresql://localhost:5432/buggywuggy
+##   Database user [BUGGYWUGGY_DB_USER]
+#    username: buggywuggy
+##   Database password; always change it in production [BUGGYWUGGY_DB_PASSWORD]
+#    password: buggywuggy
+#
+## --- Attachments ------------------------------------------------------------------------
+#  servlet:
+#    multipart:
+##     Largest file that can be attached, e.g. 10MB or 1GB [BUGGYWUGGY_MAX_ATTACHMENT_SIZE]
+#      max-file-size: 50MB
+##     Largest total size of the files in one upload [BUGGYWUGGY_MAX_UPLOAD_SIZE]
+#      max-request-size: 200MB
+#
+## --- Web server -------------------------------------------------------------------------
+#server:
+##  HTTP port [BUGGYWUGGY_PORT]
+#  port: 8080
+##  Trust the X-Forwarded-* headers of a reverse proxy. Use "framework" only when BuggyWuggy
+##  can be reached through the proxy alone [SERVER_FORWARD_HEADERS_STRATEGY]
+#  forward-headers-strategy: none
+#  servlet:
+#    session:
+##     How long an idle login stays valid, e.g. 30m, 8h, 7d [BUGGYWUGGY_SESSION_TIMEOUT]
+#      timeout: 8h
+#      cookie:
+##       Send the session cookie over HTTPS only; set to true behind HTTPS [BUGGYWUGGY_SECURE_COOKIES]
+#        secure: false
+#
+## --- BuggyWuggy -------------------------------------------------------------------------
+#buggywuggy:
+##  Directory for attachment files; use an absolute path in production, e.g.
+##  /var/lib/buggywuggy. Back it up together with the database [BUGGYWUGGY_DATA_DIR]
+#  data-dir: data
+##  The address users open BuggyWuggy at; links in e-mails point here [BUGGYWUGGY_BASE_URL]
+#  base-url: http://localhost:8080
+#
+#  setup:
+##   Fixed token for first-time setup; empty means a random token, written to the log
+##   [BUGGYWUGGY_SETUP_TOKEN]
+#    token: ""
+#
+#  security:
+#    login-throttle:
+##     Failed logins for one username from one address before logins are refused...
+#      max-failures: 5
+##     ...for this long
+#      window: 15m
+#
+## --- E-mail -----------------------------------------------------------------------------
+#  mail:
+##   SMTP server; empty means no mail is sent [BUGGYWUGGY_MAIL_HOST]
+#    host: ""
+##   SMTP port: usually 587 with starttls, 465 with ssl, 25 for a local relay [BUGGYWUGGY_MAIL_PORT]
+#    port: 587
+##   starttls, ssl or none [BUGGYWUGGY_MAIL_SECURITY]
+#    security: starttls
+##   SMTP login; empty means no login [BUGGYWUGGY_MAIL_USERNAME]
+#    username: ""
+##   SMTP password [BUGGYWUGGY_MAIL_PASSWORD]
+#    password: ""
+##   Sender of the mails [BUGGYWUGGY_MAIL_FROM]
+#    from: "BuggyWuggy <buggywuggy@localhost>"
+##   Changes by one person to one issue are combined into one mail once nothing happened
+##   for quiet-period, but a mail is never held back longer than max-delay
+#    quiet-period: 60s
+#    max-delay: 5m
+##   Attempts before a mail counts as failed; the wait doubles after each attempt
+#    max-attempts: 8
+##   How long sent and failed mails are kept
+#    retention: 30d
+##   Time-out for connecting to and talking with the mail server
+#    timeout: 30s
+##   How often waiting mails and notifications are processed
+#    poll-interval: 10s
+##   When old mails are removed (cron: second minute hour day month weekday)
+#    cleanup-cron: "0 17 3 * * *"
+#
+## --- Logging ----------------------------------------------------------------------------
+#logging:
+#  file:
+##   Also write the log to this file; by default the log only goes to standard output
+#    name: ""
+#  level:
+##   More detail for BuggyWuggy itself: ERROR, WARN, INFO or DEBUG
+#    org.buggywuggy: INFO

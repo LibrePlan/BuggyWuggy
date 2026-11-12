@@ -23,3 +23,6 @@ dist/
 .env
 *.local.yml
 data/
+
+# Configuration file written by BuggyWuggy on first start (development)
+config/
