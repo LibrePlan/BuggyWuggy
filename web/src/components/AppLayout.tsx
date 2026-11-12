@@ -4,7 +4,7 @@
 
 import { Anchor, AppShell, Avatar, Group, Menu, Text, TextInput, UnstyledButton } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconChevronDown, IconLogout, IconSearch } from '@tabler/icons-react';
+import { IconChevronDown, IconLogout, IconSearch, IconSettings, IconUser } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -51,6 +51,11 @@ export function AppLayout() {
             <Anchor component={NavLink} to="/issues?resolution=unresolved&assignee=me" c="inherit" fw={500}>
               {t('nav.issues')}
             </Anchor>
+            {myself?.globalPermissions.includes('ADMINISTER') && (
+              <Anchor component={NavLink} to="/admin" c="inherit" fw={500} visibleFrom="sm">
+                {t('nav.admin')}
+              </Anchor>
+            )}
           </Group>
           <Group gap="sm" wrap="nowrap">
             <QuickSearch />
@@ -71,6 +76,15 @@ export function AppLayout() {
                 </Menu.Target>
                 <Menu.Dropdown>
                   <Menu.Label>{myself.username}</Menu.Label>
+                  <Menu.Item leftSection={<IconUser size={16} />} component={Link} to="/profile">
+                    {t('nav.profile')}
+                  </Menu.Item>
+                  {myself.globalPermissions.includes('ADMINISTER') && (
+                    <Menu.Item leftSection={<IconSettings size={16} />} component={Link} to="/admin">
+                      {t('nav.admin')}
+                    </Menu.Item>
+                  )}
+                  <Menu.Divider />
                   <Menu.Item leftSection={<IconLogout size={16} />} onClick={() => void logout()}>
                     {t('nav.logout')}
                   </Menu.Item>

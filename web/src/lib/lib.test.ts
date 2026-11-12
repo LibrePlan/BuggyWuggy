@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { fieldErrorMap, toApiError } from './apiError';
 import { readCookie } from './cookies';
 import { changedFields, formatBytes, formatDate } from './format';
+import { moved } from './order';
 import { childTypes, topLevelTypes } from './issueTypes';
 import { hasConditions, paramsToQuery, queryToParams, sameQuery, type IssueQuery } from './issueQuery';
 import { groupByDescription, linkOptions, normalizeIssueKey } from './links';
@@ -173,5 +174,14 @@ describe('formatBytes', () => {
     expect(formatBytes(512, 'en')).toBe('512 B');
     expect(formatBytes(1536, 'en')).toBe('1.5 KB');
     expect(formatBytes(50 * 1024 * 1024, 'en')).toBe('50 MB');
+  });
+});
+
+describe('moved', () => {
+  it('swaps with the neighbour and ignores moves past the ends', () => {
+    expect(moved(['a', 'b', 'c'], 1, -1)).toEqual(['b', 'a', 'c']);
+    expect(moved(['a', 'b', 'c'], 1, 1)).toEqual(['a', 'c', 'b']);
+    expect(moved(['a', 'b'], 0, -1)).toEqual(['a', 'b']);
+    expect(moved(['a', 'b'], 1, 1)).toEqual(['a', 'b']);
   });
 });

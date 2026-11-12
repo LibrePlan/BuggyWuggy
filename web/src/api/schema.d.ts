@@ -116,6 +116,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/global-permissions/{permission}/groups/{groupId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["grant"];
+        post?: never;
+        delete: operations["revoke"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/setup/admin": {
         parameters: {
             query?: never;
@@ -724,6 +740,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/groups/picker": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["groupPicker"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf": {
         parameters: {
             query?: never;
@@ -780,6 +812,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["members_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/global-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1218,6 +1266,7 @@ export interface components {
             description: string | null;
             /** Format: int32 */
             memberCount: number;
+            builtIn: boolean;
         };
         UpdateProjectRequest: {
             key?: string;
@@ -1424,6 +1473,10 @@ export interface components {
             size: number;
             /** Format: int64 */
             total: number;
+        };
+        GlobalPermissionResponse: {
+            permission: string;
+            groups: components["schemas"]["GroupRef"][];
         };
     };
     responses: never;
@@ -1668,6 +1721,48 @@ export interface operations {
             path: {
                 id: number;
                 userId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    grant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                permission: string;
+                groupId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                permission: string;
+                groupId: number;
             };
             cookie?: never;
         };
@@ -2215,6 +2310,7 @@ export interface operations {
     list_5: {
         parameters: {
             query?: {
+                query?: string;
                 page?: number;
                 size?: number;
             };
@@ -3092,6 +3188,29 @@ export interface operations {
             };
         };
     };
+    groupPicker: {
+        parameters: {
+            query?: {
+                query?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["GroupRef"][];
+                };
+            };
+        };
+    };
     csrf: {
         parameters: {
             query: {
@@ -3177,6 +3296,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PageResponseUserResponse"];
+                };
+            };
+        };
+    };
+    list_6: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["GlobalPermissionResponse"][];
                 };
             };
         };

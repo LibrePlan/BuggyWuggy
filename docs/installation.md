@@ -260,34 +260,38 @@ it under a sub-path such as `https://example.org/bugs/` is not supported yet.
 
 ## Administration
 
-The web interface does not have administration screens yet. Until it does, administrative
-tasks are done through the REST API. The easiest way is the interactive API documentation
-built into BuggyWuggy:
+Users with the global permission *Administer BuggyWuggy* (by default the group
+`administrators`) see **Administration** in the top bar. It has three pages:
 
-1. Log in to BuggyWuggy in the browser as an administrator.
-2. In the same browser, open `https://<your-server>/api/docs`.
-3. Open an operation, choose **Try it out**, fill in the fields and choose **Execute**. Your
-   login session is used automatically.
+- **Users**: find, create and edit users. On a user's page you can change the name and
+  e-mail, deactivate the account, set a new password and change group memberships. Only
+  system administrators can create or manage other system administrators.
+  - New users are added to the group `users`.
+  - Deactivated users cannot log in, but their name stays on their issues and comments.
+    BuggyWuggy does not delete users.
+  - Setting a password or deactivating a user logs that user out everywhere.
+- **Groups**: create, rename and delete groups and manage their members. The built-in groups
+  `administrators` and `users` cannot be renamed or deleted.
+- **Global permissions**: which groups may administer BuggyWuggy, create projects and browse
+  users.
 
-Common tasks:
+Project settings (details, components, versions and people in roles) are on each project's
+**Project settings** page; see the [User Guide](user-guide.md#project-settings). Archiving,
+deleting and changing the key of a project can only be done by BuggyWuggy administrators.
 
-| Task | Operation |
-|---|---|
-| List users | `GET /api/v1/admin/users` |
-| Create a user | `POST /api/v1/admin/users` with `username`, `displayName`, `email`, `password` (12–256 characters). New users are added to the `users` group. |
-| Deactivate a user | `PATCH /api/v1/admin/users/{id}` with `{"active": false}`. The user is logged out everywhere. |
-| Reset a password | `PUT /api/v1/admin/users/{id}/password` |
-| Create a group | `POST /api/v1/admin/groups` |
-| Add a user to a group | `PUT /api/v1/admin/groups/{id}/members/{userId}` |
-| Add a user to a project role | `PUT /api/v1/projects/{key}/roles/{roleId}/users/{userId}` (role ids: `GET /api/v1/project-roles`) |
-| Add a group to a project role | `PUT /api/v1/projects/{key}/roles/{roleId}/groups/{groupId}` |
-| Manage components | `/api/v1/projects/{key}/components` |
-| Manage versions | `/api/v1/projects/{key}/versions` |
-| Rename, archive or change a project's key | `PATCH /api/v1/projects/{key}` |
-| Delete a project (and all its issues) | `DELETE /api/v1/projects/{key}` |
+Global permissions are stored in the login session. When a group gains or loses a global
+permission, or someone joins or leaves such a group, the affected users are logged out and get
+the new permissions when they log in again. This includes you when you change a group you are
+a member of. To prevent lock-outs, you cannot take *Administer BuggyWuggy* away from a group
+that is your only source of it; system administrators always keep every permission.
 
-Users can change their own name, e-mail, language and time zone with `PATCH /api/v1/myself`,
-and their password with `PUT /api/v1/myself/password`.
+### Automating with the REST API
+
+Everything in the web interface can also be done through the REST API, for example from
+scripts. The interactive API documentation is at `https://<your-server>/api/docs`; when you are
+logged in in the same browser, **Try it out** uses your session. The administration operations
+are under `/api/v1/admin/` (users, groups, global permissions); project configuration is under
+`/api/v1/projects/{key}/` (components, versions, roles).
 
 ### Default groups, roles and permissions
 
@@ -309,7 +313,7 @@ Note that ordinary users can see every project but cannot work on issues until y
 them (or a group) to the *Developers* role of a project. To hide a project from everyone
 except its members, remove the group `users` from the project's *Users* role.
 
-Permission changes take effect immediately; users do not need to log in again.
+Changes to project roles take effect immediately; users do not need to log in again.
 
 ## Backup and restore
 

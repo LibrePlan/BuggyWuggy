@@ -40,9 +40,10 @@ public class AdminGroupController {
 
     @GetMapping
     public PageResponse<GroupResponse> list(
+            @RequestParam(required = false) String query,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "50") @Min(1) @Max(200) int size) {
-        return groupService.list(page, size);
+        return groupService.list(query, page, size);
     }
 
     @PostMapping

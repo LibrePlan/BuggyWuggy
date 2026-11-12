@@ -4,7 +4,7 @@ BuggyWuggy is an open source, self-hosted issue tracker — a familiar home for 
 coming from a self-hosted Jira installation.
 
 > **Status:** early development. Projects, issues, comments, attachments, links, watchers,
-> search and saved filters work; much of Jira's feature set is still to come.
+> search, saved filters and the administration screens work; much of Jira's feature set is still to come.
 
 - Installation guide: [docs/installation.md](docs/installation.md)
 - User guide: [docs/user-guide.md](docs/user-guide.md)

@@ -11,6 +11,13 @@ import type {
   AttachmentSettings,
   CommentResponse,
   FilterResponse,
+  GlobalPermissionResponse,
+  GroupPage,
+  GroupRef,
+  GroupResponse,
+  ProjectRoleMembers,
+  UserPage,
+  UserResponse,
   StatusResponse,
   ComponentResponse,
   IssueLinkResponse,
@@ -50,6 +57,14 @@ export const keys = {
   links: (key: string) => ['issue', key, 'links'] as const,
   watchers: (key: string) => ['issue', key, 'watchers'] as const,
   attachments: (key: string) => ['issue', key, 'attachments'] as const,
+  projectRoles: (key: string) => ['project', key, 'roles'] as const,
+  admin: ['admin'] as const,
+  adminUsers: (query: string, page: number) => ['admin', 'users', query, page] as const,
+  adminUser: (id: number) => ['admin', 'user', id] as const,
+  adminGroups: (query: string, page: number) => ['admin', 'groups', query, page] as const,
+  adminGroup: (id: number) => ['admin', 'group', id] as const,
+  groupMembers: (id: number, page: number) => ['admin', 'group', id, 'members', page] as const,
+  globalPermissions: ['admin', 'global-permissions'] as const,
   search: (query: IssueQuery, page: number, size: number) => ['search', query, page, size] as const,
   allSearches: ['search'] as const,
   filters: ['filters'] as const,
@@ -82,10 +97,11 @@ export function useMyself() {
   });
 }
 
-export function useProjects(query: string, page: number) {
+/** Projects the user can see; archived ones only on request (administrators see them). */
+export function useProjects(query: string, page: number, includeArchived = false) {
   return useQuery({
-    queryKey: keys.projects(query, page),
-    queryFn: () => get<ProjectPage>('/api/v1/projects', { query, page, size: 50 }),
+    queryKey: [...keys.projects(query, page), includeArchived],
+    queryFn: () => get<ProjectPage>('/api/v1/projects', { query, page, size: 50, includeArchived }),
     placeholderData: keepPreviousData,
   });
 }
@@ -292,5 +308,64 @@ export function useAttachmentSettings() {
     queryKey: ['lookup', 'attachment-settings'],
     queryFn: () => get<AttachmentSettings>('/api/v1/attachments/settings'),
     staleTime: Infinity,
+  });
+}
+
+export function useProjectRoles(key: string) {
+  return useQuery({
+    queryKey: keys.projectRoles(key),
+    queryFn: () => get<ProjectRoleMembers[]>(`/api/v1/projects/${seg(key)}/roles`),
+  });
+}
+
+/** Groups by name (needs the BROWSE_USERS permission). */
+export function useGroupSearch(query: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['groups', 'picker', query],
+    queryFn: () => get<GroupRef[]>('/api/v1/groups/picker', { query, limit: 20 }),
+    enabled,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+}
+
+// --- administration -----------------------------------------------------------------
+
+export function useAdminUsers(query: string, page: number) {
+  return useQuery({
+    queryKey: keys.adminUsers(query, page),
+    queryFn: () => get<UserPage>('/api/v1/admin/users', { query, page, size: 50 }),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useAdminUser(id: number) {
+  return useQuery({ queryKey: keys.adminUser(id), queryFn: () => get<UserResponse>(`/api/v1/admin/users/${id}`) });
+}
+
+export function useAdminGroups(query: string, page: number) {
+  return useQuery({
+    queryKey: keys.adminGroups(query, page),
+    queryFn: () => get<GroupPage>('/api/v1/admin/groups', { query, page, size: 50 }),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useAdminGroup(id: number) {
+  return useQuery({ queryKey: keys.adminGroup(id), queryFn: () => get<GroupResponse>(`/api/v1/admin/groups/${id}`) });
+}
+
+export function useGroupMembers(id: number, page: number) {
+  return useQuery({
+    queryKey: keys.groupMembers(id, page),
+    queryFn: () => get<UserPage>(`/api/v1/admin/groups/${id}/members`, { page, size: 50 }),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useGlobalPermissions() {
+  return useQuery({
+    queryKey: keys.globalPermissions,
+    queryFn: () => get<GlobalPermissionResponse[]>('/api/v1/admin/global-permissions'),
   });
 }

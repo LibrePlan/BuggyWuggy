@@ -9,7 +9,9 @@ import org.buggywuggy.common.ApiNullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public record GroupResponse(long id, String name, @ApiNullable String description, int memberCount) {
+/** {@code builtIn}: the groups BuggyWuggy creates itself; they cannot be renamed or deleted. */
+public record GroupResponse(long id, String name, @ApiNullable String description, int memberCount,
+        boolean builtIn) {
 
     public record CreateGroupRequest(@NotBlank @Size(max = 255) String name, @Size(max = 2000) String description) {
     }

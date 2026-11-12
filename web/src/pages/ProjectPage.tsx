@@ -2,9 +2,9 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Anchor, Breadcrumbs, Button, Group, Pagination, Stack, Text, Title } from '@mantine/core';
+import { Anchor, Badge, Breadcrumbs, Button, Group, Pagination, Stack, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPlus, IconSearch } from '@tabler/icons-react';
+import { IconPlus, IconSearch, IconSettings } from '@tabler/icons-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
@@ -47,13 +47,30 @@ export function ProjectPage() {
       </Breadcrumbs>
       <Group justify="space-between" align="flex-start">
         <div>
-          <Title order={2}>{p.name}</Title>
+          <Group gap="xs">
+            <Title order={2}>{p.name}</Title>
+            {p.archived && (
+              <Badge color="gray" variant="light">
+                {t('project.archived')}
+              </Badge>
+            )}
+          </Group>
           <Text c="dimmed" size="sm">
             {p.key}
             {p.lead && ` · ${t('project.lead')}: ${p.lead.displayName}`}
           </Text>
         </div>
         <Group gap="xs">
+          {permissions?.has('ADMINISTER_PROJECT') && (
+            <Button
+              variant="default"
+              leftSection={<IconSettings size={16} />}
+              component={Link}
+              to={`/projects/${p.key}/settings`}
+            >
+              {t('settings.title')}
+            </Button>
+          )}
           <Button
             variant="default"
             leftSection={<IconSearch size={16} />}

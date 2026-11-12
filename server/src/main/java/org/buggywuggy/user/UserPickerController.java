@@ -15,6 +15,7 @@ import java.util.Map;
 import org.buggywuggy.common.SqlLike;
 import org.buggywuggy.security.Authorities;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
+import org.buggywuggy.user.UserDtos.GroupRef;
 import org.buggywuggy.user.UserDtos.UserRef;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,8 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Finds active users by name, e.g. for search filters, or looks up given {@code ids} (also
- * inactive users, to show the names in a stored filter). Requires the global BROWSE_USERS
- * permission.
+ * inactive users, to show the names in a stored filter); and finds groups by name, e.g. for
+ * project roles. Requires the global BROWSE_USERS permission.
  */
 @RestController
 public class UserPickerController {
@@ -63,5 +64,23 @@ public class UserPickerController {
         return jdbc.query("select id, username, display_name from user_account where active and not placeholder "
                         + filter + " order by lower(display_name), id limit :limit",
                 params, (rs, n) -> new UserRef(rs.getLong(1), rs.getString(2), rs.getString(3)));
+    }
+
+    @GetMapping("/api/v1/groups/picker")
+    public List<GroupRef> groupPicker(@AuthenticationPrincipal BuggyWuggyPrincipal user,
+            @RequestParam(required = false) String query,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit) {
+        if (!user.hasAuthority(Authorities.BROWSE_USERS)) {
+            throw forbidden("user.browse-permission");
+        }
+        Map<String, Object> params = new HashMap<>();
+        params.put("limit", limit);
+        String filter = "";
+        if (query != null && !query.isBlank()) {
+            filter = " where lower(name) like :pattern escape '\\'";
+            params.put("pattern", SqlLike.containsPattern(query));
+        }
+        return jdbc.query("select id, name from user_group" + filter + " order by lower(name), id limit :limit",
+                params, (rs, n) -> new GroupRef(rs.getLong(1), rs.getString(2)));
     }
 }

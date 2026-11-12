@@ -2,7 +2,7 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Anchor, Button, Group, Pagination, Stack, Table, Text, TextInput, Title } from '@mantine/core';
+import { Anchor, Badge, Button, Group, Pagination, Stack, Switch, Table, Text, TextInput, Title } from '@mantine/core';
 import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
 import { IconPlus, IconSearch } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -20,7 +20,9 @@ export function ProjectsPage() {
   const [search, setSearch] = useState('');
   const [query] = useDebouncedValue(search.trim(), 250);
   const [page, setPage] = useState(0);
-  const projects = useProjects(query, page);
+  const isAdmin = myself?.globalPermissions.includes('ADMINISTER') ?? false;
+  const [showArchived, setShowArchived] = useState(false);
+  const projects = useProjects(query, page, isAdmin && showArchived);
   const [creating, createModal] = useDisclosure(false);
   const canCreate = myself?.globalPermissions.includes('CREATE_PROJECT') ?? false;
 
@@ -44,6 +46,16 @@ export function ProjectsPage() {
         }}
         maw={360}
       />
+      {isAdmin && (
+        <Switch
+          label={t('projects.showArchived')}
+          checked={showArchived}
+          onChange={(e) => {
+            setShowArchived(e.currentTarget.checked);
+            setPage(0);
+          }}
+        />
+      )}
       {projects.isPending ? (
         <PageLoader />
       ) : projects.isError ? (
@@ -67,6 +79,11 @@ export function ProjectsPage() {
                     <Anchor component={Link} to={`/projects/${p.key}`} fw={500} onClick={(e) => e.stopPropagation()}>
                       {p.name}
                     </Anchor>
+                    {p.archived && (
+                      <Badge ml="xs" size="xs" color="gray" variant="light">
+                        {t('project.archived')}
+                      </Badge>
+                    )}
                   </Table.Td>
                   <Table.Td>{p.key}</Table.Td>
                   <Table.Td visibleFrom="sm">

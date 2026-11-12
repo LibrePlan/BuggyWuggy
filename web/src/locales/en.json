@@ -7,7 +7,9 @@
     "userMenu": "User menu",
     "logout": "Log out",
     "issues": "Issues",
-    "quickSearch": "Search or jump to BUG-12"
+    "quickSearch": "Search or jump to BUG-12",
+    "admin": "Administration",
+    "profile": "Profile"
   },
   "common": {
     "cancel": "Cancel",
@@ -16,7 +18,8 @@
     "edit": "Edit",
     "delete": "Delete",
     "more": "More actions",
-    "nothingFound": "Nothing found"
+    "nothingFound": "Nothing found",
+    "saved": "Saved."
   },
   "error": {
     "title": "Something went wrong",
@@ -59,7 +62,8 @@
     "create": "Create project",
     "search": "Search projects",
     "empty": "There are no projects yet.",
-    "keyHelp": "Used in issue keys, e.g. KEY-123."
+    "keyHelp": "Used in issue keys, e.g. KEY-123.",
+    "showArchived": "Show archived projects"
   },
   "project": {
     "name": "Name",
@@ -70,7 +74,8 @@
     "noIssues": "This project has no issues yet.",
     "issueCount_one": "{{count}} issue",
     "issueCount_other": "{{count}} issues",
-    "searchIssues": "Search issues"
+    "searchIssues": "Search issues",
+    "archived": "Archived"
   },
   "issue": {
     "create": "Create issue",
@@ -230,5 +235,157 @@
       "LOGGED_IN": "All logged-in users",
       "PROJECT": "Members of a project"
     }
+  },
+  "admin": {
+    "title": "Administration",
+    "users": "Users",
+    "groups": "Groups",
+    "permissions": {
+      "intro": "Global permissions apply to all of BuggyWuggy, not to one project. They are granted to groups. Members of a group that gains or loses a permission are logged out and get the change at their next login — that includes you, if you are a member.",
+      "permission": "Permission",
+      "groups": "Groups",
+      "none": "No groups",
+      "grant": "Grant to group…",
+      "revoke": "Take away from {{group}}",
+      "name": {
+        "ADMINISTER": "Administer BuggyWuggy",
+        "CREATE_PROJECT": "Create projects",
+        "BROWSE_USERS": "Browse users"
+      },
+      "help": {
+        "ADMINISTER": "Manage users, groups and global permissions; archive, delete and re-key projects; change the settings of every project.",
+        "CREATE_PROJECT": "Create new projects. The creator becomes the project lead and administrator.",
+        "BROWSE_USERS": "Find users and groups by name, e.g. to filter issues or to fill project roles."
+      }
+    },
+    "user": {
+      "search": "Search by name, username or e-mail",
+      "create": "Create user",
+      "username": "Username",
+      "displayName": "Full name",
+      "email": "E-mail",
+      "password": "Password",
+      "passwordHelp": "At least {{min}} characters.",
+      "groups": "Groups",
+      "lastLogin": "Last login",
+      "never": "never",
+      "count_one": "{{count}} user",
+      "count_other": "{{count}} users",
+      "inactive": "Inactive",
+      "systemAdmin": "System administrator",
+      "systemAdminHelp": "Has every permission everywhere, and can manage other system administrators.",
+      "createHelp": "New users are added to the users group.",
+      "created": "Created {{date}}",
+      "lastLoginAt": "last login {{date}}",
+      "details": "Details",
+      "active": "Active",
+      "activeHelp": "Inactive users cannot log in, but their name stays on their issues and comments.",
+      "setPassword": "Set password",
+      "setPasswordFor": "Set password for {{name}}",
+      "newPassword": "New password",
+      "confirmPassword": "Repeat new password",
+      "passwordSet": "The password of {{name}} has been set.",
+      "setPasswordHelp": "The user is logged out everywhere and must log in with the new password.",
+      "leaveGroup": "Remove from {{group}}",
+      "addToGroup": "Add to group…",
+      "groupsHelp": "When membership of a group with global permissions changes, the user is logged out and gets the new permissions at the next login."
+    },
+    "group": {
+      "search": "Search groups",
+      "create": "Create group",
+      "name": "Name",
+      "description": "Description",
+      "members": "Members",
+      "membersCount_one": "{{count}} member",
+      "membersCount_other": "{{count}} members",
+      "builtIn": "Built-in",
+      "builtInHelp": "Built-in groups cannot be renamed or deleted.",
+      "addMember": "Add member…",
+      "removeMember": "Remove {{name}}",
+      "noMembers": "This group has no members.",
+      "deleteConfirm": "Delete the group {{name}}? Its members are kept, but lose the permissions and roles the group gave them."
+    }
+  },
+  "settings": {
+    "title": "Project settings",
+    "titleFor": "Settings of {{name}}",
+    "tab": {
+      "details": "Details",
+      "components": "Components",
+      "versions": "Versions",
+      "roles": "People and roles"
+    },
+    "keyHelp": "Changing the key changes all issue keys; the old keys keep working.",
+    "keyAdminOnly": "Only BuggyWuggy administrators can change the key.",
+    "defaultAssignee": "Default assignee",
+    "defaultAssigneeHelp": "Who new issues are assigned to when nobody is chosen.",
+    "assignee": {
+      "UNASSIGNED": "Unassigned",
+      "PROJECT_LEAD": "Project lead",
+      "PROJECT_DEFAULT": "Project default",
+      "COMPONENT_LEAD": "Component lead"
+    },
+    "archivedNotice": "This project is archived: its issues can be viewed, but nothing can be changed. Ask a BuggyWuggy administrator to restore it.",
+    "archivedNoticeAdmin": "This project is archived: its issues can be viewed, but nothing can be changed. Restore it under Details to make changes.",
+    "dangerZone": "Archive or delete",
+    "archive": "Archive project",
+    "archiveHelp": "Hides the project from the project list and makes it read-only. Can be undone.",
+    "unarchive": "Restore project",
+    "unarchiveHelp": "Makes the project visible and editable again.",
+    "archivedDone": "The project has been archived.",
+    "unarchivedDone": "The project has been restored.",
+    "delete": "Delete project",
+    "deleteHelp": "Deletes the project with all its issues, comments and attachments. Cannot be undone.",
+    "deleteTitle": "Delete {{name}}",
+    "deleteWarning": "This permanently deletes the project with all its issues, comments, attachments and history.",
+    "deleteTypeKey": "Type the project key {{key}} to confirm",
+    "deleteConfirm": "Delete permanently",
+    "deleted": "{{name}} has been deleted.",
+    "componentsIntro": "Components are parts of the product, for example \"Backend\" or \"Documentation\".",
+    "component": {
+      "create": "Create component",
+      "name": "Name",
+      "empty": "This project has no components.",
+      "editTitle": "Edit component {{name}}",
+      "deleteConfirm": "Delete the component {{name}}? It is removed from all issues.",
+      "leadRequired": "Choose a lead to assign issues to the component lead."
+    },
+    "versionsIntro": "Versions are releases of the product. Their order here is the order in which they are offered.",
+    "version": {
+      "create": "Create version",
+      "name": "Name",
+      "empty": "This project has no versions.",
+      "startDate": "Start date",
+      "releaseDate": "Release date",
+      "released": "Released",
+      "archived": "Archived",
+      "editTitle": "Edit version {{name}}",
+      "release": "Mark as released",
+      "unrelease": "Mark as unreleased",
+      "archive": "Archive",
+      "unarchive": "Restore",
+      "moveUp": "Move {{name}} up",
+      "moveDown": "Move {{name}} down",
+      "deleteConfirm": "Delete the version {{name}}? It is removed from all issues.",
+      "datesInvalid": "The release date cannot be before the start date."
+    },
+    "rolesIntro": "Roles decide what people may do in this project: Users can see and create issues, Developers can work on them, Administrators can change these settings. Add groups or individual users to a role.",
+    "role": {
+      "empty": "Nobody",
+      "addGroup": "Add group…",
+      "addUser": "Add user…",
+      "remove": "Remove {{name}}"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "details": "Your details",
+    "timeZone": "Time zone",
+    "timeZoneHelp": "For e-mail notifications (coming soon). The web interface uses the time zone of your browser ({{zone}}).",
+    "timeZoneDefault": "Server default",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "passwordChanged": "Your password has been changed.",
+    "passwordHelp": "You stay logged in here; your other sessions are logged out."
   }
 }

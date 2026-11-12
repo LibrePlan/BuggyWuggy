@@ -22,8 +22,10 @@ tasks and other work. If you have used Jira, most of it will feel familiar.
 12. [Watching issues](#watching-issues)
 13. [Searching for issues](#searching-for-issues)
 14. [Saved filters](#saved-filters)
-15. [Permissions: why can't I…?](#permissions-why-cant-i)
-16. [Not available yet](#not-available-yet)
+15. [Your profile](#your-profile)
+16. [Project settings](#project-settings)
+17. [Permissions: why can't I…?](#permissions-why-cant-i)
+18. [Not available yet](#not-available-yet)
 
 ## Concepts
 
@@ -62,7 +64,9 @@ The bar at the top of every page contains:
 - **Issues**: the search page, opened with the issues assigned to you that are not yet resolved.
 - **The search box**: type an issue key such as `BUG-12` and press Enter to open that issue
   straight away. Type anything else to search for it.
-- **Your name**: the menu with **Log out**.
+- **Administration**: only for BuggyWuggy administrators; see the
+  [Installation Guide](installation.md#administration).
+- **Your name**: the menu with **Profile** and **Log out**.
 
 Every issue and every search has its own address (URL). You can bookmark it or send it to
 a colleague.
@@ -77,6 +81,7 @@ most recently updated first. From here you can:
 
 - **Create issue**: create a new issue in this project.
 - **Search issues**: open the search page for this project, showing its unresolved issues.
+- **Project settings**: only for project administrators; see [Project settings](#project-settings).
 
 ### Creating a project
 
@@ -307,6 +312,46 @@ A **filter** is a saved search.
 A filter with **Assignee: Current user** shows each person their own issues. One shared filter
 such as *My open issues* therefore works for everybody.
 
+## Your profile
+
+Choose **Profile** in the menu under your name to change:
+
+- your **full name** and **e-mail address**;
+- your **time zone**, for e-mail notifications once they are available (the web interface
+  shows times in the time zone of your browser);
+- your **password**: enter the current one and the new one (at least 12 characters) twice.
+  You stay logged in in this browser; your other sessions are logged out.
+
+Your username cannot be changed.
+
+## Project settings
+
+Project administrators (by default the project's *Administrators* role) see a **Project
+settings** button on the project page. The settings have four tabs.
+
+**Details**: name, description, project lead and **default assignee** (who new issues are
+assigned to when the reporter chooses nobody: nobody, or the project lead). BuggyWuggy
+administrators can also change the project **key** here (old issue keys keep working), and
+**archive**, **restore** or **delete** the project:
+
+- An archived project is hidden from the project list (administrators can show it with
+  *Show archived projects*) and is read-only: its issues can be viewed, but not changed or
+  commented on.
+- Deleting a project deletes all its issues, comments, attachments and history. To confirm,
+  you must type the project key.
+
+**Components**: parts of the product, such as *Backend* or *Documentation*. A component can
+have a lead and its own default assignee: the project default, the component lead, the project
+lead, or nobody. Deleting a component removes it from all issues.
+
+**Versions**: releases of the product. Use the arrows to change their order; that order is
+used wherever versions are offered. With the **⋯** menu you can edit a version, mark it as
+released, archive it, or delete it (which removes it from all issues).
+
+**People and roles**: who has which role in this project. Add groups (for example `users`)
+or individual people to *Users*, *Developers* or *Administrators*. What each role may do is
+described under [Permissions](#permissions-why-cant-i). Changes apply immediately.
+
 ## Permissions: why can't I…?
 
 What you can do depends on your role in each project. Buttons for things you may not do are
@@ -316,8 +361,8 @@ not shown. With the default settings:
 |---|---|
 | See a project and its issues, create issues, comment, attach files, delete your own attachments | Everyone in the project's *Users* role (by default all users) |
 | Edit, assign, transition and link issues; be assigned issues; manage watchers | *Developers* and *Administrators* of the project |
-| Delete issues; edit or delete other people's comments and attachments | *Administrators* of the project |
-| Create projects | BuggyWuggy administrators |
+| Delete issues; edit or delete other people's comments and attachments; change the project settings | *Administrators* of the project |
+| Create projects; archive, delete or re-key projects; manage users and groups | BuggyWuggy administrators |
 
 If you need to do more in a project, ask your BuggyWuggy administrator to add you to the
 project's *Developers* role.
@@ -330,9 +375,6 @@ A project or issue you have no access to looks exactly like one that does not ex
 These features are planned but not available in the current version:
 
 - E-mail notifications
-- Administration screens in the web interface (administrators use the API for now; see the
-  [Installation Guide](installation.md#administration))
-- Editing your own profile and password in the web interface
 - Formatted text (Markdown) in descriptions and comments
 - Boards (Kanban/Scrum), dashboards and reports
 - A text query language like Jira's JQL

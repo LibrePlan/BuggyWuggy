@@ -20,8 +20,17 @@ public interface UserGroupRepository extends JpaRepository<UserGroup, Long> {
     boolean existsByNameExcluding(String name, long excludeId);
 
     @Query(value = """
-            select new org.buggywuggy.user.GroupResponse(g.id, g.name, g.description, size(g.members))
+            select new org.buggywuggy.user.GroupResponse(g.id, g.name, g.description, size(g.members),
+                case when lower(g.name) in ('administrators', 'users') then true else false end)
             from UserGroup g order by lower(g.name)""",
             countQuery = "select count(g) from UserGroup g")
     Page<GroupResponse> findAllWithMemberCount(Pageable pageable);
+
+    /** Groups whose name matches a {@link org.buggywuggy.common.SqlLike} pattern. */
+    @Query(value = """
+            select new org.buggywuggy.user.GroupResponse(g.id, g.name, g.description, size(g.members),
+                case when lower(g.name) in ('administrators', 'users') then true else false end)
+            from UserGroup g where lower(g.name) like :pattern escape '\\' order by lower(g.name)""",
+            countQuery = "select count(g) from UserGroup g where lower(g.name) like :pattern escape '\\'")
+    Page<GroupResponse> searchWithMemberCount(String pattern, Pageable pageable);
 }

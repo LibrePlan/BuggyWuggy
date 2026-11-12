@@ -11,6 +11,7 @@ import static org.buggywuggy.common.ApiException.notFound;
 
 import java.util.List;
 import org.buggywuggy.common.PageResponse;
+import org.buggywuggy.common.SqlLike;
 import org.buggywuggy.security.SessionInvalidator;
 import org.buggywuggy.user.GroupResponse.CreateGroupRequest;
 import org.buggywuggy.user.GroupResponse.UpdateGroupRequest;
@@ -38,8 +39,11 @@ public class GroupService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<GroupResponse> list(int page, int size) {
-        return PageResponse.of(groups.findAllWithMemberCount(PageRequest.of(page, size)), g -> g);
+    public PageResponse<GroupResponse> list(String query, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size);
+        return PageResponse.of(query == null || query.isBlank()
+                ? groups.findAllWithMemberCount(pageable)
+                : groups.searchWithMemberCount(SqlLike.containsPattern(query), pageable), g -> g);
     }
 
     @Transactional(readOnly = true)
@@ -124,6 +128,6 @@ public class GroupService {
     }
 
     private static GroupResponse toResponse(UserGroup g) {
-        return new GroupResponse(g.getId(), g.getName(), g.getDescription(), g.getMembers().size());
+        return new GroupResponse(g.getId(), g.getName(), g.getDescription(), g.getMembers().size(), g.isBuiltIn());
     }
 }
