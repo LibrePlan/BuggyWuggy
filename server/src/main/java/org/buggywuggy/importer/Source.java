@@ -124,7 +124,7 @@ public interface Source {
             return CloseReason.DUPLICATE;
         }
         for (String notPlanned : List.of("won't", "wont", "not ", "cannot", "can't", "incomplete", "invalid",
-                "declined", "rejected", "obsolete", "abandoned")) {
+                "declined", "rejected", "obsolete", "abandoned", "worksforme", "works for me")) {
             if (value.contains(notPlanned)) {
                 return CloseReason.NOT_PLANNED;
             }

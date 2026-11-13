@@ -17,7 +17,7 @@ const SOURCES = [
   { kind: 'gitlab', available: true, url: 'https://gitlab.com' },
   { kind: 'jira', available: true, url: 'https://your-site.atlassian.net' },
   { kind: 'redmine', available: true, url: '' },
-  { kind: 'trac', available: false, url: '' },
+  { kind: 'trac', available: true, url: '' },
 ] as const;
 
 const STATUS_COLOR: Record<ImportJob['status'], string> = {

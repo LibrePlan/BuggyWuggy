@@ -53,6 +53,8 @@ export const REPOSITORY_SOURCES = {
   jira: { name: 'Jira', url: 'https://your-site.atlassian.net', tokenRequired: false, userField: true },
   // Redmine: a project identifier, and an API key or username and password.
   redmine: { name: 'Redmine', url: '', tokenRequired: false, userField: true },
+  // Trac: one environment is one project; username and password through the XML-RPC plugin.
+  trac: { name: 'Trac', url: '', tokenRequired: false, userField: true },
 } as const;
 
 export type RepositorySource = keyof typeof REPOSITORY_SOURCES;
@@ -67,7 +69,7 @@ function ruleOf(value: string): LabelRule {
   return { target: target as LabelRule['target'], id: id ? Number(id) : null };
 }
 
-/** The import wizard for trackers with repositories (Forgejo, GitHub, GitLab) or projects (Jira, Redmine). */
+/** The import wizard for trackers with repositories (Forgejo, GitHub, GitLab) or projects (Jira, Redmine, Trac). */
 export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
   const { t } = useTranslation();
   const source = REPOSITORY_SOURCES[kind];
@@ -161,8 +163,8 @@ export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
 
   function chooseRepository(r: ImportRepository) {
     setRepository(r.fullName);
-    // Jira and Redmine: the key or identifier, with the project name as description.
-    const project = kind === 'jira' || kind === 'redmine';
+    // Jira, Redmine and Trac: the key, identifier or name, with the project name as description.
+    const project = kind === 'jira' || kind === 'redmine' || kind === 'trac';
     const name = project ? (r.description ?? r.fullName) : (r.fullName.split('/').at(-1) ?? r.fullName);
     setNewName(name);
     setNewKey(project && PROJECT_KEY_PATTERN.test(r.fullName) ? r.fullName : suggestProjectKey(name));

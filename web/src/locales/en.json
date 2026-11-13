@@ -439,7 +439,16 @@
         },
         "trac": {
           "name": "Trac",
-          "description": "Tickets of a Trac installation."
+          "description": "Tickets of a Trac installation.",
+          "title": "Import from Trac",
+          "urlHelp": "The address of the Trac environment, e.g. https://trac.example.org/project. Trac must have the TracXMLRPC plugin.",
+          "user": "Username",
+          "userHelp": "Your Trac username. Leave it and the password empty to read as anonymous (who then needs the XML_RPC permission).",
+          "tokenHelp": "Your password. The user needs the XML_RPC and TICKET_VIEW permissions; the importer only calls methods that read, and never changes anything in Trac. The password is only kept in memory while BuggyWuggy runs, never stored.",
+          "connectedAs": "{{version}}, logged in as {{login}}.",
+          "connectedAnonymous": "{{version}}, without logging in.",
+          "searchHelp": "A Trac environment is one project; it is listed below.",
+          "repository": "Project"
         }
       },
       "history": "Imports",

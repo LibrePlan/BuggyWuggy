@@ -33,14 +33,27 @@ import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The HTTP client of all importers. It can only <b>read</b>: there is no way to send
- * anything but a GET request, so an import can never change the system it reads from.
+ * The HTTP client of all importers. It can only <b>read</b>, so an import can never change
+ * the system it reads from: it sends GET requests, and the only other request is an XML-RPC
+ * call (a POST, as XML-RPC requires) of one of the {@link #READ_ONLY_RPC_METHODS}, which this
+ * class writes itself.
  *
  * <p>It retries temporary failures, waits when the server's rate limit runs out (asking the
  * {@link RateLimits} of the source when and how long), follows redirects itself, and only
  * sends the access token to the hosts of the source, never to a host a redirect points to.
  */
 public final class ReadOnlyHttp {
+
+    /**
+     * The XML-RPC methods {@link #rpc} may call: those of Trac's XmlRpcPlugin that only read.
+     * Methods that change something (ticket.create, ticket.update, …) are not on the list,
+     * and neither is system.multicall, which could wrap them.
+     */
+    public static final Set<String> READ_ONLY_RPC_METHODS = Set.of("system.getAPIVersion", "ticket.query",
+            "ticket.get", "ticket.changeLog", "ticket.listAttachments", "ticket.getTicketFields",
+            "ticket.milestone.getAll", "ticket.milestone.get", "ticket.component.getAll", "ticket.component.get",
+            "ticket.type.getAll", "ticket.priority.getAll", "ticket.resolution.getAll", "ticket.status.getAll",
+            "ticket.version.getAll");
 
     /** Waiting is never longer than this at once (GitHub resets its limit every hour). */
     public static final Duration MAX_WAIT = Duration.ofMinutes(65);
@@ -156,13 +169,39 @@ public final class ReadOnlyHttp {
 
     /** GETs an API resource; anything but 200 becomes an {@link ApiException} with a readable message. */
     public Response get(URI start) {
+        return send(start, null);
+    }
+
+    /**
+     * Calls a read-only XML-RPC method (see {@link #READ_ONLY_RPC_METHODS}) and returns its
+     * result. A fault of the server becomes {@link XmlRpc.Fault}.
+     *
+     * @throws IllegalArgumentException for any other method
+     */
+    public Object rpc(URI endpoint, String method, Object... params) {
+        if (!READ_ONLY_RPC_METHODS.contains(method)) {
+            throw new IllegalArgumentException("Not a read-only XML-RPC method: " + method);
+        }
+        Response response = send(endpoint, XmlRpc.bytes(XmlRpc.call(method, List.of(params))));
+        try {
+            return XmlRpc.result(response.body());
+        } catch (XmlRpc.Fault fault) {
+            throw fault;
+        } catch (Exception e) {
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "import.bad-response", response.uri().getPath());
+        }
+    }
+
+    /** A GET, or with {@code rpc} an XML-RPC call. */
+    private Response send(URI start, byte[] rpc) {
         URI uri = start;
         int redirects = 0;
         for (int attempt = 1; ; attempt++) {
             checkCancelled();
             HttpResponse<byte[]> response;
             try {
-                response = http.send(request(uri, Duration.ofSeconds(60), true), HttpResponse.BodyHandlers.ofByteArray());
+                response = http.send(rpc == null ? request(uri, Duration.ofSeconds(60), true) : rpcRequest(uri, rpc),
+                        HttpResponse.BodyHandlers.ofByteArray());
             } catch (IOException e) {
                 if (attempt < 4) {
                     pause(clock.instant().plusSeconds(5L * attempt), null);
@@ -185,7 +224,8 @@ public final class ReadOnlyHttp {
                 continue;
             }
             if (status >= 300 && status < 400 && redirects < MAX_REDIRECTS
-                    && response.headers().firstValue("Location").isPresent()) {
+                    && response.headers().firstValue("Location").isPresent()
+                    && (rpc == null || sameSource(uri.resolve(response.headers().firstValue("Location").get())))) {
                 // E.g. a renamed repository. The token only goes along to the hosts of the source.
                 uri = uri.resolve(response.headers().firstValue("Location").get());
                 redirects++;
@@ -270,6 +310,26 @@ public final class ReadOnlyHttp {
         public TooLargeException(long size) {
             super("larger than allowed (" + size + " bytes)");
         }
+    }
+
+    /** XML-RPC calls are only sent on (e.g. from http to https) to the hosts of the source. */
+    private boolean sameSource(URI uri) {
+        return uri.getHost() != null && tokenHosts.contains(uri.getHost().toLowerCase(Locale.ROOT));
+    }
+
+    private HttpRequest rpcRequest(URI uri, byte[] body) {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(120))
+                .POST(HttpRequest.BodyPublishers.ofByteArray(body));
+        headers.forEach((name, value) -> {
+            if (!name.equalsIgnoreCase("Accept") && !name.equalsIgnoreCase("Content-Type")) {
+                builder.header(name, value);
+            }
+        });
+        builder.header("Content-Type", "text/xml; charset=utf-8").header("Accept", "text/xml");
+        if (authorization != null && sameSource(uri)) {
+            builder.header("Authorization", authorization);
+        }
+        return builder.build();
     }
 
     /** Files may be on other hosts (e.g. storage a redirect points to): they only get the User-Agent. */

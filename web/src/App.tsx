@@ -60,6 +60,7 @@ export const router = createBrowserRouter([
               { path: 'import/gitlab', element: <RepositoryImportPage key="gitlab" kind="gitlab" /> },
               { path: 'import/jira', element: <RepositoryImportPage key="jira" kind="jira" /> },
               { path: 'import/redmine', element: <RepositoryImportPage key="redmine" kind="redmine" /> },
+              { path: 'import/trac', element: <RepositoryImportPage key="trac" kind="trac" /> },
               { path: 'import/jobs/:jobId', element: <ImportJobPage /> },
             ],
           },

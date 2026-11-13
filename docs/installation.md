@@ -428,12 +428,14 @@ that is your only source of it; system administrators always keep every permissi
 **Administration → Import** copies issues from another tracker into a BuggyWuggy project, with
 their comments, attachments and history. Forgejo (it also covers Gitea and codeberg.org),
 GitHub (github.com and GitHub Enterprise Server), GitLab (gitlab.com and self-managed), Jira
-(Cloud, or Server / Data Center at your own address) and Redmine are available now. Trac is
-listed but follows later.
+(Cloud, or Server / Data Center at your own address), Redmine and Trac are available.
 
 **An import only reads.** It never changes anything in the source: the importer can only send
 read (GET) requests, so it cannot write, close, comment or label anything there. A token with
-read-only permissions is enough.
+read-only permissions is enough. The one exception is Trac, whose XML-RPC interface only takes
+POST requests, also for reading: there the importer can only call a fixed list of methods that
+read (such as `ticket.get` and `ticket.changeLog`); any other method is refused before anything
+is sent.
 
 #### Forgejo
 
@@ -662,6 +664,52 @@ description's history, and the project's wiki, forums, news, documents and repos
 **Rate limits.** Redmine has none of its own. An import makes one request per issue (with its
 journal), one per person and one per attachment, plus a page of 100 issues at a time.
 
+#### Trac
+
+The Trac import reads the tickets of one Trac environment through the XML-RPC interface of the
+**TracXMLRPC plugin** (`/rpc`, and `/login/rpc` when logging in), with the same four-step wizard.
+Trac itself has no other interface that gives the original texts and the full change history.
+
+1. **Connection.** The address of the environment (e.g. `https://trac.example.org/project`); a
+   link to a ticket works too. Enter your Trac **username and password**, or leave both empty
+   to read as anonymous. The user (or *anonymous*) needs the permissions **XML_RPC** and
+   **TICKET_VIEW** (*Admin → Permissions*). Logging in uses basic authentication on `/login`; a
+   Trac that only offers digest authentication or a login form cannot be read this way yet.
+2. **Project.** An environment is one project: it is listed with the last part of its address
+   as name.
+3. **Mapping.** The wizard lists Trac's **ticket types** as `type:defect`, **priorities** as
+   `priority/major`, **components** as `component/core` and **severities** as
+   `severity/blocker`; **keywords** are labels. `defect` is suggested as *Bug*, `enhancement`
+   as *Story*.
+4. **Start** works as for Forgejo.
+
+What is imported:
+
+| Trac | BuggyWuggy |
+|---|---|
+| Summary, description, reporter, owner, created, changed | The same fields. Texts are converted from WikiFormatting to Markdown. |
+| Status | Open, or closed (status *closed*); the resolution sets *Fixed*, *Won't Fix* (*wontfix*, *invalid*, *worksforme*) or *Duplicate*. |
+| Type, priority, component, severity, keywords | As mapped in the wizard |
+| Milestone | The version; milestones keep their due date, and completed ones are released. |
+| Comments | Comments |
+| Change log (summary, type, priority, component, severity, keywords, owner, milestone, status) | History with the original author and date |
+| Attachments | Attachments; `[[Image(file.png)]]` and `attachment:file.txt` point to the copy. |
+| `#12`, `ticket:12` and links to `…/ticket/12` | The key of the imported ticket |
+| `wiki:Page`, `milestone:1.0`, `source:…`, `changeset:…` | Links to the page in Trac |
+| *blocked by* (MasterTickets plugin) | Dependencies |
+| *parents* (Subtickets plugin) | Sub-tasks, one level deep |
+| *sensitive* (SensitiveTickets plugin) | Issues with the label `restricted` |
+
+People are known in Trac by username only (or by name and e-mail address, for tickets of people
+who were not logged in); the import cannot read their names or e-mail addresses. Match them to
+existing accounts in the wizard where needed.
+
+Not imported: CC, version, other custom fields, time tracking, edits of comments, the
+description's history, and the wiki and repository browser.
+
+**Rate limits.** Trac has none. An import makes three requests per ticket (the ticket, its
+attachments and its change log), plus one per attachment.
+
 #### Progress, status line and log
 
 While an import runs, **every administration page shows a status line** with its progress and
@@ -822,7 +870,9 @@ Forgejo under *Settings → Applications*, on GitHub under *Settings → Develop
 GitLab under *Preferences → Access tokens* (scope `read_api`). For Jira Cloud, enter the
 e-mail address of the account that owns the API token; for a Jira personal access token, leave
 the username empty. Redmine ignores API keys, and usernames and passwords, until an administrator turns on
-*Enable REST web service* (*Administration → Settings → API*). For a
+*Enable REST web service* (*Administration → Settings → API*). Trac answers "No XML-RPC
+interface" when the TracXMLRPC plugin is missing or turned off, and "may not read" when the
+user lacks the XML_RPC permission. For a
 private repository the
 token's user must be able to see the repository; for a GitHub organisation that requires it, the
 token must also be approved for (or authorised with SSO by) the organisation.
