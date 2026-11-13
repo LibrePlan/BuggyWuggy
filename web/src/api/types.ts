@@ -77,3 +77,4 @@ export type ImportLabelInfo = Schemas['LabelInfo'];
 export type ImportUserInfo = Schemas['UserInfo'];
 export type LabelRule = Schemas['LabelRule'];
 export type ImportStartRequest = Schemas['StartRequest'];
+export type UrgencyResponse = Schemas['UrgencyResponse'];

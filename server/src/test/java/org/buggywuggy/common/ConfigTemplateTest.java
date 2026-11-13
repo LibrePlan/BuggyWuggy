@@ -20,6 +20,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.buggywuggy.mail.MailProperties;
+import org.buggywuggy.taskwarrior.UrgencyProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.core.env.MapPropertySource;
@@ -83,6 +84,13 @@ class ConfigTemplateTest {
         Arrays.stream(MailProperties.class.getRecordComponents())
                 .map(c -> "buggywuggy.mail." + c.getName().replaceAll("([A-Z])", "-$1").toLowerCase())
                 .forEach(changeable::add);
+        // The maps (priority, tags, projects) are listed with their default entries.
+        Arrays.stream(UrgencyProperties.class.getRecordComponents())
+                .filter(c -> c.getType() != Map.class)
+                .map(c -> "buggywuggy.taskwarrior.urgency." + c.getName().replaceAll("([A-Z])", "-$1").toLowerCase())
+                .forEach(changeable::add);
+        changeable.add("buggywuggy.taskwarrior.urgency.priority.Highest");
+        changeable.add("buggywuggy.taskwarrior.urgency.tags.next");
 
         assertThat(template).containsAll(changeable);
     }

@@ -82,11 +82,19 @@ public final class IssueDtos {
     public record RemoteLink(long id, String url, String title, String relation, Instant createdAt) {
     }
 
-    /** An issue in a list or search result. */
+    /**
+     * An issue in a list or search result. {@code urgency} is TaskWarrior's urgency, null for a
+     * resolved issue.
+     */
     public record IssueSummaryResponse(long id, String key, ProjectRef project, String summary,
             IssueTypeRef issueType, StatusRef status, @ApiNullable PriorityRef priority,
             @ApiNullable ResolutionRef resolution, @ApiNullable UserRef assignee, Instant createdAt,
-            Instant updatedAt) {
+            Instant updatedAt, @ApiNullable Double urgency) {
+
+        public IssueSummaryResponse withUrgency(Double value) {
+            return new IssueSummaryResponse(id, key, project, summary, issueType, status, priority, resolution,
+                    assignee, createdAt, updatedAt, value);
+        }
     }
 
     /**

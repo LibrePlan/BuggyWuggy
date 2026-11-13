@@ -28,7 +28,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 import { del, seg } from '../api/client';
 import { useIssueMutations } from '../api/issueMutations';
-import { useIssue, useIssueTypes, useProjectPermissions, useTransitions } from '../api/queries';
+import { useIssue, useIssueTypes, useLinks, useProjectPermissions, useTransitions } from '../api/queries';
 import type { IssueResponse, TransitionResponse } from '../api/types';
 import { CreateIssueModal } from '../components/CreateIssueModal';
 import { EditIssueModal } from '../components/EditIssueModal';
@@ -37,6 +37,7 @@ import { IssueComments } from '../components/IssueComments';
 import { IssueHistory } from '../components/IssueHistory';
 import { IssueLinks } from '../components/IssueLinks';
 import { IssueTypeIcon, PriorityLabel, StatusBadge } from '../components/IssueIcons';
+import { IssueUrgency } from '../components/IssueUrgency';
 import { ErrorAlert, isNotFound, PageLoader } from '../components/QueryState';
 import { TransitionModal } from '../components/TransitionModal';
 import { UserLabel } from '../components/UserLabel';
@@ -75,6 +76,8 @@ function IssueView({ issue }: { issue: IssueResponse }) {
   const transitions = useTransitions(issue.key, canTransition);
   const { update, transition } = useIssueMutations(issue);
   const issueTypes = useIssueTypes().data ?? [];
+  // Links (blocks) and comments change the urgency; comments also change updatedAt.
+  const links = useLinks(issue.key);
   const canHaveChildren = childTypes(issueTypes, issue.issueType.hierarchyLevel).length > 0;
 
   const [editing, editModal] = useDisclosure(false);
@@ -310,6 +313,9 @@ function IssueView({ issue }: { issue: IssueResponse }) {
                   <Text size="sm">{formatDate(issue.dueDate, i18n.language)}</Text>
                 </Field>
               )}
+              <Field label={t('taskwarrior.urgency')}>
+                <IssueUrgency issueKey={issue.key} version={`${issue.updatedAt}:${links.data?.length ?? 0}`} />
+              </Field>
               <Field label={t('issue.created')}>
                 <Text size="sm">{formatDateTime(issue.createdAt, i18n.language)}</Text>
               </Field>

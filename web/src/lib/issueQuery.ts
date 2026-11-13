@@ -8,7 +8,7 @@ export type IssueQuery = components['schemas']['IssueQuery'];
 export type SortField = NonNullable<IssueQuery['sort']>;
 export type SortDirection = NonNullable<IssueQuery['direction']>;
 
-export const SORT_FIELDS: SortField[] = ['RELEVANCE', 'UPDATED', 'CREATED', 'KEY', 'PRIORITY', 'STATUS', 'DUE_DATE'];
+export const SORT_FIELDS: SortField[] = ['RELEVANCE', 'UPDATED', 'CREATED', 'KEY', 'PRIORITY', 'STATUS', 'DUE_DATE', 'URGENCY'];
 const RESOLUTIONS = ['UNRESOLVED', 'RESOLVED'] as const;
 const USER_VALUE = /^(me|none|\d{1,18})$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;

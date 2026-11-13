@@ -16,7 +16,16 @@ const ids = (values: string[]) => values.map(Number);
 const strs = (values: number[] | undefined) => (values ?? []).map(String);
 
 /** The conditions of an issue search. Every change is reported at once (text debounced). */
-export function FilterBar({ query, onChange }: { query: IssueQuery; onChange: (query: IssueQuery) => void }) {
+export function FilterBar({
+  query,
+  onChange,
+  defaultSort,
+}: {
+  query: IssueQuery;
+  onChange: (query: IssueQuery) => void;
+  /** The sort when the query has none (e.g. URGENCY in the TaskWarrior view). */
+  defaultSort?: SortField;
+}) {
   const { t } = useTranslation();
   const projects = useAllProjects().data ?? [];
   const types = useIssueTypes().data ?? [];
@@ -32,7 +41,7 @@ export function FilterBar({ query, onChange }: { query: IssueQuery; onChange: (q
   const set = <K extends keyof IssueQuery>(key: K, value: IssueQuery[K]) => onChange({ ...query, [key]: value });
   const moreCount = [query.reporters?.length, query.createdFrom, query.createdTo, query.updatedFrom, query.updatedTo]
     .filter(Boolean).length;
-  const sort: SortField = query.sort ?? (query.text ? 'RELEVANCE' : 'UPDATED');
+  const sort: SortField = query.sort ?? defaultSort ?? (query.text ? 'RELEVANCE' : 'UPDATED');
   const descending = (query.direction ?? (sort === 'KEY' ? 'ASC' : 'DESC')) === 'DESC';
 
   return (

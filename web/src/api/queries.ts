@@ -40,6 +40,7 @@ import type {
   ProjectResponse,
   ResolutionResponse,
   TransitionResponse,
+  UrgencyResponse,
   UserRef,
   VersionResponse,
 } from './types';
@@ -63,6 +64,7 @@ export const keys = {
   links: (key: string) => ['issue', key, 'links'] as const,
   watchers: (key: string) => ['issue', key, 'watchers'] as const,
   attachments: (key: string) => ['issue', key, 'attachments'] as const,
+  urgency: (key: string) => ['issue', key, 'urgency'] as const,
   projectRoles: (key: string) => ['project', key, 'roles'] as const,
   admin: ['admin'] as const,
   adminUsers: (query: string, page: number) => ['admin', 'users', query, page] as const,
@@ -215,6 +217,14 @@ export function useComments(key: string) {
   return useQuery({
     queryKey: keys.comments(key),
     queryFn: () => get<CommentResponse[]>(`/api/v1/issues/${seg(key)}/comments`),
+  });
+}
+
+/** TaskWarrior's urgency, with its calculation; {@code version} refetches it when the issue changed. */
+export function useUrgency(key: string, version: string) {
+  return useQuery({
+    queryKey: [...keys.urgency(key), version],
+    queryFn: () => get<UrgencyResponse>(`/api/v1/issues/${seg(key)}/urgency`),
   });
 }
 

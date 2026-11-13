@@ -49,7 +49,7 @@ public record IssueQuery(
 
     public enum Resolution { UNRESOLVED, RESOLVED }
 
-    public enum Sort { RELEVANCE, KEY, CREATED, UPDATED, PRIORITY, STATUS, DUE_DATE }
+    public enum Sort { RELEVANCE, KEY, CREATED, UPDATED, PRIORITY, STATUS, DUE_DATE, URGENCY }
 
     public enum Direction { ASC, DESC }
 

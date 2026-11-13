@@ -916,6 +916,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/issues/{idOrKey}/urgency": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_5"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/issues/{idOrKey}/history": {
         parameters: {
             query?: never;
@@ -1577,7 +1593,7 @@ export interface components {
             /** Format: date */
             updatedTo?: string;
             /** @enum {string} */
-            sort?: "RELEVANCE" | "KEY" | "CREATED" | "UPDATED" | "PRIORITY" | "STATUS" | "DUE_DATE";
+            sort?: "RELEVANCE" | "KEY" | "CREATED" | "UPDATED" | "PRIORITY" | "STATUS" | "DUE_DATE" | "URGENCY";
             /** @enum {string} */
             direction?: "ASC" | "DESC";
         };
@@ -1596,6 +1612,8 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            /** Format: double */
+            urgency: number | null;
         };
         PageResponseIssueSummaryResponse: {
             items: components["schemas"]["IssueSummaryResponse"][];
@@ -1971,6 +1989,22 @@ export interface components {
             icon: string | null;
             color: string | null;
             isDefault: boolean;
+        };
+        Term: {
+            name: string;
+            /** Format: double */
+            factor: number;
+            /** Format: double */
+            coefficient: number;
+            /** Format: double */
+            urgency: number;
+        };
+        UrgencyResponse: {
+            key: string;
+            /** Format: double */
+            urgency: number | null;
+            resolved: boolean;
+            terms: components["schemas"]["Term"][];
         };
         TransitionResponse: {
             /** Format: int64 */
@@ -4159,6 +4193,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["WatchersResponse"];
+                };
+            };
+        };
+    };
+    get_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UrgencyResponse"];
                 };
             };
         };

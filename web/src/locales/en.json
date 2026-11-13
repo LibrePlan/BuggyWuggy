@@ -7,6 +7,12 @@
     "userMenu": "User menu",
     "logout": "Log out",
     "issues": "Issues",
+    "issuesMenu": "Issue views",
+    "issueViews": "View issues as",
+    "issueView": {
+      "issues": "Issues",
+      "taskwarrior": "TaskWarrior"
+    },
     "quickSearch": "Search or jump to BUG-12",
     "admin": "Administration",
     "profile": "Profile"
@@ -201,6 +207,15 @@
     "count_one": "{{count}} watcher",
     "count_other": "{{count}} watchers"
   },
+  "taskwarrior": {
+    "title": "TaskWarrior",
+    "intro": "Issues with TaskWarrior's urgency, most urgent first. Open an issue and click its urgency to see how it was calculated.",
+    "urgency": "Urgency",
+    "showCalculation": "Show how the urgency was calculated",
+    "resolved": "Resolved issues have no urgency, as TaskWarrior's next report only lists pending tasks.",
+    "noTerms": "Nothing about this issue counts towards its urgency.",
+    "explanation": "Each line: the issue's value for a term × the term's coefficient = its share. The coefficients are set by the administrator in the configuration file."
+  },
   "search": {
     "title": "Issues",
     "noResults": "No issues match these conditions."
@@ -216,7 +231,8 @@
       "KEY": "Key",
       "PRIORITY": "Priority",
       "STATUS": "Status",
-      "DUE_DATE": "Due date"
+      "DUE_DATE": "Due date",
+      "URGENCY": "Urgency"
     },
     "ascending": "Ascending",
     "descending": "Descending",

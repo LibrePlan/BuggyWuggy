@@ -7,20 +7,34 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import type { IssueSummaryResponse } from '../api/types';
 import { formatDateTime } from '../lib/format';
+import { formatUrgency } from '../lib/urgency';
 import { IssueTypeIcon, PriorityIcon, StatusBadge } from './IssueIcons';
 import { UserLabel } from './UserLabel';
 
-/** A list of issues; rows open the issue. */
-export function IssueTable({ issues, showProject = false }: { issues: IssueSummaryResponse[]; showProject?: boolean }) {
+/** A list of issues; rows open the issue. {@code showUrgency} adds TaskWarrior's urgency. */
+export function IssueTable({
+  issues,
+  showProject = false,
+  showUrgency = false,
+}: {
+  issues: IssueSummaryResponse[];
+  showProject?: boolean;
+  showUrgency?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   return (
-    <Table.ScrollContainer minWidth={showProject ? 820 : 680}>
+    <Table.ScrollContainer minWidth={(showProject ? 820 : 680) + (showUrgency ? 90 : 0)}>
       <Table highlightOnHover verticalSpacing="xs">
         <Table.Thead>
           <Table.Tr>
             <Table.Th w={36} aria-label={t('issue.type')} />
             <Table.Th w={110}>{t('issue.key')}</Table.Th>
+            {showUrgency && (
+              <Table.Th w={90} ta="right">
+                {t('taskwarrior.urgency')}
+              </Table.Th>
+            )}
             <Table.Th>{t('issue.summary')}</Table.Th>
             {showProject && <Table.Th w={160}>{t('issue.project')}</Table.Th>}
             <Table.Th w={150}>{t('issue.status')}</Table.Th>
@@ -46,6 +60,13 @@ export function IssueTable({ issues, showProject = false }: { issues: IssueSumma
                   {issue.key}
                 </Anchor>
               </Table.Td>
+              {showUrgency && (
+                <Table.Td ta="right">
+                  <Text size="sm" fw={600} ff="monospace">
+                    {issue.urgency == null ? '–' : formatUrgency(issue.urgency)}
+                  </Text>
+                </Table.Td>
+              )}
               <Table.Td>
                 <Text size="sm" lineClamp={2}>
                   {issue.summary}

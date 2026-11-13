@@ -10,8 +10,10 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import org.buggywuggy.common.PageResponse;
@@ -27,6 +29,8 @@ import org.buggywuggy.project.ProjectPermissionService;
 import org.buggywuggy.search.IssueQuery.Direction;
 import org.buggywuggy.search.IssueQuery.Sort;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
+import org.buggywuggy.taskwarrior.Urgency;
+import org.buggywuggy.taskwarrior.UrgencyService;
 import org.buggywuggy.user.UserDtos.UserRef;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -67,10 +71,15 @@ public class IssueSearchService {
                    a.id as a_id, a.username as a_username, a.display_name as a_display_name
             """;
 
-    private final NamedParameterJdbcTemplate jdbc;
+    /** Sorting by urgency calculates it for at most this many issues. */
+    static final int MAX_URGENCY_SORT = 10_000;
 
-    public IssueSearchService(NamedParameterJdbcTemplate jdbc) {
+    private final NamedParameterJdbcTemplate jdbc;
+    private final UrgencyService urgency;
+
+    public IssueSearchService(NamedParameterJdbcTemplate jdbc, UrgencyService urgency) {
         this.jdbc = jdbc;
+        this.urgency = urgency;
     }
 
     public PageResponse<IssueSummaryResponse> search(BuggyWuggyPrincipal user, IssueQuery query, int page, int size) {
@@ -96,11 +105,39 @@ public class IssueSearchService {
 
         String whereSql = " where " + String.join("\n  and ", where.conditions);
         long total = jdbc.queryForObject("select count(*) " + FROM + whereSql, where.params, Long.class);
-        where.params.addValue("limit", size).addValue("offset", (long) page * size);
-        List<IssueSummaryResponse> items = jdbc.query(COLUMNS + FROM + whereSql
-                        + " order by " + orderBy(query, rank) + " limit :limit offset :offset",
-                where.params, (rs, n) -> toSummary(rs));
-        return new PageResponse<>(items, page, size, total);
+        List<IssueSummaryResponse> items;
+        Map<Long, Urgency.Result> urgencies;
+        if (query.sort() == Sort.URGENCY) {
+            // Calculated in Java, so first for every matching issue, then one page is read.
+            where.params.addValue("max", MAX_URGENCY_SORT);
+            List<Long> ids = jdbc.queryForList("select i.id " + FROM + whereSql + " order by i.id desc limit :max",
+                    where.params, Long.class);
+            urgencies = urgency.of(ids);
+            boolean ascending = query.direction() == Direction.ASC;
+            Comparator<Long> byUrgency = Comparator.comparing(
+                    (Long id) -> urgencies.get(id) == null ? null : urgencies.get(id).urgency(),
+                    Comparator.nullsLast(ascending ? Comparator.<Double>naturalOrder()
+                            : Comparator.<Double>reverseOrder()));
+            List<Long> pageIds = ids.stream().sorted(byUrgency.thenComparing(Comparator.reverseOrder()))
+                    .skip((long) page * size).limit(size).toList();
+            items = pageIds.isEmpty() ? List.of() : inOrder(pageIds, jdbc.query(COLUMNS + FROM
+                    + " where i.id in (:pageIds)", Map.of("pageIds", pageIds), (rs, n) -> toSummary(rs)));
+        } else {
+            where.params.addValue("limit", size).addValue("offset", (long) page * size);
+            items = jdbc.query(COLUMNS + FROM + whereSql
+                            + " order by " + orderBy(query, rank) + " limit :limit offset :offset",
+                    where.params, (rs, n) -> toSummary(rs));
+            urgencies = urgency.of(items.stream().map(IssueSummaryResponse::id).toList());
+        }
+        List<IssueSummaryResponse> withUrgency = items.stream().map(i -> i.withUrgency(
+                urgencies.get(i.id()) == null ? null : urgencies.get(i.id()).urgency())).toList();
+        return new PageResponse<>(withUrgency, page, size, total);
+    }
+
+    private static List<IssueSummaryResponse> inOrder(List<Long> ids, List<IssueSummaryResponse> found) {
+        Map<Long, IssueSummaryResponse> byId = found.stream()
+                .collect(Collectors.toMap(IssueSummaryResponse::id, i -> i));
+        return ids.stream().map(byId::get).filter(java.util.Objects::nonNull).toList();
     }
 
     /**
@@ -195,6 +232,7 @@ public class IssueSearchService {
             case PRIORITY -> "pr.position" + (desc ? " asc" : " desc") + " nulls last";
             case STATUS -> "s.position" + dir;
             case DUE_DATE -> "i.due_date" + dir + " nulls last";
+            case URGENCY -> "i.updated_at" + dir; // sorted in Java, see search()
         };
         return order + ", i.id" + dir;
     }
@@ -216,7 +254,7 @@ public class IssueSearchService {
                 new StatusRef(rs.getLong("s_id"), rs.getString("s_name"),
                         Status.Category.valueOf(rs.getString("s_category"))),
                 priority, resolution, assignee,
-                rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant());
+                rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant(), null);
     }
 
     /** The WHERE conditions and parameters of one search. */

@@ -182,6 +182,9 @@ buggywuggy:
 The file contains passwords: make it readable only for root and the `buggywuggy` group
 (`chmod 640`, `chown root:buggywuggy`).
 
+**TaskWarrior view.** The coefficients of the urgency calculation are set under
+`buggywuggy.taskwarrior.urgency`; see [The TaskWarrior view](taskwarrior.md#configuration).
+
 ### E-mail
 
 BuggyWuggy sends e-mail notifications about issues (see the
