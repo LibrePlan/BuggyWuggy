@@ -27,3 +27,42 @@
 .bw-plain-link:hover {
   text-decoration: underline;
 }
+
+/* Kanban board: a grid of columns, one row of cells per lane. */
+.bw-board {
+  display: grid;
+  gap: var(--mantine-spacing-xs);
+  overflow-x: auto;
+  padding-bottom: var(--mantine-spacing-xs);
+}
+
+.bw-board-cell {
+  min-height: 72px;
+  padding: 6px;
+  border-radius: var(--mantine-radius-sm);
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+  outline: 2px solid transparent;
+  transition: outline-color 120ms;
+}
+
+.bw-board-cell[data-over] {
+  outline-color: var(--mantine-color-blue-filled);
+}
+
+.bw-board-lane {
+  grid-column: 1 / -1;
+  padding-top: var(--mantine-spacing-xs);
+}
+
+.bw-board-card {
+  cursor: grab;
+  touch-action: manipulation;
+}
+
+.bw-board-card[data-dragging] {
+  opacity: 0.4;
+}
+
+.bw-board-card[data-fixed] {
+  cursor: pointer;
+}

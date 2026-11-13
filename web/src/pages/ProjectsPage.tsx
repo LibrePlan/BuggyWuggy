@@ -4,7 +4,7 @@
 
 import { Anchor, Badge, Button, Group, Pagination, Stack, Switch, Table, Text, TextInput, Title } from '@mantine/core';
 import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
-import { IconPlus, IconSearch } from '@tabler/icons-react';
+import { IconLayoutKanban, IconPlus, IconSearch } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
@@ -70,6 +70,7 @@ export function ProjectsPage() {
                 <Table.Th>{t('project.name')}</Table.Th>
                 <Table.Th>{t('project.key')}</Table.Th>
                 <Table.Th visibleFrom="sm">{t('project.lead')}</Table.Th>
+                <Table.Th w={1} />
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -88,6 +89,20 @@ export function ProjectsPage() {
                   <Table.Td>{p.key}</Table.Td>
                   <Table.Td visibleFrom="sm">
                     <UserLabel user={p.lead} emptyLabel="—" />
+                  </Table.Td>
+                  <Table.Td ta="right">
+                    <Anchor
+                      component={Link}
+                      to={`/projects/${p.key}/board`}
+                      size="sm"
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={t('board.openFor', { name: p.name })}
+                    >
+                      <Group gap={4} wrap="nowrap">
+                        <IconLayoutKanban size={16} />
+                        {t('board.title')}
+                      </Group>
+                    </Anchor>
                   </Table.Td>
                 </Table.Tr>
               ))}

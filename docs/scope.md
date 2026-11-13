@@ -37,7 +37,7 @@ functionally comparable, easy to install on your own server, and easy to migrate
 - Configurable workflows, workflow schemes, screen schemes
 - Custom fields
 - Full query language (JQL-like)
-- Agile boards (Scrum / Kanban), sprints, backlog
+- Scrum boards, sprints, backlog (kanban boards are available)
 - Dashboards and gadgets
 - Webhooks
 - Plugin / extension system

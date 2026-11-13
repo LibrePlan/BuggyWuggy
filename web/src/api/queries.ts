@@ -7,6 +7,8 @@ import { ApiError } from '../lib/apiError';
 import { get, post, seg } from './client';
 import type { IssueQuery } from '../lib/issueQuery';
 import type {
+  BoardConfigResponse,
+  BoardResponse,
   AttachmentResponse,
   AttachmentSettings,
   CommentResponse,
@@ -65,6 +67,9 @@ export const keys = {
   watchers: (key: string) => ['issue', key, 'watchers'] as const,
   attachments: (key: string) => ['issue', key, 'attachments'] as const,
   urgency: (key: string) => ['issue', key, 'urgency'] as const,
+  board: (key: string) => ['project', key, 'board'] as const,
+  boardConfig: (key: string) => ['project', key, 'board', 'config'] as const,
+  defaultBoard: ['admin', 'board'] as const,
   projectRoles: (key: string) => ['project', key, 'roles'] as const,
   admin: ['admin'] as const,
   adminUsers: (query: string, page: number) => ['admin', 'users', query, page] as const,
@@ -451,4 +456,24 @@ export function useImportJob(id: number) {
     queryFn: () => get<ImportJob>(`/api/v1/admin/import/jobs/${id}`),
     refetchInterval: (query) => (query.state.data?.status === 'RUNNING' ? 1500 : false),
   });
+}
+
+export function useBoard(key: string) {
+  return useQuery({
+    queryKey: keys.board(key),
+    queryFn: () => get<BoardResponse>(`/api/v1/projects/${seg(key)}/board`),
+  });
+}
+
+/** The columns of a project's board, for its administrators. */
+export function useBoardConfig(key: string) {
+  return useQuery({
+    queryKey: keys.boardConfig(key),
+    queryFn: () => get<BoardConfigResponse>(`/api/v1/projects/${seg(key)}/board/config`),
+  });
+}
+
+/** The default board, for administrators. */
+export function useDefaultBoardConfig() {
+  return useQuery({ queryKey: keys.defaultBoard, queryFn: () => get<BoardConfigResponse>('/api/v1/admin/board') });
 }

@@ -52,6 +52,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{idOrKey}/board/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["config"];
+        put: operations["saveConfig"];
+        post?: never;
+        delete: operations["resetConfig"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/myself/password": {
         parameters: {
             query?: never;
@@ -148,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["config_1"];
+        put: operations["save_1"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/setup/admin": {
         parameters: {
             query?: never;
@@ -206,6 +238,22 @@ export interface paths {
         get: operations["list_2"];
         put?: never;
         post: operations["create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{idOrKey}/board/moves": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["move"];
         delete?: never;
         options?: never;
         head?: never;
@@ -820,6 +868,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{idOrKey}/board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["board"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{idOrKey}/assignable-users": {
         parameters: {
             query?: never;
@@ -1257,6 +1321,31 @@ export interface components {
             /** Format: int32 */
             position: number;
         };
+        BoardConfigRequest: {
+            /** @enum {string} */
+            swimlanes: "NONE" | "ASSIGNEE" | "EPIC" | "PRIORITY";
+            /** Format: int32 */
+            resolvedDays: number;
+            columns: components["schemas"]["ColumnRequest"][];
+        };
+        ColumnRequest: {
+            name: string;
+            statusIds: number[];
+        };
+        BoardConfigResponse: {
+            own: boolean;
+            /** @enum {string} */
+            swimlanes: "NONE" | "ASSIGNEE" | "EPIC" | "PRIORITY";
+            /** Format: int32 */
+            resolvedDays: number;
+            columns: components["schemas"]["ColumnConfig"][];
+        };
+        ColumnConfig: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            statusIds: number[];
+        };
         ChangeOwnPasswordRequest: {
             currentPassword: string;
             newPassword: string;
@@ -1382,6 +1471,23 @@ export interface components {
             lead: components["schemas"]["UserRef"] | null;
             /** @enum {string} */
             defaultAssignee: "PROJECT_DEFAULT" | "UNASSIGNED" | "PROJECT_LEAD" | "COMPONENT_LEAD";
+        };
+        Lane: {
+            /** @enum {string} */
+            by: "NONE" | "ASSIGNEE" | "EPIC" | "PRIORITY";
+            value: string | null;
+        };
+        MoveRequest: {
+            issue: string;
+            /** Format: int64 */
+            version?: number;
+            /** Format: int64 */
+            transitionId?: number;
+            /** Format: int64 */
+            resolutionId?: number;
+            lane?: components["schemas"]["Lane"];
+            after?: string;
+            before?: string;
         };
         CreateIssueRequest: {
             project: string;
@@ -1975,6 +2081,49 @@ export interface components {
         MyProjectPermissionsResponse: {
             permissions: ("BROWSE_PROJECT" | "CREATE_ISSUE" | "EDIT_ISSUE" | "DELETE_ISSUE" | "ASSIGN_ISSUE" | "ASSIGNABLE_USER" | "TRANSITION_ISSUE" | "ADD_COMMENT" | "EDIT_ALL_COMMENTS" | "EDIT_OWN_COMMENTS" | "DELETE_ALL_COMMENTS" | "DELETE_OWN_COMMENTS" | "CREATE_ATTACHMENT" | "DELETE_ALL_ATTACHMENTS" | "DELETE_OWN_ATTACHMENTS" | "LINK_ISSUE" | "MANAGE_WATCHERS" | "ADMINISTER_PROJECT")[];
         };
+        BoardColumn: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            statuses: components["schemas"]["StatusRef"][];
+        };
+        BoardIssue: {
+            /** Format: int64 */
+            id: number;
+            key: string;
+            summary: string;
+            issueType: components["schemas"]["IssueTypeRef"];
+            status: components["schemas"]["StatusRef"];
+            priority: components["schemas"]["PriorityRef"] | null;
+            assignee: components["schemas"]["UserRef"] | null;
+            parent: components["schemas"]["IssueRef"] | null;
+            epic: components["schemas"]["IssueRef"] | null;
+            /** Format: double */
+            urgency: number | null;
+            /** Format: int64 */
+            version: number;
+            /** Format: int64 */
+            columnId: number;
+        };
+        BoardPermissions: {
+            transition: boolean;
+            assign: boolean;
+            edit: boolean;
+            configure: boolean;
+        };
+        BoardResponse: {
+            project: components["schemas"]["ProjectRef"];
+            ownColumns: boolean;
+            /** @enum {string} */
+            swimlanes: "NONE" | "ASSIGNEE" | "EPIC" | "PRIORITY";
+            /** Format: int32 */
+            resolvedDays: number;
+            columns: components["schemas"]["BoardColumn"][];
+            issues: components["schemas"]["BoardIssue"][];
+            truncated: boolean;
+            unmappedStatuses: components["schemas"]["StatusRef"][];
+            permissions: components["schemas"]["BoardPermissions"];
+        };
         ProjectRoleResponse: {
             /** Format: int64 */
             id: number;
@@ -2249,6 +2398,76 @@ export interface operations {
             };
         };
     };
+    config: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BoardConfigResponse"];
+                };
+            };
+        };
+    };
+    saveConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BoardConfigResponse"];
+                };
+            };
+        };
+    };
+    resetConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BoardConfigResponse"];
+                };
+            };
+        };
+    };
     changePassword: {
         parameters: {
             query?: never;
@@ -2498,6 +2717,50 @@ export interface operations {
             };
         };
     };
+    config_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BoardConfigResponse"];
+                };
+            };
+        };
+    };
+    save_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BoardConfigResponse"];
+                };
+            };
+        };
+    };
     createAdministrator: {
         parameters: {
             query?: never;
@@ -2664,6 +2927,30 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["ComponentResponse"];
                 };
+            };
+        };
+    };
+    move: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -4063,6 +4350,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MyProjectPermissionsResponse"];
+                };
+            };
+        };
+    };
+    board: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BoardResponse"];
                 };
             };
         };

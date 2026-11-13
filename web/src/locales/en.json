@@ -159,7 +159,8 @@
       "link": "Link",
       "attachment": "Attachment",
       "import": "Imported from",
-      "remotelink": "External link"
+      "remotelink": "External link",
+      "rank": "Rank"
     }
   },
   "comment": {
@@ -560,7 +561,8 @@
         "waitingUntil": "until {{time}}",
         "open": "Show"
       }
-    }
+    },
+    "board": "Board"
   },
   "settings": {
     "title": "Project settings",
@@ -569,7 +571,8 @@
       "details": "Details",
       "components": "Components",
       "versions": "Versions",
-      "roles": "People and roles"
+      "roles": "People and roles",
+      "board": "Board"
     },
     "keyHelp": "Changing the key changes all issue keys; the old keys keep working.",
     "keyAdminOnly": "Only BuggyWuggy administrators can change the key.",
@@ -651,5 +654,60 @@
     "emailNotificationsHelp": "About issues you watch, reported or are assigned to. Several changes by one person are combined into one mail.",
     "notifyOwnChanges": "Also about my own changes",
     "notifyOwnChangesHelp": "Normally you do not get mails about changes you made yourself."
+  },
+  "board": {
+    "title": "Board",
+    "titleFor": "{{name}} board",
+    "open": "Open the board",
+    "openFor": "Board of {{name}}",
+    "configure": "Columns",
+    "readOnly": "You can look at this board, but not move issues on it.",
+    "unmapped": "Issues with the status {{statuses}} are not shown: these statuses are in no column.",
+    "truncated": "Only the first {{count}} issues are shown.",
+    "issueCount_one": "{{count}} issue",
+    "issueCount_other": "{{count}} issues",
+    "moveTitle": "Move {{key}} to {{column}}",
+    "transition": "Transition",
+    "move": "Move",
+    "lane": {
+      "unassigned": "Unassigned",
+      "noEpic": "No epic",
+      "noPriority": "No priority"
+    },
+    "swimlanes": {
+      "NONE": "None",
+      "ASSIGNEE": "Assignee",
+      "EPIC": "Epic",
+      "PRIORITY": "Priority"
+    },
+    "cannot": {
+      "transition": "You may not change the status of issues in this project.",
+      "assign": "You may not assign issues in this project.",
+      "edit": "You may not edit issues in this project.",
+      "rank": "You may not change the order of the issues on this board.",
+      "noPriority": "An issue cannot be moved to the lane without priority.",
+      "epic": "Issues of type {{type}} cannot be moved to another epic on the board.",
+      "noTransition": "There is no transition from {{status}} to a status in {{column}}."
+    },
+    "config": {
+      "defaultIntro": "The columns of the board of every project that has no columns of its own. Each column shows the issues with one of its statuses; moving an issue to another column changes its status through the workflow. Project administrators can give their project columns of its own.",
+      "projectIntro": "The columns of this project's board. Each column shows the issues with one of its statuses; moving an issue to another column changes its status through the workflow.",
+      "usesDefault": "This project uses the default board, set by the BuggyWuggy administrator. Saving gives the project these columns as its own.",
+      "useDefault": "Use the default board",
+      "columnName": "Column",
+      "nameRequired": "Enter a name.",
+      "nameDuplicate": "Another column has this name.",
+      "statuses": "Statuses",
+      "noStatuses": "No statuses: the column stays empty",
+      "moveUp": "Move column up",
+      "moveDown": "Move column down",
+      "removeColumn": "Remove column",
+      "addColumn": "Add column",
+      "unused": "In no column, so not shown on the board: {{statuses}}.",
+      "swimlanes": "Swimlanes",
+      "swimlanesHelp": "The horizontal lanes until a user chooses others.",
+      "resolvedDays": "Resolved issues stay (days)",
+      "resolvedDaysHelp": "How long resolved issues remain on the board."
+    }
   }
 }

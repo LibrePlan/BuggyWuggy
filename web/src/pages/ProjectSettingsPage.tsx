@@ -9,13 +9,14 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useMyself, useProject, useProjectPermissions } from '../api/queries';
 import { ErrorAlert, isNotFound, PageLoader } from '../components/QueryState';
+import { BoardSettings } from '../components/settings/BoardSettings';
 import { ComponentsSettings } from '../components/settings/ComponentsSettings';
 import { ProjectDetailsSettings } from '../components/settings/ProjectDetailsSettings';
 import { RolesSettings } from '../components/settings/RolesSettings';
 import { VersionsSettings } from '../components/settings/VersionsSettings';
 import { NotFoundPage } from './NotFoundPage';
 
-const TABS = ['details', 'components', 'versions', 'roles'] as const;
+const TABS = ['details', 'components', 'versions', 'roles', 'board'] as const;
 type Tab = (typeof TABS)[number];
 
 /** Project settings, for project administrators (ADMINISTER_PROJECT). */
@@ -82,6 +83,9 @@ export function ProjectSettingsPage() {
         </Tabs.Panel>
         <Tabs.Panel value="roles" pt="md">
           <RolesSettings projectKey={p.key} readOnly={readOnly} />
+        </Tabs.Panel>
+        <Tabs.Panel value="board" pt="md">
+          <BoardSettings projectKey={p.key} readOnly={readOnly} />
         </Tabs.Panel>
       </Tabs>
     </Stack>

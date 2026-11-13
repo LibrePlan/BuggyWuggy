@@ -4,7 +4,7 @@
 
 import { Anchor, Badge, Breadcrumbs, Button, Group, Pagination, Stack, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPlus, IconSearch, IconSettings } from '@tabler/icons-react';
+import { IconLayoutKanban, IconPlus, IconSearch, IconSettings } from '@tabler/icons-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
@@ -71,6 +71,14 @@ export function ProjectPage() {
               {t('settings.title')}
             </Button>
           )}
+          <Button
+            variant="default"
+            leftSection={<IconLayoutKanban size={16} />}
+            component={Link}
+            to={`/projects/${p.key}/board`}
+          >
+            {t('board.title')}
+          </Button>
           <Button
             variant="default"
             leftSection={<IconSearch size={16} />}

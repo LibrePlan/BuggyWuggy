@@ -45,6 +45,8 @@ public class IssueHistory {
         public static final String PARENT = "parent";
         public static final String STATUS = "status";
         public static final String RESOLUTION = "resolution";
+        /** The order on the board: value = "higher" or "lower", text = e.g. "Ranked higher". */
+        public static final String RANK = "rank";
         /** Where an imported issue came from: value = original URL, text = e.g. "Forgejo owner/repo#12". */
         public static final String IMPORT = "import";
         /** A link to something outside BuggyWuggy, e.g. a pull request: value = URL, text = title. */

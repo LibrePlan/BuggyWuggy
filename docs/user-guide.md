@@ -21,12 +21,13 @@ tasks and other work. If you have used Jira, most of it will feel familiar.
 11. [Linking issues](#linking-issues)
 12. [Watching issues](#watching-issues)
 13. [Searching for issues](#searching-for-issues)
-14. [Saved filters](#saved-filters)
-15. [Your profile](#your-profile)
-16. [E-mail notifications](#e-mail-notifications)
-17. [Project settings](#project-settings)
-18. [Permissions: why can't I…?](#permissions-why-cant-i)
-19. [Not available yet](#not-available-yet)
+14. [The board](#the-board)
+15. [Saved filters](#saved-filters)
+16. [Your profile](#your-profile)
+17. [E-mail notifications](#e-mail-notifications)
+18. [Project settings](#project-settings)
+19. [Permissions: why can't I…?](#permissions-why-cant-i)
+20. [Not available yet](#not-available-yet)
 
 ## Concepts
 
@@ -75,12 +76,14 @@ a colleague.
 ## Projects
 
 **Projects** lists the projects you have access to. Use the search field to find a project by
-name or key, and click a project to open it.
+name or key, and click a project to open it. **Board**, on the right of each project, opens its
+[board](#the-board).
 
 A project page shows the project's name, key, lead and description, and its issues with the
 most recently updated first. From here you can:
 
 - **Create issue**: create a new issue in this project.
+- **Board**: open the project's [board](#the-board).
 - **Search issues**: open the search page for this project, showing its unresolved issues.
 - **Project settings**: only for project administrators; see [Project settings](#project-settings).
 
@@ -300,6 +303,50 @@ link to a colleague. They will see the same search, limited to the projects they
 
 You only ever find issues in projects you may see.
 
+## The board
+
+Every project has a kanban **board**: open it with **Board** on the project list or the project
+page. The board shows the project's unresolved issues, and the issues resolved in the last
+14 days (the administrator can change that number), in **columns**. Each column shows the issues
+with one or more statuses, for example *To Do* (Open, Reopened), *In Progress* and *Done*
+(Resolved, Closed). The number next to a column's name is how many issues it holds; hover over
+the name to see its statuses.
+
+A card shows the issue's type, key, summary, priority, assignee, epic and
+[TaskWarrior urgency](taskwarrior.md). Click a card to open the issue.
+
+**Swimlanes** divide the board into horizontal lanes: **None**, or one lane per **Assignee**,
+**Epic** or **Priority**. The administrator sets which one a board starts with; the choice you
+make above the board is remembered in your browser, per project. Sub-tasks are in the lane of
+their parent's epic, and an epic is in its own lane.
+
+**Drag a card** to change it:
+
+- **To another column**: the issue goes through the workflow transition to a status of that
+  column, as with the transition buttons on the issue page. When several transitions lead to the
+  column, or the column means *done*, BuggyWuggy asks which transition and which resolution to
+  use. When no transition leads there from the issue's status, the card goes back.
+- **To another lane**: the field of the lane changes: the assignee (to *Unassigned* removes
+  it), the epic (to *No epic* removes it), or the priority. Only standard issues can move to
+  another epic; a sub-task follows its parent.
+- **Up or down**: the order of the issues on the board. The order is the same in every lane
+  and column: an issue you move to the top of *To Do* stays above the others when it moves on.
+
+One drag can do all three at once. Every change appears in the issue's **History**, like the
+same change made on the issue page; a new place in the order shows as *Rank: Ranked higher* or
+*Ranked lower*. Nobody is notified by e-mail of a new order.
+
+You can also move a card with the keyboard: Tab to it, press Space, move it with the arrow keys
+and press Space again (Escape cancels).
+
+You need the same permissions as for the same change on the issue page: *transition* for
+another column, *assign* for another assignee, and *edit* for another epic, priority or place.
+Without any of them the board is read-only. Issues with a status that is in no column are not
+shown; the board then says which statuses those are.
+
+Project administrators set the board's columns under
+[Project settings → Board](#project-settings).
+
 ## Saved filters
 
 A **filter** is a saved search.
@@ -360,7 +407,7 @@ see the [Installation Guide](installation.md#mail-templates).
 ## Project settings
 
 Project administrators (by default the project's *Administrators* role) see a **Project
-settings** button on the project page. The settings have four tabs.
+settings** button on the project page. The settings have five tabs.
 
 **Details**: name, description, project lead and **default assignee** (who new issues are
 assigned to when the reporter chooses nobody: nobody, or the project lead). BuggyWuggy
@@ -385,6 +432,14 @@ released, archive it, or delete it (which removes it from all issues).
 or individual people to *Users*, *Developers* or *Administrators*. What each role may do is
 described under [Permissions](#permissions-why-cant-i). Changes apply immediately.
 
+**Board**: the columns of the project's [board](#the-board). A project starts with the
+default board of the BuggyWuggy administrator. Give each column a name and the statuses it
+shows, and use the arrows to change their order; a status can be in only one column, and
+statuses that are in no column are listed below the columns, as their issues are not shown.
+Also choose the swimlanes the board starts with and how many days resolved issues stay on it
+(0: they leave the board at once). **Save** gives the project these columns as its own: changes
+to the default board then no longer apply to it. **Use the default board** undoes that.
+
 ## Permissions: why can't I…?
 
 What you can do depends on your role in each project. Buttons for things you may not do are
@@ -408,6 +463,6 @@ A project or issue you have no access to looks exactly like one that does not ex
 These features are planned but not available in the current version:
 
 - Formatted text (Markdown) in descriptions and comments
-- Boards (Kanban/Scrum), dashboards and reports
+- Scrum boards with sprints and a backlog, dashboards and reports
 - A text query language like Jira's JQL
 - The web interface in other languages than English (e-mails are available in English and Dutch)

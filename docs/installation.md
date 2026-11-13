@@ -370,7 +370,7 @@ it under a sub-path such as `https://example.org/bugs/` is not supported yet.
 ## Administration
 
 Users with the global permission *Administer BuggyWuggy* (by default the group
-`administrators`) see **Administration** in the top bar. It has five pages:
+`administrators`) see **Administration** in the top bar. It has six pages:
 
 - **Users**: find, create and edit users. On a user's page you can change the name and
   e-mail, deactivate the account, set a new password and change group memberships. Only
@@ -383,6 +383,10 @@ Users with the global permission *Administer BuggyWuggy* (by default the group
   `administrators` and `users` cannot be renamed or deleted.
 - **Global permissions**: which groups may administer BuggyWuggy, create projects and browse
   users.
+- **Board**: the default board: the columns, swimlanes and number of days resolved issues stay,
+  for every project that has no columns of its own. A new installation has *To Do*,
+  *In Progress* and *Done*, one per status category. Project administrators can give their
+  project columns of its own; see *The board* in the [User Guide](user-guide.md#the-board).
 - **E-mail**: the mail server status with **Send test mail** and the configuration file in
   use, the mail templates, the languages mails are available in, and mails that could not be
   sent. A language can be enabled or disabled, made the default, added and deleted; the

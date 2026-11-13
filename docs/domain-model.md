@@ -125,6 +125,7 @@ Named `project_version` to avoid confusion with the optimistic-locking `version`
 | due_date | date, nullable | |
 | created_at, updated_at, resolved_at | timestamptz | `resolved_at` set when resolution becomes non-null |
 | version | bigint | Optimistic locking |
+| board_rank | double precision, nullable | Order on the project's board, lower first; null (never moved) comes last, by id. See §10 |
 | search_vector | tsvector, generated | See §9 |
 
 **Parent rules** (enforced in the domain layer):
@@ -165,7 +166,7 @@ another project it gets a new number; its old key keeps resolving.
 `issue_type.hierarchy_level` drives the parent rules (epic = 1, standard = 0, sub-task = −1),
 which also prepares for deeper hierarchies later.
 
-`status.category` ∈ `TODO`, `IN_PROGRESS`, `DONE` — used for colouring now and for boards later.
+`status.category` ∈ `TODO`, `IN_PROGRESS`, `DONE` — used for colouring, and for the columns of the default board.
 
 ## 6. Collaboration
 
@@ -391,6 +392,18 @@ Indexes are maintained transactionally by PostgreSQL; no re-indexing is ever nee
 - `user_preference(user_id, key, value)` — `mail.notifications` (default `true`) and
   `mail.own-changes` (default `false`).
 - `application_setting(key, value jsonb)` — base URL, mail settings, installation defaults.
+- `board(id, project_id unique nullable, swimlanes, resolved_days)` — kanban boards. The one row
+  with `project_id = null` is the default board (set by administrators); a project without a
+  row of its own uses it. `swimlanes` ∈ `NONE`, `ASSIGNEE`, `EPIC`, `PRIORITY` is the default
+  lane division; `resolved_days` (0–365) how long resolved issues stay on the board.
+  `board_column(id, board_id, name, position)` and `board_column_status(board_column_id,
+  board_id, status_id)`, unique on (board, status): a status is in at most one column.
+  Moving an issue between columns is a workflow transition, between lanes an ordinary field
+  change (assignee, parent epic, priority), each with its usual permission and history. The
+  order is `issue.board_rank`: a move places the issue halfway between its neighbours, after
+  giving unranked issues ranks at the end; when there is no room left between two ranks, all
+  ranks of the project are renumbered (steps of 1024) under a row lock on the project. A new
+  place is recorded as a `rank` change item (`higher` / `lower`) without notification.
 
 ## 11. Planned later (designed for, not built)
 
@@ -398,7 +411,7 @@ Indexes are maintained transactionally by PostgreSQL; no re-indexing is ever nee
 |---|---|
 | Custom fields | `field_definition(id, key, name, type, …)` + `field_context` (project/issue type scope) + `issue_field_value(issue_id, field_id, text_value, number_value, date_value, option_id, user_id)`. System fields get rows in `field_definition` too, so field-level config (screens, required fields) treats both alike. |
 | Configurable workflows | Admin UI on existing `workflow*` tables; add conditions/validators/post-functions. |
-| Boards & sprints | `board`, `sprint`, `issue_sprint`, plus a `rank` column (lexorank-style text) on `issue`. Board columns map to statuses. |
+| Sprints | Scrum boards: `sprint`, `issue_sprint` and a backlog, on top of the kanban `board` tables (§10). |
 | Restricted comments | Visibility columns on `comment`. |
 | Webhooks | Consumers of `outbox_event`. |
 | SSO / LDAP | `external_identity`; groups synced into `user_group`. |

@@ -6,8 +6,10 @@ import { createBrowserRouter, Navigate } from 'react-router';
 import { AppLayout } from './components/AppLayout';
 import { RequireAuth } from './components/RequireAuth';
 import { RouteError } from './components/RouteError';
+import { BoardPage } from './pages/BoardPage';
 import { IssuePage } from './pages/IssuePage';
 import { LoginPage } from './pages/LoginPage';
+import { AdminBoardPage } from './pages/admin/AdminBoardPage';
 import { AdminGroupPage } from './pages/admin/AdminGroupPage';
 import { AdminGroupsPage } from './pages/admin/AdminGroupsPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
@@ -41,6 +43,7 @@ export const router = createBrowserRouter([
           { path: '/projects', element: <ProjectsPage /> },
           { path: '/projects/:projectKey', element: <ProjectPage /> },
           { path: '/projects/:projectKey/settings', element: <ProjectSettingsPage /> },
+          { path: '/projects/:projectKey/board', element: <BoardPage /> },
           { path: '/profile', element: <ProfilePage /> },
           {
             path: '/admin',
@@ -52,6 +55,7 @@ export const router = createBrowserRouter([
               { path: 'groups', element: <AdminGroupsPage /> },
               { path: 'groups/:groupId', element: <AdminGroupPage /> },
               { path: 'permissions', element: <GlobalPermissionsPage /> },
+              { path: 'board', element: <AdminBoardPage /> },
               { path: 'email', element: <MailSettingsPage /> },
               { path: 'email/templates/:templateKey/:language', element: <MailTemplatePage /> },
               { path: 'import', element: <ImportPage /> },
