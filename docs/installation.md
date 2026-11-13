@@ -427,9 +427,9 @@ that is your only source of it; system administrators always keep every permissi
 
 **Administration → Import** copies issues from another tracker into a BuggyWuggy project, with
 their comments, attachments and history. Forgejo (it also covers Gitea and codeberg.org),
-GitHub (github.com and GitHub Enterprise Server), GitLab (gitlab.com and self-managed) and Jira
-(Cloud, or Server / Data Center at your own address) are available now. Redmine and Trac are
-listed but follow later.
+GitHub (github.com and GitHub Enterprise Server), GitLab (gitlab.com and self-managed), Jira
+(Cloud, or Server / Data Center at your own address) and Redmine are available now. Trac is
+listed but follows later.
 
 **An import only reads.** It never changes anything in the source: the importer can only send
 read (GET) requests, so it cannot write, close, comment or label anything there. A token with
@@ -612,6 +612,56 @@ too many; the import then waits as long as Jira says. Jira Server and Data Cente
 requests when an administrator turned that on. An import makes about three requests per issue
 (the issue's changelog, comments and web links), plus one per attachment.
 
+#### Redmine
+
+The Redmine import reads one Redmine project (without its subprojects) through Redmine's REST
+API, with the same four-step wizard.
+
+1. **Connection.** The address of your Redmine, including its path (e.g.
+   `https://example.org/redmine`); a link to a page of Redmine (`…/projects/web/issues`) works too.
+   - Your **API key** (*My account → API access key*), with the username field left empty.
+   - Or your username and password.
+   - Public projects can be read without logging in.
+   To log in, an administrator of Redmine must have turned on **Enable REST web service**
+   (*Administration → Settings → API*).
+   The account only needs to view the project's issues; the importer never changes anything in
+   Redmine. With an administrator's key the import also sees logins and e-mail addresses, which
+   helps to match people to existing accounts; without it, people are known by name only.
+2. **Project.** Search for part of the name, or type the project identifier (`web`). For a new
+   BuggyWuggy project the name is suggested, and a key made from it.
+3. **Mapping.** Redmine has no labels: the wizard lists its **trackers** as `type:Bug`, its
+   **priorities** as `priority/High` and its **categories** as `component/Backend`, with
+   suggestions as for Jira.
+4. **Start** works as for Forgejo.
+
+What is imported:
+
+| Redmine | BuggyWuggy |
+|---|---|
+| Subject, description, author, assignee, due date, created, updated, closed | The same fields. Textile is converted to Markdown (see below). |
+| Status | Open or closed (statuses marked *Issue closed*); *Rejected* and the like set *Won't Fix*, an issue that duplicates another *Duplicate*. |
+| Tracker, priority, category | As mapped in the wizard |
+| Target version | The version; versions keep their due date, and *closed* versions are released. Versions shared by other projects are included. |
+| Notes | Comments. **Private notes are not imported**: they would become visible to everyone who can browse the project. |
+| Journal (subject, tracker, priority, category, assignee, target version, due date, status) | History with the original author and date |
+| Subtasks | Sub-tasks, one level deep (deeper levels as *Relates* links) |
+| Relations | *Blocks* and *precedes* become dependencies; *is duplicate of* a *Duplicate* link, *copied to* a *Cloners* link, *related to* a *Relates* link. Relations to issues that were not imported are left out; issues of other projects are found when that project was imported before. |
+| Files | Attachments; `!image.png!`, `attachment:file.pdf` and Markdown links to a file name point to the copy. |
+| Private issues | Issues with the label `restricted`. BuggyWuggy has no private issues: restrict who can browse the project if needed. |
+| `#12` and links to `…/issues/12` | The key of the imported issue; numbers of issues that were not imported link to Redmine. |
+| `[[Wiki page]]` | A link to the page in Redmine's wiki |
+
+**Text formatting.** Redmine formats texts with Textile or Markdown, as its administrator chose,
+and the API does not say which. The import guesses it from the descriptions of the project
+(`h2.`, `"text":url` and `<pre>` mean Textile; `[text](url)` and code fences mean Markdown).
+Textile is converted to Markdown; Markdown is kept.
+
+Not imported: custom fields, start date, % done, estimated and spent time, watchers, the
+description's history, and the project's wiki, forums, news, documents and repository.
+
+**Rate limits.** Redmine has none of its own. An import makes one request per issue (with its
+journal), one per person and one per attachment, plus a page of 100 issues at a time.
+
 #### Progress, status line and log
 
 While an import runs, **every administration page shows a status line** with its progress and
@@ -771,7 +821,9 @@ The token is wrong, expired, or lacks read access to repositories or issues. Cre
 Forgejo under *Settings → Applications*, on GitHub under *Settings → Developer settings*, or in
 GitLab under *Preferences → Access tokens* (scope `read_api`). For Jira Cloud, enter the
 e-mail address of the account that owns the API token; for a Jira personal access token, leave
-the username empty. For a private repository the
+the username empty. Redmine ignores API keys, and usernames and passwords, until an administrator turns on
+*Enable REST web service* (*Administration → Settings → API*). For a
+private repository the
 token's user must be able to see the repository; for a GitHub organisation that requires it, the
 token must also be approved for (or authorised with SSO by) the organisation.
 

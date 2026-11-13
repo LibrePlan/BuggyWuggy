@@ -489,22 +489,8 @@ final class JiraSource implements Source {
         return epicLinkField.isEmpty() ? null : epicLinkField;
     }
 
-    /** Done, Fixed: completed; Duplicate; Won't Fix, Won't Do, Cannot Reproduce, …: not planned. */
     static CloseReason closeReason(String resolution) {
-        if (resolution == null) {
-            return CloseReason.COMPLETED;
-        }
-        String name = resolution.toLowerCase(Locale.ROOT).replace("’", "'");
-        if (name.contains("duplicate")) {
-            return CloseReason.DUPLICATE;
-        }
-        for (String notPlanned : List.of("won't", "wont", "not ", "cannot", "can't", "incomplete", "invalid",
-                "declined", "rejected", "obsolete", "abandoned")) {
-            if (name.contains(notPlanned)) {
-                return CloseReason.NOT_PLANNED;
-            }
-        }
-        return CloseReason.COMPLETED;
+        return Source.closeReason(resolution);
     }
 
     // --- texts and users -----------------------------------------------------------------

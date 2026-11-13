@@ -426,7 +426,16 @@
         },
         "redmine": {
           "name": "Redmine",
-          "description": "Issues of a project in a Redmine installation."
+          "description": "Issues of a project in a Redmine installation.",
+          "title": "Import from Redmine",
+          "urlHelp": "The address of your Redmine, with its path if it has one (e.g. https://example.org/redmine).",
+          "user": "Username",
+          "userHelp": "Only to log in with your username and password; leave it empty when you use an API key.",
+          "tokenHelp": "Your API key (My account → API access key), or your password. Either only works when the administrator turned on the REST web service (Administration → Settings → API). Leave both empty for public projects. It only needs to read; the importer never changes anything in Redmine. The key is only kept in memory while BuggyWuggy runs, never stored.",
+          "connectedAs": "{{version}}, logged in as {{login}}.",
+          "connectedAnonymous": "{{version}}, without logging in: only public projects.",
+          "searchHelp": "A project identifier or part of the name. Empty: all projects you can see.",
+          "repository": "Project"
         },
         "trac": {
           "name": "Trac",

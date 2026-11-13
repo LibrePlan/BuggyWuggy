@@ -16,7 +16,7 @@ const SOURCES = [
   { kind: 'github', available: true, url: 'https://github.com' },
   { kind: 'gitlab', available: true, url: 'https://gitlab.com' },
   { kind: 'jira', available: true, url: 'https://your-site.atlassian.net' },
-  { kind: 'redmine', available: false, url: '' },
+  { kind: 'redmine', available: true, url: '' },
   { kind: 'trac', available: false, url: '' },
 ] as const;
 

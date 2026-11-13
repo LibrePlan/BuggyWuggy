@@ -122,7 +122,8 @@ public final class ImportText {
     }
 
     private Optional<String> key(String repo, long number) {
-        return repo.equalsIgnoreCase(repository) ? resolver.issueKey(null, number) : resolver.issueKey(repo, number);
+        // No repository in the link (Redmine: /issues/12): this one.
+        return repo == null || repo.isEmpty() || repo.equalsIgnoreCase(repository) ? resolver.issueKey(null, number) : resolver.issueKey(repo, number);
     }
 
     /** Attachment and relative links. */

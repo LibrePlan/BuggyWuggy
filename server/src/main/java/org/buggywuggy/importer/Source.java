@@ -111,6 +111,27 @@ public interface Source {
     /** Why an issue was closed. */
     enum CloseReason { COMPLETED, NOT_PLANNED, DUPLICATE }
 
+    /**
+     * The reason for a resolution or status name: Done, Fixed: completed; Duplicate; Won't
+     * Fix, Won't Do, Cannot Reproduce, Rejected, …: not planned.
+     */
+    static CloseReason closeReason(String name) {
+        if (name == null) {
+            return CloseReason.COMPLETED;
+        }
+        String value = name.toLowerCase(java.util.Locale.ROOT).replace("’", "'");
+        if (value.contains("duplicate")) {
+            return CloseReason.DUPLICATE;
+        }
+        for (String notPlanned : List.of("won't", "wont", "not ", "cannot", "can't", "incomplete", "invalid",
+                "declined", "rejected", "obsolete", "abandoned")) {
+            if (value.contains(notPlanned)) {
+                return CloseReason.NOT_PLANNED;
+            }
+        }
+        return CloseReason.COMPLETED;
+    }
+
     record SourceLabel(String name, String color, String description) {
     }
 

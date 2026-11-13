@@ -14,7 +14,7 @@ built in v1, but the v1 model is designed so they fit in without restructuring.
 | Primary keys | `bigint generated always as identity`. Compact, fast, ordered; public URLs use issue keys (`BUG-123`) rather than IDs anyway. |
 | Timestamps | `timestamptz`, stored in UTC. Never filled implicitly by the database when an importer supplies a value (see §8). |
 | Text | `text` columns; length limits enforced in the application, not with `varchar(n)`. |
-| Rich text | Markdown (CommonMark + GFM tables/task lists). Imported Jira wiki markup is converted at import time. |
+| Rich text | Markdown (CommonMark + GFM tables/task lists). Imported Jira wiki markup and Redmine Textile are converted at import time. |
 | Enumerations | Small fixed sets (e.g. status category) are `text` with a `check` constraint, mapped to Java enums. Admin-editable lists (priorities, issue types) are tables. |
 | Concurrency | Optimistic locking with a `version bigint` column on entities edited concurrently (`issue`, `comment`, `project`). |
 | Deletion | Hard deletes in v1, with `on delete` rules defined per foreign key. Change history keeps a textual record of what was removed. |
@@ -297,8 +297,8 @@ the history stays complete after the file is gone.
    unique `(import_source_id, source_type, source_id)`. Makes imports repeatable and
    incremental, and allows links, parents and history to be resolved after all issues exist.
    `source_type` ∈ `user`, `issue`, `comment`, `attachment` (Forgejo: the attachment UUID;
-   GitHub: the attachment's URL; GitLab: `<secret>/<file name>` of the upload; Jira: the
-   attachment id). A
+   GitHub: the attachment's URL; GitLab: `<secret>/<file name>` of the upload; Jira and
+   Redmine: the attachment id). A
    reference counts only while its local row exists, so issues of a deleted project can be
    imported again.
 4. **Sources and jobs.**
@@ -314,7 +314,8 @@ the history stays complete after the file is gone.
      for a rate limit.
    - `import_job_log(id, job_id, at, level, message)` — `level` ∈ `INFO`, `WARN`, `ERROR`.
 5. **Origin of an issue.** `issue.origin_source_id`, `origin_key` (e.g. `forgejo/website#12`,
-   or `ABC-12` for Jira, where `project_path` is the project key)
+   or `ABC-12` for Jira, where `project_path` is the project key; Redmine: `web#12`, with the
+   project identifier and the issue number, which is the same in all projects of a Redmine)
    and `origin_url`. Imported issues get new numbers; the origin is shown on the issue and
    recorded in its history as field `import` (value = original URL, text = e.g.
    "Forgejo forgejo/website#12").
@@ -326,10 +327,11 @@ the history stays complete after the file is gone.
 8. **Read-only.** All importers use `ReadOnlyHttp`, which can only send GET requests, and only
    sends the token to the hosts of the source. The engine (`IssueImporter`) is the same for
    every kind; a `Connector` per kind turns its API into the neutral model of `Source`.
-9. **Hierarchy.** Sub-issues (GitHub; Jira's sub-tasks and the issues in an epic) become
+9. **Hierarchy.** Sub-issues (GitHub; Jira's sub-tasks and the issues in an epic; Redmine's
+   subtasks) become
    sub-tasks of a standard issue, or children of an epic; anything deeper or across projects
    becomes a *Relates* link. Other links between issues (GitLab's "relates to", Jira's link
-   types) become links of the link type with the same name, else *Relates*, once per pair and
+   types, Redmine's relations) become links of the link type with the same name, else *Relates*, once per pair and
    type. A label can be mapped to an epic type, and to a component of the project (created when
    missing).
 
