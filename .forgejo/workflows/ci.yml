@@ -1,0 +1,107 @@
+# BuggyWuggy — open source, self-hosted issue tracker
+# Copyright (C) 2026 The BuggyWuggy contributors
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Continuous integration for Forgejo Actions: builds the server and the web UI, runs all
+# tests against a PostgreSQL service, checks that the generated API types are up to date,
+# and keeps the jar as an artifact. Needs a Forgejo runner with the label "docker"; the tests
+# use the PostgreSQL service instead of Testcontainers, so the job needs no Docker socket.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: docker
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: buggywuggy_test
+          POSTGRES_USER: buggywuggy
+          POSTGRES_PASSWORD: buggywuggy
+    env:
+      # The tests use the service above, not a container of their own.
+      BUGGYWUGGY_TEST_TESTCONTAINERS: "false"
+      BUGGYWUGGY_DB_URL: jdbc:postgresql://postgres:5432/buggywuggy_test
+      BUGGYWUGGY_DB_USER: buggywuggy
+      BUGGYWUGGY_DB_PASSWORD: buggywuggy
+    steps:
+      - name: Check out
+        uses: https://data.forgejo.org/actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: https://data.forgejo.org/actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Cache Node.js and npm packages
+        uses: https://data.forgejo.org/actions/cache@v4
+        with:
+          path: |
+            web/node
+            ~/.npm
+          key: web-${{ hashFiles('web/pom.xml', 'web/package-lock.json') }}
+          restore-keys: web-
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in $(seq 1 30); do
+            (echo > /dev/tcp/postgres/5432) 2>/dev/null && exit 0
+            sleep 2
+          done
+          echo "PostgreSQL did not start" >&2
+          exit 1
+
+      - name: Build and test
+        run: ./mvnw -B -ntp verify
+
+      - name: Check that the API types are up to date
+        env:
+          BUGGYWUGGY_PORT: "18080"
+          BUGGYWUGGY_DATA_DIR: ${{ runner.temp }}/buggywuggy-data
+          BUGGYWUGGY_CONFIG_GENERATE: "false"
+          BUGGYWUGGY_API_URL: http://localhost:18080
+        run: |
+          java -jar server/target/buggywuggy.jar > "$RUNNER_TEMP/server.log" 2>&1 &
+          server=$!
+          trap 'kill $server' EXIT
+          for i in $(seq 1 60); do
+            curl -fsS -o /dev/null "$BUGGYWUGGY_API_URL/api/openapi" && break
+            if ! kill -0 $server 2>/dev/null || [ "$i" = 60 ]; then
+              cat "$RUNNER_TEMP/server.log"
+              echo "The server did not start" >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          cd web
+          npm run -s api:types
+          if ! git diff --exit-code -- src/api/schema.d.ts; then
+            echo "::error::web/src/api/schema.d.ts is out of date: run 'npm run api:types' against the server and commit it." >&2
+            exit 1
+          fi
+
+      - name: Keep the jar
+        uses: https://data.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          name: buggywuggy-jar
+          path: server/target/buggywuggy.jar
+          retention-days: 14
+
+      - name: Keep the test reports when tests failed
+        if: failure()
+        uses: https://data.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            server/target/surefire-reports/
+            server/target/failsafe-reports/
+          retention-days: 14
