@@ -41,9 +41,12 @@ public final class ImportDtos {
     }
 
     /** What a label of the source becomes in BuggyWuggy. */
-    public enum LabelTarget { LABEL, ISSUE_TYPE, PRIORITY, IGNORE }
+    public enum LabelTarget { LABEL, ISSUE_TYPE, PRIORITY, COMPONENT, IGNORE }
 
-    /** {@code id} is the issue type or priority for those targets. */
+    /**
+     * {@code id} is the issue type (a standard type or an epic) or priority for those targets.
+     * A component is named after the label, without a {@code component/} prefix.
+     */
     public record LabelRule(@NotNull LabelTarget target, @ApiNullable Long id) {
     }
 

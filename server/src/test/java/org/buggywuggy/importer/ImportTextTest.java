@@ -61,6 +61,37 @@ class ImportTextTest {
     }
 
     @Test
+    void understandsJiraKeys() {
+        ImportText jira = new ImportText(BASE, "ABC", null,
+                Pattern.compile(Pattern.quote(BASE) + "/browse/([A-Z][A-Z0-9_]*)-(\\d+)/?"),
+                Pattern.compile("(?<![\\w/.\\-])([A-Z][A-Z0-9_]*)-(\\d+)\\b"), new ImportText.Resolver() {
+            @Override
+            public Optional<String> issueKey(String repository, long number) {
+                return repository == null && number == 1 ? Optional.of("NEW-7")
+                        : "OPS".equals(repository) && number == 2 ? Optional.of("OPS-9") : Optional.empty();
+            }
+
+            @Override
+            public Optional<Long> attachmentId(String key) {
+                return Optional.empty();
+            }
+
+            @Override
+            public String issueUrl(String repository, long number) {
+                return BASE + "/browse/" + repository + "-" + number;
+            }
+
+            @Override
+            public String attachmentUrl(String found) {
+                return found;
+            }
+        });
+        // Keys of this project, or of imported issues; other look-alikes (UTF-8) and #1 stay.
+        assertThat(jira.rewrite("ABC-1, ABC-5, OPS-2, OPS-3, UTF-8, #1 and " + BASE + "/browse/ABC-1."))
+                .isEqualTo("NEW-7, [ABC-5](" + BASE + "/browse/ABC-5), OPS-9, OPS-3, UTF-8, #1 and NEW-7.");
+    }
+
+    @Test
     void leavesCodeLinksAnchorsAndEntitiesAlone() {
         String untouched = """
                 `#1` and

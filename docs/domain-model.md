@@ -297,7 +297,8 @@ the history stays complete after the file is gone.
    unique `(import_source_id, source_type, source_id)`. Makes imports repeatable and
    incremental, and allows links, parents and history to be resolved after all issues exist.
    `source_type` ∈ `user`, `issue`, `comment`, `attachment` (Forgejo: the attachment UUID;
-   GitHub: the attachment's URL; GitLab: `<secret>/<file name>` of the upload). A
+   GitHub: the attachment's URL; GitLab: `<secret>/<file name>` of the upload; Jira: the
+   attachment id). A
    reference counts only while its local row exists, so issues of a deleted project can be
    imported again.
 4. **Sources and jobs.**
@@ -312,7 +313,8 @@ the history stays complete after the file is gone.
      `waiting_until` describe what a running job does now (for the status line), e.g. waiting
      for a rate limit.
    - `import_job_log(id, job_id, at, level, message)` — `level` ∈ `INFO`, `WARN`, `ERROR`.
-5. **Origin of an issue.** `issue.origin_source_id`, `origin_key` (e.g. `forgejo/website#12`)
+5. **Origin of an issue.** `issue.origin_source_id`, `origin_key` (e.g. `forgejo/website#12`,
+   or `ABC-12` for Jira, where `project_path` is the project key)
    and `origin_url`. Imported issues get new numbers; the origin is shown on the issue and
    recorded in its history as field `import` (value = original URL, text = e.g.
    "Forgejo forgejo/website#12").
@@ -324,9 +326,12 @@ the history stays complete after the file is gone.
 8. **Read-only.** All importers use `ReadOnlyHttp`, which can only send GET requests, and only
    sends the token to the hosts of the source. The engine (`IssueImporter`) is the same for
    every kind; a `Connector` per kind turns its API into the neutral model of `Source`.
-9. **Hierarchy.** Sub-issues (GitHub) become sub-tasks of a standard issue, or children of an
-   epic; anything deeper or across projects becomes a *Relates* link. Issues the source links
-   as "relates to" (GitLab) get one *Relates* link between them.
+9. **Hierarchy.** Sub-issues (GitHub; Jira's sub-tasks and the issues in an epic) become
+   sub-tasks of a standard issue, or children of an epic; anything deeper or across projects
+   becomes a *Relates* link. Other links between issues (GitLab's "relates to", Jira's link
+   types) become links of the link type with the same name, else *Relates*, once per pair and
+   type. A label can be mapped to an epic type, and to a component of the project (created when
+   missing).
 
 ## 9. Search (PostgreSQL only)
 

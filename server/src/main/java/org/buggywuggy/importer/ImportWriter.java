@@ -118,16 +118,17 @@ public class ImportWriter {
     }
 
     /**
-     * The issue imported from {@code path#number} of a source, by this or an earlier import;
-     * {@code name} is its key. Used for references and links between issues.
+     * The issue imported as {@code originKey} (e.g. owner/repo#12) from project {@code path} of
+     * a source, by this or an earlier import; {@code name} is its key. Used for references and
+     * links between issues.
      */
-    public Optional<Named> issueBySource(String kind, String baseUrl, String path, long number) {
+    public Optional<Named> issueBySource(String kind, String baseUrl, String path, String originKey) {
         return jdbc.query("""
                 select i.id, p.key || '-' || i.number from import_source s
                 join issue i on i.origin_source_id = s.id and lower(i.origin_key) = lower(:originKey)
                 join project p on p.id = i.project_id
                 where s.kind = :kind and lower(s.base_url) = lower(:url) and lower(s.project_path) = lower(:path)""",
-                Map.of("kind", kind, "url", baseUrl, "path", path, "originKey", path + "#" + number),
+                Map.of("kind", kind, "url", baseUrl, "path", path, "originKey", originKey),
                 (rs, n) -> new Named(rs.getLong(1), rs.getString(2))).stream().findFirst();
     }
 
@@ -310,6 +311,23 @@ public class ImportWriter {
         fields.replaceLabels(issueId, new java.util.TreeSet<>(labels));
     }
 
+    /** Adds the issue to these components of the project, creating those that do not exist. */
+    public void components(long projectId, long issueId, Collection<String> names) {
+        for (String name : new java.util.LinkedHashSet<>(names)) {
+            if (name.isBlank()) {
+                continue;
+            }
+            long componentId = jdbc.queryForList("select id from component where project_id = :project "
+                    + "and lower(name) = lower(:name)", Map.of("project", projectId, "name", name), Long.class)
+                    .stream().findFirst().orElseGet(() -> jdbc.queryForObject("""
+                            insert into component (project_id, name) values (:project, :name) returning id""",
+                            Map.of("project", projectId, "name", name), Long.class));
+            jdbc.update("""
+                    insert into issue_component (issue_id, component_id) values (:issue, :component)
+                    on conflict do nothing""", Map.of("issue", issueId, "component", componentId));
+        }
+    }
+
     public void fixVersions(long issueId, Collection<Long> versionIds) {
         fields.replaceVersions(issueId, VersionKind.FIX, versionIds);
     }
@@ -397,11 +415,7 @@ public class ImportWriter {
      */
     public void link(String typeName, long sourceId, String sourceKey, long targetId, String targetKey,
             Long authorId, Instant at) {
-        Map<String, Object> type = jdbc.queryForList("""
-                select id, outward_description, inward_description from issue_link_type
-                where lower(name) in (lower(:name), 'relates') order by lower(name) = lower(:name) desc limit 1""",
-                Map.of("name", typeName)).stream().findFirst()
-                .orElseThrow(() -> new IllegalStateException("No link type " + typeName));
+        Map<String, Object> type = linkType(typeName);
         int added = jdbc.update("""
                 insert into issue_link (link_type_id, source_issue_id, target_issue_id, created_at)
                 values (:type, :source, :target, :at) on conflict do nothing""",
@@ -418,12 +432,21 @@ public class ImportWriter {
         history.record(targetId, authorId, at, onTarget);
     }
 
-    /** Whether two issues are linked, in either direction, with any link type. */
-    public boolean linked(long a, long b) {
+    /** The link type of that name, or Relates. */
+    private Map<String, Object> linkType(String typeName) {
+        return jdbc.queryForList("""
+                select id, outward_description, inward_description from issue_link_type
+                where lower(name) in (lower(:name), 'relates') order by lower(name) = lower(:name) desc limit 1""",
+                Map.of("name", typeName)).stream().findFirst()
+                .orElseThrow(() -> new IllegalStateException("No link type " + typeName));
+    }
+
+    /** Whether two issues are linked, in either direction, with the link type of that name (or Relates). */
+    public boolean linked(long a, long b, String typeName) {
         return Boolean.TRUE.equals(jdbc.queryForObject("""
-                select exists (select 1 from issue_link where (source_issue_id = :a and target_issue_id = :b)
-                                                       or (source_issue_id = :b and target_issue_id = :a))""",
-                Map.of("a", a, "b", b), Boolean.class));
+                select exists (select 1 from issue_link where link_type_id = :type
+                    and ((source_issue_id = :a and target_issue_id = :b) or (source_issue_id = :b and target_issue_id = :a)))""",
+                Map.of("a", a, "b", b, "type", linkType(typeName).get("id")), Boolean.class));
     }
 
     /** What the hierarchy rules need to know about an issue. */

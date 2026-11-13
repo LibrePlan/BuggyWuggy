@@ -1694,7 +1694,7 @@ export interface components {
         };
         LabelRule: {
             /** @enum {string} */
-            target: "LABEL" | "ISSUE_TYPE" | "PRIORITY" | "IGNORE";
+            target: "LABEL" | "ISSUE_TYPE" | "PRIORITY" | "COMPONENT" | "IGNORE";
             /** Format: int64 */
             id: number | null;
         };

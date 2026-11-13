@@ -64,12 +64,13 @@ public class ImportService {
     }
 
     public Analysis analyze(String kind, String url, String token, String repository) {
-        return importer.analyze(connector(kind).open(url, token, IssueImporter.path(repository)));
+        Connector connector = connector(kind);
+        return importer.analyze(connector.open(url, token, connector.path(repository)));
     }
 
     public JobResponse start(String kind, BuggyWuggyPrincipal admin, StartRequest request) {
         Connector connector = connector(kind);
-        String path = IssueImporter.path(request.repository());
+        String path = connector.path(request.repository());
         if (jobs.anyRunning()) {
             throw conflict("import.running");
         }
@@ -127,7 +128,7 @@ public class ImportService {
                 }
                 boolean ok = rule.id() != null && Boolean.TRUE.equals(jdbc.queryForObject(
                         "select exists (select 1 from " + table + " where id = :id"
-                                + (table.equals("issue_type") ? " and hierarchy_level = 0" : "") + ")",
+                                + (table.equals("issue_type") ? " and hierarchy_level in (0, 1)" : "") + ")",
                         Map.of("id", rule.id()), Boolean.class));
                 if (!ok) {
                     throw badRequest("import.label-rule-invalid", label);

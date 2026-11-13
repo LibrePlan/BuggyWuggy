@@ -23,6 +23,11 @@ public interface Connector {
         return kind().toLowerCase(java.util.Locale.ROOT);
     }
 
+    /** The project as typed (e.g. {@code owner/name}) in its stored form, or a bad request. */
+    default String path(String repository) {
+        return IssueImporter.path(repository);
+    }
+
     /** The server as stored with the source, e.g. https://github.com. */
     String baseUrl(String url);
 

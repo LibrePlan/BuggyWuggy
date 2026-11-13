@@ -427,8 +427,8 @@ that is your only source of it; system administrators always keep every permissi
 
 **Administration → Import** copies issues from another tracker into a BuggyWuggy project, with
 their comments, attachments and history. Forgejo (it also covers Gitea and codeberg.org),
-GitHub (github.com and GitHub Enterprise Server) and GitLab (gitlab.com and self-managed) are
-available now. Jira (Cloud, or Server / Data Center at your own address), Redmine and Trac are
+GitHub (github.com and GitHub Enterprise Server), GitLab (gitlab.com and self-managed) and Jira
+(Cloud, or Server / Data Center at your own address) are available now. Redmine and Trac are
 listed but follow later.
 
 **An import only reads.** It never changes anything in the source: the importer can only send
@@ -562,6 +562,55 @@ Not imported: epics, iterations, weight, time tracking, award emoji and the task
 
 **Rate limits.** gitlab.com allows about 2000 API requests a minute with a token. An import makes
 about seven requests per issue, plus one per attachment and one per person.
+
+#### Jira
+
+The Jira import reads one Jira project through REST API v2, which Jira Cloud and Jira Server /
+Data Center both have, with the same four-step wizard.
+
+1. **Connection.** The address of your Jira: `https://your-site.atlassian.net` for Jira Cloud,
+   or that of your own server, including its path (e.g. `https://example.org/jira`). A link to a
+   page of Jira (`…/browse/ABC-1`) works too.
+   - **Jira Cloud:** your e-mail address and an **API token** (*Account settings → Security →
+     Create and manage API tokens*). Choose a token without write permissions if you can.
+   - **Jira Server / Data Center:** a **personal access token** (*Profile → Personal Access
+     Tokens*, Jira 8.14 and later) with the username field left empty, or your username and
+     password.
+   - A public Jira can be read without logging in.
+   The account only needs to browse the project; the importer never changes anything in Jira.
+2. **Project.** Search for part of the name, or type the project key (`ABC`). For a new
+   BuggyWuggy project the Jira key and name are suggested.
+3. **Mapping.** Besides Jira's labels, the wizard lists Jira's **issue types** as `type:Bug`,
+   its **priorities** as `priority/Major` and its **components** as `component/Backend`. The
+   suggestions map issue types and priorities with the same (or a common) name, `type:Epic` to
+   the epic type and components to components of the project; change what you like.
+4. **Start** works as for Forgejo.
+
+What is imported:
+
+| Jira | BuggyWuggy |
+|---|---|
+| Summary, description, reporter, assignee, due date, created, updated, resolved | The same fields. Texts are converted from Jira's wiki markup to Markdown. |
+| Status | Open or closed (status category *Done*); the resolution sets *Fixed*/*Done*, *Won't Fix* or *Duplicate*. Other statuses, such as *In Progress*, become open. |
+| Issue type, priority, components, labels | As mapped in the wizard |
+| Fix versions | Versions of the project; an issue gets its **first** fix version. Versions keep their release date and released state. |
+| Comments | Comments. **Comments restricted to a role or group, and internal comments of Jira Service Management, are not imported**: they would become visible to everyone who can browse the project. |
+| Changelog (summary, labels, type, priority, components, assignee, fix version, due date, status, resolution) | History with the original author and date |
+| Sub-tasks, and the issues in an epic | Sub-tasks, and issues in the epic (when `type:Epic` is mapped to the epic type) |
+| Issue links | Links of the link type with the same name (*Blocks*, *Duplicate*, *Cloners*, *Relates*), other link types as *Relates*. Links to issues that were not imported are left out. |
+| Web links (remote links) | **External links**; links to pull or merge requests are marked as such |
+| Attachments | Attachments; `!image.png!` and `[^file.pdf]` in texts point to the copy. |
+| Issues with a security level | Issues with the label `restricted`. BuggyWuggy has no issue security: restrict who can browse the project if needed. |
+| `ABC-12` and links to `…/browse/ABC-12` | The key of the imported issue. Keys of issues that were not imported link to Jira when they are of the same project, and stay as they are otherwise. |
+| `[~user]` mentions | `@Display Name` |
+
+Not imported: sprints, story points and other custom fields, work logs and time tracking,
+votes, watchers and affects versions.
+
+**Rate limits.** Jira Cloud limits requests per minute and asks clients to wait when they make
+too many; the import then waits as long as Jira says. Jira Server and Data Center only limit
+requests when an administrator turned that on. An import makes about three requests per issue
+(the issue's changelog, comments and web links), plus one per attachment.
 
 #### Progress, status line and log
 
@@ -720,7 +769,9 @@ variable as well (for systemd in `/etc/buggywuggy.env`).
 **An import fails with "The server refused the access token" or "may not read".**
 The token is wrong, expired, or lacks read access to repositories or issues. Create a new one in
 Forgejo under *Settings → Applications*, on GitHub under *Settings → Developer settings*, or in
-GitLab under *Preferences → Access tokens* (scope `read_api`). For a private repository the
+GitLab under *Preferences → Access tokens* (scope `read_api`). For Jira Cloud, enter the
+e-mail address of the account that owns the API token; for a Jira personal access token, leave
+the username empty. For a private repository the
 token's user must be able to see the repository; for a GitHub organisation that requires it, the
 token must also be approved for (or authorised with SSO by) the organisation.
 

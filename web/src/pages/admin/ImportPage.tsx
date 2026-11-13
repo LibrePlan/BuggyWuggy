@@ -15,7 +15,7 @@ const SOURCES = [
   { kind: 'forgejo', available: true, url: 'https://codeberg.org' },
   { kind: 'github', available: true, url: 'https://github.com' },
   { kind: 'gitlab', available: true, url: 'https://gitlab.com' },
-  { kind: 'jira', available: false, url: 'https://your-site.atlassian.net' },
+  { kind: 'jira', available: true, url: 'https://your-site.atlassian.net' },
   { kind: 'redmine', available: false, url: '' },
   { kind: 'trac', available: false, url: '' },
 ] as const;

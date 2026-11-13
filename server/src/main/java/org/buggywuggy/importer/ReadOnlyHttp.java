@@ -53,6 +53,12 @@ public final class ReadOnlyHttp {
             .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
             .build();
 
+    /** Reads the camelCase JSON of other APIs (Jira); unknown fields are ignored. */
+    public static final JsonMapper CAMEL_CASE_JSON = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .build();
+
     /** How a source announces its rate limit. */
     public interface RateLimits {
 
@@ -211,8 +217,12 @@ public final class ReadOnlyHttp {
     }
 
     public static <T> T read(Response response, JavaType type) {
+        return read(response, type, JSON);
+    }
+
+    public static <T> T read(Response response, JavaType type, JsonMapper mapper) {
         try {
-            return JSON.readValue(response.body(), type);
+            return mapper.readValue(response.body(), type);
         } catch (JacksonException e) {
             throw new ApiException(HttpStatus.BAD_GATEWAY, "import.bad-response", response.uri().getPath());
         }

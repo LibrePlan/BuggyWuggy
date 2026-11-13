@@ -47,6 +47,27 @@ public interface Source {
         return found;
     }
 
+    /**
+     * How the source names an issue, e.g. owner/repo#12 or (Jira) ABC-12. Stored as the
+     * origin of an imported issue, and used to find it again.
+     */
+    default String reference(String repository, long number) {
+        return repository + "#" + number;
+    }
+
+    /** Links to issues in texts, with the repository as group 1 and the number as group 2. */
+    default Pattern issueLinks() {
+        return ImportText.defaultIssueLinks(webUrl());
+    }
+
+    /**
+     * References like {@code ABC-12} in texts (project group 1, number group 2), for sources
+     * that do not use {@code #12} and {@code owner/repo#12}; null for those.
+     */
+    default Pattern issueKeys() {
+        return null;
+    }
+
     /** The web address of an issue, for references to issues that were not imported. */
     default String issueUrl(String repository, long number) {
         return webUrl() + "/" + repository + "/issues/" + number;
@@ -131,6 +152,7 @@ public interface Source {
      * <li>DUE_DATE: {@code oldValue}, {@code value} (ISO dates, null for none)</li>
      * <li>CLOSED: {@code closeReason} (null when unknown); REOPENED</li>
      * <li>PULL_REQUEST: {@code value} = URL, {@code oldValue} = title</li>
+     * <li>WEB_LINK: as PULL_REQUEST, for other links (e.g. a page in a wiki)</li>
      * </ul>
      */
     record SourceEvent(Kind kind, SourceUser author, Instant at, String oldValue, String value, SourceUser user,
@@ -138,7 +160,7 @@ public interface Source {
 
         public enum Kind {
             LABEL_ADDED, LABEL_REMOVED, ASSIGNED, UNASSIGNED, MILESTONE, RENAMED, DUE_DATE, CLOSED, REOPENED,
-            PULL_REQUEST
+            PULL_REQUEST, WEB_LINK
         }
     }
 
@@ -146,8 +168,16 @@ public interface Source {
     record SourceDependency(SourceRef blocker, SourceUser author, Instant at) {
     }
 
-    /** {@code related}: issues linked as "relates to". */
+    /**
+     * A link from this issue to another, read as "this issue {@code <outward description of
+     * type>} other": e.g. Duplicate means this issue duplicates the other. {@code type} is the
+     * name of a link type; unknown names become Relates.
+     */
+    record SourceLink(String type, SourceRef other) {
+    }
+
+    /** {@code links}: links other than dependencies and sub-issues. */
     record SourceDetails(List<SourceComment> comments, List<SourceEvent> events, List<SourceDependency> blockedBy,
-            List<SourceRef> children, List<SourceRef> related) {
+            List<SourceRef> children, List<SourceLink> links) {
     }
 }

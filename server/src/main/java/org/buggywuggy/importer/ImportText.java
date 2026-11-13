@@ -12,9 +12,9 @@ import java.util.regex.Pattern;
 /**
  * Rewrites imported Markdown for BuggyWuggy. Outside code:
  * <ul>
- * <li>{@code #12}, {@code owner/repo#12} and bare links to issues of the source become the key
- * of the imported issue, or a link to the original (an issue or pull request that was not
- * imported);</li>
+ * <li>{@code #12}, {@code owner/repo#12} (or, for Jira, {@code ABC-12}) and bare links to issues
+ * of the source become the key of the imported issue, or a link to the original (an issue or
+ * pull request that was not imported);</li>
  * <li>links to attachments point to the copied attachment, or to the original file when it was
  * not copied;</li>
  * <li>other relative links become absolute links to the source's web address.</li>
@@ -53,6 +53,7 @@ public final class ImportText {
     private final Resolver resolver;
     private final Pattern attachment;
     private final Pattern issueUrl;
+    private final Pattern keys;
 
     /**
      * @param web         the web address issues are under, e.g. https://github.com
@@ -60,13 +61,27 @@ public final class ImportText {
      * @param attachments attachment links with the key as group 1, or null
      */
     public ImportText(String web, String repository, Pattern attachments, Resolver resolver) {
+        this(web, repository, attachments, defaultIssueLinks(web), null, resolver);
+    }
+
+    /**
+     * @param issueLinks links to issues, with the repository as group 1 and the number as group 2
+     * @param keys       references like {@code ABC-12} (project as group 1, number as group 2)
+     *                   instead of {@code #12} and {@code owner/repo#12}; null for those
+     */
+    public ImportText(String web, String repository, Pattern attachments, Pattern issueLinks, Pattern keys,
+            Resolver resolver) {
         this.web = web;
         this.repository = repository;
         this.resolver = resolver;
         this.attachment = attachments;
-        // GitHub and Forgejo: /owner/repo/issues/12; GitLab: /group/project/-/issues/12
-        this.issueUrl = Pattern.compile(Pattern.quote(web)
-                + "/([\\w.\\-]+(?:/[\\w.\\-]+)+?)/(?:-/)?issues/(\\d+)/?");
+        this.issueUrl = issueLinks;
+        this.keys = keys;
+    }
+
+    /** GitHub and Forgejo: /owner/repo/issues/12; GitLab: /group/project/-/issues/12 */
+    public static Pattern defaultIssueLinks(String web) {
+        return Pattern.compile(Pattern.quote(web) + "/([\\w.\\-]+(?:/[\\w.\\-]+)+?)/(?:-/)?issues/(\\d+)/?");
     }
 
     public String rewrite(String text) {
@@ -120,6 +135,15 @@ public final class ImportText {
     }
 
     private String references(String text) {
+        if (keys != null) {
+            // Only keys of this project, or of issues that were imported: ABC-12 may also be UTF-8.
+            return keys.matcher(text).replaceAll(m -> {
+                String repo = m.group(1);
+                long number = Long.parseLong(m.group(2));
+                return Matcher.quoteReplacement(key(repo, number).orElseGet(() -> repo.equals(repository)
+                        ? "[" + m.group() + "](" + resolver.issueUrl(repo, number) + ")" : m.group()));
+            });
+        }
         String result = CROSS_REF.matcher(text).replaceAll(m -> {
             String repo = m.group(1);
             long number = Long.parseLong(m.group(2));

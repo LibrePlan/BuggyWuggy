@@ -48,6 +48,7 @@ import org.buggywuggy.importer.Source.SourceComment;
 import org.buggywuggy.importer.Source.SourceDependency;
 import org.buggywuggy.importer.Source.SourceDetails;
 import org.buggywuggy.importer.Source.SourceIssue;
+import org.buggywuggy.importer.Source.SourceLink;
 import org.buggywuggy.importer.Source.SourceLabel;
 import org.buggywuggy.importer.Source.SourceMilestone;
 import org.buggywuggy.importer.Source.SourceRef;
@@ -211,8 +212,13 @@ public class IssueImporter {
                 }
             }
         }
-        Map<String, String> typeAliases = Map.of("bug", "bug", "defect", "bug", "feature", "story",
-                "enhancement", "story", "task", "task", "story", "story");
+        if (name.startsWith("component/") || name.startsWith("component:")) {
+            return new LabelRule(LabelTarget.COMPONENT, null);
+        }
+        Map<String, String> typeAliases = Map.ofEntries(Map.entry("bug", "bug"), Map.entry("defect", "bug"),
+                Map.entry("feature", "story"), Map.entry("new feature", "story"), Map.entry("enhancement", "story"),
+                Map.entry("improvement", "story"), Map.entry("task", "task"), Map.entry("story", "story"),
+                Map.entry("epic", "epic"));
         String type = typeAliases.get(last);
         if (type != null && (!name.contains("/") || name.startsWith("kind") || name.startsWith("type"))) {
             for (Map.Entry<Long, String> t : types.entrySet()) {
@@ -229,7 +235,7 @@ public class IssueImporter {
 
     /** What rounds two and three need of an issue round one created or extended. */
     private record Done(long issueId, String key, SourceIssue issue, boolean isNew, List<Long> commentIds,
-            List<SourceDependency> dependencies, List<SourceRef> children, List<SourceRef> related) {
+            List<SourceDependency> dependencies, List<SourceRef> children, List<SourceLink> links) {
     }
 
     /** State of one run. */
@@ -345,8 +351,18 @@ public class IssueImporter {
             return named == null ? null : named.id();
         }
 
+        /** The issue as the source names it: owner/repo#12, ABC-12. */
         String origin(long number) {
-            return source.path() + "#" + number;
+            return source.reference(source.path(), number);
+        }
+
+        String origin(SourceRef ref) {
+            return source.reference(ref.repository() == null ? source.path() : ref.repository(), ref.number());
+        }
+
+        Optional<Named> imported(String repository, long number) {
+            String repo = repository == null ? source.path() : repository;
+            return writer.issueBySource(source.kind(), source.baseUrl(), repo, source.reference(repo, number));
         }
     }
 
@@ -381,7 +397,7 @@ public class IssueImporter {
             if (context.cancelled()) {
                 throw new CancelledException();
             }
-            context.status("Issue " + ++position + " of " + issues.size() + ": #" + issue.number());
+            context.status("Issue " + ++position + " of " + issues.size() + ": " + run.origin(issue.number()));
             int usersBefore = run.usersCreated;
             Map<String, Named> knownUsers = new HashMap<>(run.users);
             Map<String, Named> knownVersions = new HashMap<>(run.versions);
@@ -405,7 +421,7 @@ public class IssueImporter {
                 run.usersCreated = usersBefore;
                 jobs.count(jobId, 1, 0, 0, 0, 0);
                 failed++;
-                context.warn("Issue #" + issue.number() + " was not imported: " + context.describe(e));
+                context.warn("Issue " + run.origin(issue.number()) + " was not imported: " + context.describe(e));
                 if (++failuresInARow >= MAX_FAILURES_IN_A_ROW) {
                     throw new IllegalStateException(MAX_FAILURES_IN_A_ROW + " issues in a row failed; stopped.", e);
                 }
@@ -414,7 +430,8 @@ public class IssueImporter {
 
         context.status("Linking issues and updating references");
         context.info("Linking issues and updating references.");
-        ImportText text = new ImportText(source.webUrl(), source.path(), source.attachmentLinks(), resolver(run));
+        ImportText text = new ImportText(source.webUrl(), source.path(), source.attachmentLinks(),
+                source.issueLinks(), source.issueKeys(), resolver(run));
         for (Done d : done) {
             if (context.cancelled()) {
                 throw new CancelledException();
@@ -440,8 +457,7 @@ public class IssueImporter {
         return new ImportText.Resolver() {
             @Override
             public Optional<String> issueKey(String repository, long number) {
-                return writer.issueBySource(run.source.kind(), run.source.baseUrl(),
-                        repository == null ? run.source.path() : repository, number).map(Named::name);
+                return run.imported(repository, number).map(Named::name);
             }
 
             @Override
@@ -493,6 +509,9 @@ public class IssueImporter {
         writer.remember(run.sourceId, Ref.ISSUE, issue.externalId(), id, run.now);
 
         writer.labels(id, labels.stream().map(run.mapping::label).filter(Objects::nonNull).toList());
+        writer.components(run.projectId, id, labels.stream()
+                .filter(l -> run.rule(l).target() == LabelTarget.COMPONENT).map(IssueImporter::componentName)
+                .toList());
         if (issue.milestone() != null && !issue.milestone().isBlank()) {
             writer.fixVersions(id, List.of(run.mapping.version(issue.milestone().strip()).id()));
         }
@@ -513,13 +532,13 @@ public class IssueImporter {
             writer.history(id, run.id(run.user(entry.author())), entry.at(), entry.changes());
         }
         for (ImportHistory.PullRequest pr : history.pullRequests()) {
-            writer.remoteLink(id, pr.url(), pr.title(), "PULL_REQUEST", pr.at());
+            writer.remoteLink(id, pr.url(), pr.title(), pr.relation(), pr.at());
         }
         Changes origin = new Changes();
         origin.record(Fields.IMPORT, null, null, issue.url(),
                 run.source.displayName() + " " + run.origin(issue.number()));
         writer.history(id, run.startedBy, run.now, origin);
-        return new Done(id, key, issue, true, commentIds, details.blockedBy(), details.children(), details.related());
+        return new Done(id, key, issue, true, commentIds, details.blockedBy(), details.children(), details.links());
     }
 
     /** For an issue an earlier run imported: only comments that are new since then. */
@@ -611,11 +630,9 @@ public class IssueImporter {
             }
         }
         for (SourceDependency dep : d.dependencies()) {
-            String repo = dep.blocker().repository() == null ? run.source.path() : dep.blocker().repository();
-            Optional<Named> blocker = writer.issueBySource(run.source.kind(), run.source.baseUrl(), repo,
-                    dep.blocker().number());
+            Optional<Named> blocker = run.imported(dep.blocker().repository(), dep.blocker().number());
             if (blocker.isEmpty()) {
-                run.context.warn(d.key() + " depends on " + repo + "#" + dep.blocker().number()
+                run.context.warn(d.key() + " depends on " + run.origin(dep.blocker())
                         + ", which was not imported; the dependency was skipped.");
                 continue;
             }
@@ -623,12 +640,11 @@ public class IssueImporter {
                     dep.author() == null ? run.startedBy : run.id(run.user(dep.author())),
                     dep.at() == null ? run.now : dep.at());
         }
-        for (SourceRef ref : d.related()) {
-            String repo = ref.repository() == null ? run.source.path() : ref.repository();
-            Optional<Named> other = writer.issueBySource(run.source.kind(), run.source.baseUrl(), repo, ref.number());
-            // Both issues list the link; the second one finds it already there.
-            if (other.isPresent() && other.get().id() != d.issueId() && !writer.linked(d.issueId(), other.get().id())) {
-                writer.link("Relates", d.issueId(), d.key(), other.get().id(), other.get().name(), run.startedBy,
+        for (SourceLink link : d.links()) {
+            Optional<Named> other = run.imported(link.other().repository(), link.other().number());
+            // Both issues may list the link; the second one finds it already there.
+            if (other.isPresent() && other.get().id() != d.issueId() && !writer.linked(d.issueId(), other.get().id(), link.type())) {
+                writer.link(link.type(), d.issueId(), d.key(), other.get().id(), other.get().name(), run.startedBy,
                         run.now);
             }
         }
@@ -646,7 +662,7 @@ public class IssueImporter {
         for (Done d : done) {
             byOrigin.put(run.origin(d.issue().number()).toLowerCase(Locale.ROOT), d);
             for (SourceRef c : d.children()) {
-                children.add(originOf(run, c));
+                children.add(run.origin(c).toLowerCase(Locale.ROOT));
             }
         }
         Deque<Done> queue = new ArrayDeque<>();
@@ -661,14 +677,13 @@ public class IssueImporter {
                 continue;
             }
             for (SourceRef ref : parent.children()) {
-                String repo = ref.repository() == null ? run.source.path() : ref.repository();
                 try {
-                    tx.executeWithoutResult(status -> child(run, parent, repo, ref.number(), subtask));
+                    tx.executeWithoutResult(status -> child(run, parent, ref, subtask));
                 } catch (RuntimeException e) {
-                    run.context.warn(parent.key() + ": sub-issue " + repo + "#" + ref.number()
+                    run.context.warn(parent.key() + ": sub-issue " + run.origin(ref)
                             + " could not be linked: " + run.context.describe(e));
                 }
-                Done next = byOrigin.get((repo + "#" + ref.number()).toLowerCase(Locale.ROOT));
+                Done next = byOrigin.get(run.origin(ref).toLowerCase(Locale.ROOT));
                 if (next != null && !next.children().isEmpty() && !handled.contains(next.issueId())) {
                     queue.addFirst(next);
                 }
@@ -676,15 +691,10 @@ public class IssueImporter {
         }
     }
 
-    private static String originOf(Run run, SourceRef ref) {
-        return ((ref.repository() == null ? run.source.path() : ref.repository()) + "#" + ref.number())
-                .toLowerCase(Locale.ROOT);
-    }
-
-    private void child(Run run, Done parentDone, String repo, long number, Optional<Named> subtask) {
-        Optional<Named> found = writer.issueBySource(run.source.kind(), run.source.baseUrl(), repo, number);
+    private void child(Run run, Done parentDone, SourceRef ref, Optional<Named> subtask) {
+        Optional<Named> found = run.imported(ref.repository(), ref.number());
         if (found.isEmpty()) {
-            run.context.warn(parentDone.key() + " has sub-issue " + repo + "#" + number
+            run.context.warn(parentDone.key() + " has sub-issue " + run.origin(ref)
                     + ", which was not imported; it was skipped.");
             return;
         }
@@ -704,6 +714,13 @@ public class IssueImporter {
             writer.link("Relates", parent.id(), parentDone.key(), child.id(), found.get().name(), run.startedBy,
                     run.now);
         }
+    }
+
+    /** component/Backend → Backend */
+    static String componentName(String label) {
+        String name = label.regionMatches(true, 0, "component/", 0, "component/".length())
+                ? label.substring("component/".length()) : label;
+        return name.strip();
     }
 
     private static String blankToNull(String value) {

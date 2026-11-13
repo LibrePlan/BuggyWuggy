@@ -221,7 +221,7 @@ final class GitLabSource implements Source {
             }
         }
         List<SourceDependency> blockedBy = new ArrayList<>();
-        List<SourceRef> related = new ArrayList<>();
+        List<SourceLink> related = new ArrayList<>();
         for (LinkedIssue link : optional(() -> api.all(at + "/links", Map.of(), LinkedIssue.class))) {
             SourceRef ref = ref(link);
             if (ref == null) {
@@ -230,7 +230,7 @@ final class GitLabSource implements Source {
             if ("is_blocked_by".equals(link.linkType())) {
                 blockedBy.add(new SourceDependency(ref, null, instant(link.linkCreatedAt())));
             } else if ("relates_to".equals(link.linkType())) {
-                related.add(ref);
+                related.add(new SourceLink("Relates", ref));
             }
             // "blocks": recorded as "is_blocked_by" on the other issue.
         }

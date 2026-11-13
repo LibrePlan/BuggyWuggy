@@ -63,8 +63,11 @@ public final class ImportHistory {
     public record Entry(SourceUser author, Instant at, Changes changes) {
     }
 
-    /** A pull request that referenced the issue. */
-    public record PullRequest(String url, String title, SourceUser author, Instant at) {
+    /**
+     * A pull request that referenced the issue, or another web link ({@code relation} as in
+     * {@code issue_remote_link}: PULL_REQUEST or OTHER).
+     */
+    public record PullRequest(String url, String title, SourceUser author, Instant at, String relation) {
     }
 
     public record Result(List<Entry> entries, List<PullRequest> pullRequests, boolean reopened) {
@@ -118,16 +121,16 @@ public final class ImportHistory {
 
         List<PullRequest> pullRequests = new ArrayList<>();
         for (SourceEvent e : events) {
-            if (e.kind() == Kind.PULL_REQUEST && e.value() != null
+            if (isLink(e) && e.value() != null
                     && pullRequests.stream().noneMatch(p -> p.url().equals(e.value()))) {
                 pullRequests.add(new PullRequest(e.value(), e.oldValue() == null ? e.value() : e.oldValue(),
-                        e.author(), e.at()));
+                        e.author(), e.at(), e.kind() == Kind.PULL_REQUEST ? "PULL_REQUEST" : "OTHER"));
             }
         }
 
         List<List<SourceEvent>> groups = new ArrayList<>();
         for (SourceEvent e : events) {
-            if (e.kind() == Kind.PULL_REQUEST && pullRequests.stream().noneMatch(p -> p.url().equals(e.value())
+            if (isLink(e) && pullRequests.stream().noneMatch(p -> p.url().equals(e.value())
                     && p.at().equals(e.at()))) {
                 continue; // a later reference to a pull request that is already listed
             }
@@ -156,7 +159,7 @@ public final class ImportHistory {
             if (!atCreation) {
                 Changes changes = diff(before, after, mapping);
                 for (SourceEvent e : group) {
-                    if (e.kind() == Kind.PULL_REQUEST) {
+                    if (isLink(e)) {
                         changes.record(Fields.REMOTE_LINK, null, null, e.value(),
                                 e.oldValue() == null ? e.value() : e.oldValue());
                     }
@@ -206,10 +209,14 @@ public final class ImportHistory {
                 state.closed = true;
                 state.reason = closedBefore.get(e);
             }
-            case PULL_REQUEST -> {
+            case PULL_REQUEST, WEB_LINK -> {
                 // not about the issue's values
             }
         }
+    }
+
+    private static boolean isLink(SourceEvent e) {
+        return e.kind() == Kind.PULL_REQUEST || e.kind() == Kind.WEB_LINK;
     }
 
     private static LocalDate date(String value) {

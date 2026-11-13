@@ -46,9 +46,11 @@ import { PROJECT_KEY_PATTERN, suggestProjectKey } from '../../lib/projectKey';
 
 /** The sources with a repository wizard, and what differs between them. */
 export const REPOSITORY_SOURCES = {
-  forgejo: { name: 'Forgejo', url: 'https://codeberg.org', tokenRequired: false },
-  github: { name: 'GitHub', url: 'https://github.com', tokenRequired: true },
-  gitlab: { name: 'GitLab', url: 'https://gitlab.com', tokenRequired: false },
+  forgejo: { name: 'Forgejo', url: 'https://codeberg.org', tokenRequired: false, userField: false },
+  github: { name: 'GitHub', url: 'https://github.com', tokenRequired: true, userField: false },
+  gitlab: { name: 'GitLab', url: 'https://gitlab.com', tokenRequired: false, userField: false },
+  // Jira: a project key instead of a repository, and basic authentication with e-mail address (or username).
+  jira: { name: 'Jira', url: 'https://your-site.atlassian.net', tokenRequired: false, userField: true },
 } as const;
 
 export type RepositorySource = keyof typeof REPOSITORY_SOURCES;
@@ -63,7 +65,7 @@ function ruleOf(value: string): LabelRule {
   return { target: target as LabelRule['target'], id: id ? Number(id) : null };
 }
 
-/** The import wizard for trackers with repositories: Forgejo, GitHub and GitLab. */
+/** The import wizard for trackers with repositories (Forgejo, GitHub, GitLab) or projects (Jira). */
 export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
   const { t } = useTranslation();
   const source = REPOSITORY_SOURCES[kind];
@@ -75,8 +77,11 @@ export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
   // 1. Connection
   const [url, setUrl] = useState<string>(source.url);
   const [token, setToken] = useState('');
+  const [user, setUser] = useState('');
+  // Basic authentication goes to the server as user:token; it is only kept in memory there too.
+  const secret = source.userField && user.trim() ? `${user.trim()}:${token}` : token;
   const connect = useMutation({
-    mutationFn: () => post<ImportConnection>(`${BASE}/connection`, { url, token: token || null }),
+    mutationFn: () => post<ImportConnection>(`${BASE}/connection`, { url, token: secret || null }),
     onSuccess: (c) => setUrl(c.url),
   });
 
@@ -85,7 +90,7 @@ export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
   const [repository, setRepository] = useState('');
   const search = useMutation({
     mutationFn: () =>
-      post<ImportRepository[]>(`${BASE}/repositories`, { url, token: token || null, query: query || null }),
+      post<ImportRepository[]>(`${BASE}/repositories`, { url, token: secret || null, query: query || null }),
   });
   const [target, setTarget] = useState<'new' | 'existing'>('new');
   const [newKey, setNewKey] = useState('');
@@ -95,13 +100,16 @@ export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
 
   // 3. Mapping
   const analysis = useMutation({
-    mutationFn: () => post<ImportAnalysis>(`${BASE}/analysis`, { url, token: token || null, repository }),
+    mutationFn: () => post<ImportAnalysis>(`${BASE}/analysis`, { url, token: secret || null, repository }),
     onSuccess: (a) => {
       setRules(Object.fromEntries(a.labels.map((l) => [l.name, l.suggestion])));
       setUsers(Object.fromEntries(a.users.map((u) => [u.id, u.suggestion])));
     },
   });
-  const issueTypes = (useIssueTypes().data ?? []).filter((type) => type.hierarchyLevel === 0);
+  const allTypes = useIssueTypes().data;
+  const issueTypes = useMemo(() => (allTypes ?? []).filter((type) => type.hierarchyLevel === 0), [allTypes]);
+  // A label may also become an epic (e.g. Jira's type:Epic); sub-tasks only come from the hierarchy.
+  const labelTypes = useMemo(() => (allTypes ?? []).filter((type) => type.hierarchyLevel >= 0), [allTypes]);
   const priorities = usePriorities().data ?? [];
   const [issueTypeId, setIssueTypeId] = useState<string | null>(null);
   const [rules, setRules] = useState<Record<string, LabelRule>>({});
@@ -118,19 +126,20 @@ export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
         group: t('admin.importer.wizard.keep'),
         items: [
           { value: 'LABEL', label: t('admin.importer.wizard.asLabel') },
+          { value: 'COMPONENT', label: t('admin.importer.wizard.asComponent') },
           { value: 'IGNORE', label: t('admin.importer.wizard.ignore') },
         ],
       },
       {
         group: t('admin.importer.wizard.asIssueType'),
-        items: issueTypes.map((type) => ({ value: `ISSUE_TYPE:${type.id}`, label: type.name })),
+        items: labelTypes.map((type) => ({ value: `ISSUE_TYPE:${type.id}`, label: type.name })),
       },
       {
         group: t('admin.importer.wizard.asPriority'),
         items: priorities.map((p) => ({ value: `PRIORITY:${p.id}`, label: p.name })),
       },
     ],
-    [t, issueTypes, priorities],
+    [t, labelTypes, priorities],
   );
 
   // 4. Start
@@ -150,9 +159,11 @@ export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
 
   function chooseRepository(r: ImportRepository) {
     setRepository(r.fullName);
-    const name = r.fullName.split('/').at(-1) ?? r.fullName;
+    // Jira: the key, with the project name as description.
+    const project = kind === 'jira';
+    const name = project ? (r.description ?? r.fullName) : (r.fullName.split('/').at(-1) ?? r.fullName);
     setNewName(name);
-    setNewKey(suggestProjectKey(name));
+    setNewKey(project && PROJECT_KEY_PATTERN.test(r.fullName) ? r.fullName : suggestProjectKey(name));
   }
 
   function submit() {
@@ -160,7 +171,7 @@ export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
     for (const [id, user] of Object.entries(users)) if (user) chosen[id] = user.id;
     start.mutate({
       url,
-      token: token || null,
+      token: secret || null,
       repository,
       projectId: target === 'existing' ? Number(projectId) : null,
       newProject: target === 'new' ? { key: newKey, name: newName.trim() } : null,
@@ -192,6 +203,18 @@ export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
                 connect.reset();
               }}
             />
+            {source.userField && (
+              <TextInput
+                label={t('admin.importer.wizard.user')}
+                description={t(`admin.importer.source.${kind}.userHelp`)}
+                autoComplete="off"
+                value={user}
+                onChange={(e) => {
+                  setUser(e.currentTarget.value);
+                  connect.reset();
+                }}
+              />
+            )}
             <PasswordInput
               label={t('admin.importer.wizard.token')}
               required={source.tokenRequired}
@@ -227,10 +250,10 @@ export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
           </Stack>
         </Stepper.Step>
 
-        <Stepper.Step label={t('admin.importer.wizard.step.repository')}>
+        <Stepper.Step label={t(`admin.importer.source.${kind}.repository`, { defaultValue: t('admin.importer.wizard.step.repository') })}>
           <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl" mt="md">
             <Stack>
-              <Title order={5}>{t('admin.importer.wizard.repository')}</Title>
+              <Title order={5}>{t(`admin.importer.source.${kind}.repository`, { defaultValue: t('admin.importer.wizard.repository') })}</Title>
               <Group align="end" wrap="nowrap">
                 <TextInput
                   style={{ flex: 1 }}
@@ -269,7 +292,9 @@ export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
                       <Group gap={4}>
                         {r.isPrivate && <Badge variant="light">{t('admin.importer.wizard.private')}</Badge>}
                         {r.hasIssues ? (
-                          <Badge variant="outline">{t('admin.importer.wizard.openIssues', { count: r.openIssues })}</Badge>
+                          r.openIssues >= 0 && (
+                            <Badge variant="outline">{t('admin.importer.wizard.openIssues', { count: r.openIssues })}</Badge>
+                          )
                         ) : (
                           <Badge color="gray">{t('admin.importer.wizard.noIssues')}</Badge>
                         )}
