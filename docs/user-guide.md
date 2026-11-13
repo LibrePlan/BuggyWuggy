@@ -62,11 +62,7 @@ The bar at the top of every page contains:
 
 - **BuggyWuggy** (the logo): back to the start page.
 - **Projects**: all projects you can see.
-- **Issues**: a menu with the views of the issue list, both opened with the issues assigned
-  to you that are not yet resolved:
-  - **Issues**: the search page (see [Searching for issues](#searching-for-issues)).
-  - **TaskWarrior**: the same list with each issue's *urgency*, most urgent first; see
-    [The TaskWarrior view](taskwarrior.md).
+- **Issues**: the search page, opened with the issues assigned to you that are not yet resolved.
 - **The search box**: type an issue key such as `BUG-12` and press Enter to open that issue
   straight away. Type anything else to search for it.
 - **Administration**: only for BuggyWuggy administrators; see the
@@ -136,7 +132,7 @@ An issue page shows:
 - **Comments** and **History** tabs.
 - On the right, the **details**: status and resolution, type, priority, assignee, reporter,
   labels, components, versions, due date, the TaskWarrior *urgency* (click it to see how it is
-  calculated, see [The TaskWarrior view](taskwarrior.md)), and when the issue was created, last updated and
+  calculated, see [TaskWarrior urgency](taskwarrior.md)), and when the issue was created, last updated and
   resolved. For an issue that was imported from another tracker, *Imported from* shows where
   it came from, such as `forgejo/website#12`, with a link to the original.
 
@@ -280,8 +276,8 @@ Watchers get [e-mail notifications](#e-mail-notifications) about changes.
 
 ## Searching for issues
 
-Open **Issues → Issues** in the top bar. The page shows a list of issues and, above it, the search
-conditions. Every change is applied immediately.
+Open **Issues** in the top bar. The page shows a list of issues and, above it, the search
+conditions. Each issue shows its TaskWarrior *urgency* (see [TaskWarrior urgency](taskwarrior.md)). Every change is applied immediately.
 
 | Condition | |
 |---|---|
@@ -296,7 +292,7 @@ Within one condition, the values are alternatives (status *Open* **or** *Reopene
 conditions must all match (status … **and** assignee …).
 
 **Sort by** chooses the order: relevance (when searching for text), updated, created, key,
-priority, status, due date or urgency (see [The TaskWarrior view](taskwarrior.md)). The button next to it switches between ascending and descending.
+priority, status, due date or urgency. The button next to it switches between ascending and descending.
 **Clear conditions** removes all conditions.
 
 The search conditions are part of the page address, so you can bookmark a search or send its

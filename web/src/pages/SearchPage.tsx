@@ -24,17 +24,11 @@ import { normalizeQuery, paramsToQuery, queryToParams, sameQuery, type IssueQuer
 
 const PAGE_SIZE = 50;
 
-/** The views of the issue list: the plain list, and TaskWarrior's (with urgency, most urgent first). */
-export type IssueView = 'issues' | 'taskwarrior';
-
-const VIEW_PATH: Record<IssueView, string> = { issues: '/issues', taskwarrior: '/issues/taskwarrior' };
-
 /**
  * Issue search with filters in the URL (/issues?q=…&status=…), and saved filters (&filter=ID).
- * The TaskWarrior view (/issues/taskwarrior) shows the urgency and sorts by it unless another
- * sort is chosen.
+ * Every issue shows its TaskWarrior urgency.
  */
-export function SearchPage({ view = 'issues' }: { view?: IssueView }) {
+export function SearchPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -43,12 +37,7 @@ export function SearchPage({ view = 'issues' }: { view?: IssueView }) {
   const page = Math.max(0, Number(params.get('page') ?? '1') - 1) || 0;
   const filterId = /^\d+$/.test(params.get('filter') ?? '') ? Number(params.get('filter')) : null;
   const filter = useFilter(filterId);
-  const taskwarrior = view === 'taskwarrior';
-  const results = useIssueSearch(
-    normalizeQuery(taskwarrior ? { ...query, sort: query.sort ?? 'URGENCY' } : query),
-    page,
-    PAGE_SIZE,
-  );
+  const results = useIssueSearch(normalizeQuery(query), page, PAGE_SIZE);
   const [saving, saveModal] = useDisclosure(false);
   const [editing, editModal] = useDisclosure(false);
 
@@ -90,7 +79,7 @@ export function SearchPage({ view = 'issues' }: { view?: IssueView }) {
     <Stack>
       <Group justify="space-between" align="flex-start">
         <Group gap="sm" align="center">
-          <Title order={2}>{filter.data?.name ?? t(taskwarrior ? 'taskwarrior.title' : 'search.title')}</Title>
+          <Title order={2}>{filter.data?.name ?? t('search.title')}</Title>
           {filter.data && changed && (
             <Badge color="orange" variant="light">
               {t('filter.modified')}
@@ -148,12 +137,7 @@ export function SearchPage({ view = 'issues' }: { view?: IssueView }) {
       )}
       {filter.isError && <ErrorAlert error={filter.error} />}
 
-      {taskwarrior && (
-        <Text size="sm" c="dimmed">
-          {t('taskwarrior.intro')}
-        </Text>
-      )}
-      <FilterBar query={query} onChange={(q) => show(q)} defaultSort={taskwarrior ? 'URGENCY' : undefined} />
+      <FilterBar query={query} onChange={(q) => show(q)} />
 
       {results.isPending ? (
         <PageLoader />
@@ -165,7 +149,7 @@ export function SearchPage({ view = 'issues' }: { view?: IssueView }) {
         </Text>
       ) : (
         <>
-          <IssueTable issues={data!.items} showProject showUrgency={taskwarrior} />
+          <IssueTable issues={data!.items} showProject showUrgency />
           <Group justify="space-between">
             <Text size="sm" c="dimmed">
               {t('project.issueCount', { count: data!.total })}
@@ -187,7 +171,7 @@ export function SearchPage({ view = 'issues' }: { view?: IssueView }) {
         onClose={saveModal.close}
         onSaved={(f) => {
           notifications.show({ color: 'green', message: t('filter.saved', { name: f.name }) });
-          navigate(`${VIEW_PATH[view]}?${new URLSearchParams([...queryToParams(f.query), ['filter', String(f.id)]])}`);
+          navigate(`/issues?${new URLSearchParams([...queryToParams(f.query), ['filter', String(f.id)]])}`);
         }}
       />
       {filter.data?.mine && (

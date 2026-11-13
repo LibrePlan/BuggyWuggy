@@ -1,32 +1,26 @@
-# The TaskWarrior view
+# TaskWarrior urgency
 
-BuggyWuggy can show issues the way [TaskWarrior](https://taskwarrior.org) shows tasks: each
+BuggyWuggy can rank issues the way [TaskWarrior](https://taskwarrior.org) ranks tasks: each
 open issue gets an **urgency**, a number that says how much it asks for attention, and the
-list puts the most urgent issues first. The urgency is calculated as TaskWarrior calculates it
+issue list can put the most urgent issues first. The urgency is calculated as TaskWarrior calculates it
 ([TaskWarrior: urgency](https://taskwarrior.org/docs/urgency/)), with the qualities of an issue
 in BuggyWuggy in place of those of a task.
 
 ## Contents
 
-1. [Using the view](#using-the-view)
+1. [Where the urgency is shown](#where-the-urgency-is-shown)
 2. [How the urgency is calculated](#how-the-urgency-is-calculated)
 3. [The terms](#the-terms)
 4. [Configuration](#configuration)
 5. [API](#api)
 6. [Differences from TaskWarrior](#differences-from-taskwarrior)
 
-## Using the view
+## Where the urgency is shown
 
-**Issues** in the top bar is a menu with the views of the issue list:
-
-- **Issues**: the ordinary list.
-- **TaskWarrior**: the same list, with the same search conditions and saved filters, plus an
-  **Urgency** column. It is sorted by urgency, most urgent first, until you choose another sort
-  under **Sort by**. Both views open with the unresolved issues assigned to you.
-
-The address of the view is `/issues/taskwarrior`, followed by the search conditions, so it can
-be bookmarked and shared like any search. **Urgency** is also one of the sorts of the ordinary
-list.
+The issue list (**Issues** in the top bar) has an **Urgency** column. To put the most urgent
+issues first, choose **Urgency** under **Sort by** (descending). Like every search condition,
+the sort is part of the page address and of a saved filter, so a filter such as *my unresolved
+issues, by urgency* can be saved and shared.
 
 On the **issue page**, the details show the issue's **Urgency**. Click the value to see how it
 was calculated, line by line, as TaskWarrior's `task info` shows it:
@@ -147,7 +141,7 @@ buggywuggy:
 - **Environment variables** work too, for example
   `BUGGYWUGGY_TASKWARRIOR_URGENCY_DUE_COEFFICIENT=10.0`. For the maps the file is easier.
 
-TaskWarrior's advice holds here as well: use the view for a while before changing anything,
+TaskWarrior's advice holds here as well: use the urgency for a while before changing anything,
 change coefficients in small steps (±1.0), and keep any single term from dominating the others.
 Setting the priority coefficients to 1.0 and all others to 0 sorts by priority alone.
 

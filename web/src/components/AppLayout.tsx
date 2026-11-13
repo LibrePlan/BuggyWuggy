@@ -4,11 +4,11 @@
 
 import { Anchor, AppShell, Avatar, Group, Menu, Text, TextInput, UnstyledButton } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconChevronDown, IconFlame, IconList, IconLogout, IconSearch, IconSettings, IconUser } from '@tabler/icons-react';
+import { IconChevronDown, IconLogout, IconSearch, IconSettings, IconUser } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import { post } from '../api/client';
 import { keys, useMyself } from '../api/queries';
 import { normalizeIssueKey } from '../lib/links';
@@ -19,7 +19,6 @@ export function AppLayout() {
   const myself = useMyself().data;
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
 
   async function logout() {
     try {
@@ -49,35 +48,9 @@ export function AppLayout() {
             <Anchor component={NavLink} to="/projects" c="inherit" fw={500}>
               {t('nav.projects')}
             </Anchor>
-            <Menu position="bottom-start" withinPortal trigger="click-hover" openDelay={50} closeDelay={150}>
-              <Menu.Target>
-                <UnstyledButton aria-label={t('nav.issuesMenu')}>
-                  <Group gap={4} wrap="nowrap">
-                    <Text fw={500} c={pathname.startsWith('/issues') ? 'blue' : undefined}>
-                      {t('nav.issues')}
-                    </Text>
-                    <IconChevronDown size={14} />
-                  </Group>
-                </UnstyledButton>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Label>{t('nav.issueViews')}</Menu.Label>
-                <Menu.Item
-                  leftSection={<IconList size={16} />}
-                  component={Link}
-                  to="/issues?resolution=unresolved&assignee=me"
-                >
-                  {t('nav.issueView.issues')}
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconFlame size={16} />}
-                  component={Link}
-                  to="/issues/taskwarrior?resolution=unresolved&assignee=me"
-                >
-                  {t('nav.issueView.taskwarrior')}
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+            <Anchor component={NavLink} to="/issues?resolution=unresolved&assignee=me" c="inherit" fw={500}>
+              {t('nav.issues')}
+            </Anchor>
             {myself?.globalPermissions.includes('ADMINISTER') && (
               <Anchor component={NavLink} to="/admin" c="inherit" fw={500} visibleFrom="sm">
                 {t('nav.admin')}
