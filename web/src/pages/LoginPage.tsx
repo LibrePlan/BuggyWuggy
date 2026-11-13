@@ -2,15 +2,17 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Alert, Button, Container, Paper, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Anchor, Button, Container, Paper, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { post } from '../api/client';
-import { keys, useMyself, useSetupStatus } from '../api/queries';
+import { keys, useDonation, useMyself, useSetupStatus } from '../api/queries';
 import type { MyselfResponse } from '../api/types';
 import { PageLoader } from '../components/QueryState';
+
+const LICENSE_PAGE = '/admin/license';
 
 /** Only follow redirects within the app. */
 function safeNext(next: string | null): string {
@@ -25,6 +27,7 @@ export function LoginPage() {
   const queryClient = useQueryClient();
   const setup = useSetupStatus();
   const myself = useMyself();
+  const donation = useDonation();
   const next = safeNext(params.get('next'));
   const setupDone = (location.state as { setupDone?: boolean } | null)?.setupDone;
 
@@ -82,6 +85,22 @@ export function LoginPage() {
           </Stack>
         </form>
       </Paper>
+      {donation.data?.show && (
+        <Stack gap={4} mt="xl" align="center" ta="center">
+          <Title order={1}>{t('donate.title')}</Title>
+          <Text>
+            {t('donate.notFree')}{' '}
+            <Anchor component={Link} to={`/login?next=${encodeURIComponent(LICENSE_PAGE)}`} replace>
+              {t('donate.findOut')}
+            </Anchor>
+          </Text>
+          {next === LICENSE_PAGE && (
+            <Text size="sm" c="dimmed">
+              {t('donate.loginAsAdmin')}
+            </Text>
+          )}
+        </Stack>
+      )}
     </Container>
   );
 }

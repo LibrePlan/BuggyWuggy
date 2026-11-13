@@ -392,6 +392,13 @@ Indexes are maintained transactionally by PostgreSQL; no re-indexing is ever nee
 - `user_preference(user_id, key, value)` — `mail.notifications` (default `true`) and
   `mail.own-changes` (default `false`).
 - `application_setting(key, value jsonb)` — base URL, mail settings, installation defaults.
+- `license_request(challenge pk, created_at, created_by, country_code, users, currency,
+  yearly_total, company_name, contact_name, contact_email, contact_phone)` — quotation requests,
+  mailed to sales@buggywuggy.org; `license(id, challenge unique fk, valid_until, activated_at,
+  activated_by, reminder_sent_at)` — entered license codes. A code is an Ed25519 signature (by
+  the BuggyWuggy project) of the challenge and the last valid day; BuggyWuggy holds only the
+  public key. While a license is valid, the login page asks for no donation; a month
+  before it ends, one reminder goes to sales.
 - `board(id, project_id unique nullable, swimlanes, resolved_days)` — kanban boards. The one row
   with `project_id = null` is the default board (set by administrators); a project without a
   row of its own uses it. `swimlanes` ∈ `NONE`, `ASSIGNEE`, `EPIC`, `PRIORITY` is the default

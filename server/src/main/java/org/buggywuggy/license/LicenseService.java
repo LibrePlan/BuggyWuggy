@@ -1,0 +1,280 @@
+/*
+ * BuggyWuggy — open source, self-hosted issue tracker
+ * Copyright (C) 2026 The BuggyWuggy contributors
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+package org.buggywuggy.license;
+
+import static org.buggywuggy.common.ApiException.badRequest;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.buggywuggy.common.ApiNullable;
+import org.buggywuggy.license.LicensePricing.Quote;
+import org.buggywuggy.mail.HtmlMail;
+import org.buggywuggy.mail.MailOutbox;
+import org.buggywuggy.mail.MailTransport;
+import org.buggywuggy.security.BuggyWuggyPrincipal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.HtmlUtils;
+
+/**
+ * Licenses that support the project. An administrator asks for a quotation: the request is
+ * mailed to {@link #SALES} with a new challenge. The signed answer (a license code, see
+ * {@link LicenseCode}) entered by the administrator makes a license valid until the date in the
+ * code; while one is valid, the login page asks for no donation. A month before it expires,
+ * {@link #SALES} is told so, to discuss an extension.
+ */
+@Service
+@Transactional
+public class LicenseService {
+
+    /** Where quotation requests and expiry reminders go. */
+    public static final String SALES = "sales@buggywuggy.org";
+
+    private static final Logger log = LoggerFactory.getLogger(LicenseService.class);
+
+    public record LicenseRequestSummary(String challenge, Instant createdAt, String companyName, String currency,
+            BigDecimal yearlyTotal, int users) {
+    }
+
+    /**
+     * {@code validUntil}: the last day of the current license (null without one).
+     * {@code userCount}: active accounts, the default number of users of a quotation.
+     */
+    public record LicenseStatus(boolean licensed, @ApiNullable LocalDate validUntil, int userCount,
+            boolean mailConfigured, String salesAddress, List<LicenseRequestSummary> requests) {
+    }
+
+    public record QuotationRequest(
+            @NotBlank @Size(max = 2) String country,
+            @NotNull @Min(1) @Max(1_000_000) Integer users,
+            @NotBlank @Size(max = 200) String companyName,
+            @NotBlank @Size(max = 200) String contactName,
+            @NotBlank @Email @Size(max = 254) String contactEmail,
+            @Size(max = 50) String contactPhone) {
+    }
+
+    /**
+     * The request as it was mailed ({@code subject}, {@code text}), so it can also be sent by
+     * hand when BuggyWuggy cannot send mail.
+     */
+    public record QuotationResponse(String challenge, Quote quote, boolean mailConfigured, String to, String subject,
+            String text) {
+    }
+
+    public record ActivateRequest(@NotBlank @Size(max = 200) String code) {
+    }
+
+    private final NamedParameterJdbcTemplate jdbc;
+    private final LicensePricing pricing;
+    private final LicenseCode codes;
+    private final MailOutbox outbox;
+    private final MailTransport transport;
+    private final Clock clock;
+    private final String baseUrl;
+
+    public LicenseService(NamedParameterJdbcTemplate jdbc, LicensePricing pricing, LicenseCode codes,
+            MailOutbox outbox, MailTransport transport, Clock clock, @Value("${buggywuggy.base-url}") String baseUrl) {
+        this.jdbc = jdbc;
+        this.pricing = pricing;
+        this.codes = codes;
+        this.outbox = outbox;
+        this.transport = transport;
+        this.clock = clock;
+        this.baseUrl = baseUrl;
+    }
+
+    private LocalDate today() {
+        return LocalDate.ofInstant(clock.instant(), ZoneId.systemDefault());
+    }
+
+    /** The last day of the license that is valid today, if any. */
+    @Transactional(readOnly = true)
+    public Optional<LocalDate> validUntil() {
+        return Optional.ofNullable(jdbc.queryForObject(
+                "select max(valid_until) from license where valid_until >= :today",
+                Map.of("today", today()), LocalDate.class));
+    }
+
+    /** Whether the login page asks for a donation: when no license is valid. */
+    @Transactional(readOnly = true)
+    public boolean showDonation() {
+        return validUntil().isEmpty();
+    }
+
+    @Transactional(readOnly = true)
+    public int userCount() {
+        return jdbc.queryForObject("select count(*) from user_account where active and not placeholder", Map.of(),
+                Integer.class);
+    }
+
+    @Transactional(readOnly = true)
+    public LicenseStatus status() {
+        Optional<LocalDate> until = validUntil();
+        List<LicenseRequestSummary> requests = jdbc.query("""
+                select challenge, created_at, company_name, currency, yearly_total, users
+                from license_request r
+                where not exists (select 1 from license l where l.challenge = r.challenge)
+                order by created_at desc
+                limit 5""", Map.of(), (rs, n) -> new LicenseRequestSummary(rs.getString("challenge"),
+                rs.getTimestamp("created_at").toInstant(), rs.getString("company_name"), rs.getString("currency"),
+                rs.getBigDecimal("yearly_total"), rs.getInt("users")));
+        return new LicenseStatus(until.isPresent(), until.orElse(null), userCount(), transport.configured(), SALES,
+                requests);
+    }
+
+    @Transactional(readOnly = true)
+    public Quote quote(String country, Integer users) {
+        int count = users == null ? Math.max(userCount(), 1) : users;
+        if (count < 1 || count > 1_000_000) {
+            throw badRequest("license.users-invalid");
+        }
+        return pricing.quote(country, count);
+    }
+
+    /** Stores a new challenge and mails the request to {@link #SALES}. */
+    public QuotationResponse requestQuotation(BuggyWuggyPrincipal user, QuotationRequest request) {
+        Quote quote = pricing.quote(request.country(), request.users());
+        String challenge = codes.newChallenge();
+        Instant now = clock.instant();
+        String phone = request.contactPhone() == null || request.contactPhone().isBlank() ? null
+                : request.contactPhone().strip();
+        jdbc.update("""
+                insert into license_request (challenge, created_at, created_by, country_code, users, currency,
+                                             yearly_total, company_name, contact_name, contact_email, contact_phone)
+                values (:challenge, :at, :by, :country, :users, :currency, :total, :company, :contact, :email, :phone)""",
+                new MapSqlParameterSource().addValue("challenge", challenge).addValue("at", Timestamp.from(now))
+                        .addValue("by", user.id()).addValue("country", quote.countryCode())
+                        .addValue("users", quote.users()).addValue("currency", quote.currency())
+                        .addValue("total", quote.yearlyTotal()).addValue("company", request.companyName().strip())
+                        .addValue("contact", request.contactName().strip())
+                        .addValue("email", request.contactEmail().strip()).addValue("phone", phone));
+
+        Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("Challenge", challenge);
+        fields.put("Company", request.companyName().strip());
+        fields.put("Contact", request.contactName().strip());
+        fields.put("E-mail", request.contactEmail().strip());
+        fields.put("Phone", phone == null ? "–" : phone);
+        fields.put("Country", quote.countryName() + " (" + quote.countryCode() + ")");
+        fields.put("Users", String.valueOf(quote.users()));
+        fields.put("Price per user per month", quote.pricePerUserMonth().toPlainString() + " " + quote.currency()
+                + " (" + quote.currencyName() + ")");
+        fields.put("Yearly total", quote.yearlyTotal().toPlainString() + " " + quote.currency());
+        fields.put("Calculation", calculation(quote));
+        fields.put("Installation", baseUrl);
+        fields.put("Requested by", user.getUsername());
+        String subject = "BuggyWuggy quotation request: " + request.companyName().strip();
+        String intro = "A BuggyWuggy administrator asks for a quotation for a license. Answer with a license code for "
+                + "the challenge below.";
+        String text = send(subject, intro, fields);
+        return new QuotationResponse(challenge, quote, transport.configured(), SALES, subject, text);
+    }
+
+    static String calculation(Quote quote) {
+        if (quote.bigMacPrice() == null) {
+            return quote.basePricePerUserEur().toPlainString() + " EUR per user per month (no Big Mac index price)";
+        }
+        return quote.basePricePerUserEur().toPlainString() + " EUR × Big Mac " + quote.bigMacPrice().toPlainString()
+                + " " + quote.currency() + " / Big Mac Netherlands " + quote.referenceBigMacPrice().toPlainString()
+                + " EUR (Big Mac index of " + quote.indexDate() + ")";
+    }
+
+    /** Queues a mail to {@link #SALES} and returns its text. */
+    private String send(String subject, String intro, Map<String, String> fields) {
+        StringBuilder text = new StringBuilder(intro).append("\n\n");
+        StringBuilder html = new StringBuilder("<p>").append(HtmlUtils.htmlEscape(intro)).append("</p><table>");
+        fields.forEach((label, value) -> {
+            text.append(label).append(": ").append(value).append('\n');
+            html.append("<tr><td style=\"padding-right: 12px\"><b>").append(HtmlUtils.htmlEscape(label))
+                    .append("</b></td><td>").append(HtmlUtils.htmlEscape(value)).append("</td></tr>");
+        });
+        html.append("</table>");
+        outbox.enqueue(null, SALES, subject, HtmlMail.document(html.toString()), text.toString());
+        return text.toString();
+    }
+
+    /** Enters a license code; it must answer one of the challenges of earlier requests. */
+    public LicenseStatus activate(BuggyWuggyPrincipal user, ActivateRequest request) {
+        List<String> challenges = jdbc.queryForList("""
+                select challenge from license_request r
+                where not exists (select 1 from license l where l.challenge = r.challenge)
+                order by created_at desc""", Map.of(), String.class);
+        for (String challenge : challenges) {
+            Optional<LocalDate> until = codes.verify(challenge, request.code());
+            if (until.isPresent()) {
+                if (until.get().isBefore(today())) {
+                    throw badRequest("license.code-expired", until.get());
+                }
+                jdbc.update("""
+                        insert into license (challenge, valid_until, activated_at, activated_by)
+                        values (:challenge, :until, :at, :by)""",
+                        new MapSqlParameterSource().addValue("challenge", challenge).addValue("until", until.get())
+                                .addValue("at", Timestamp.from(clock.instant())).addValue("by", user.id()));
+                log.info("License {} entered by {}, valid until {}", challenge, user.getUsername(), until.get());
+                return status();
+            }
+        }
+        throw badRequest("license.code-invalid");
+    }
+
+    /**
+     * Once a day: when the current license ends within a month, tells {@link #SALES} once, so
+     * they can discuss an extension.
+     */
+    @Scheduled(cron = "0 23 9 * * *")
+    public void remindBeforeExpiry() {
+        LocalDate today = today();
+        jdbc.query("""
+                select l.id, l.valid_until, r.challenge, r.company_name, r.contact_name, r.contact_email,
+                       r.contact_phone, r.country_code, r.users, r.currency, r.yearly_total
+                from license l join license_request r on r.challenge = l.challenge
+                where l.reminder_sent_at is null
+                  and l.valid_until between :today and :soon
+                  and l.valid_until = (select max(valid_until) from license)""",
+                Map.of("today", today, "soon", today.plusMonths(1)), rs -> {
+                    Map<String, String> fields = new LinkedHashMap<>();
+                    fields.put("Valid until", rs.getObject("valid_until", LocalDate.class).toString());
+                    fields.put("Challenge", rs.getString("challenge"));
+                    fields.put("Company", rs.getString("company_name"));
+                    fields.put("Contact", rs.getString("contact_name"));
+                    fields.put("E-mail", rs.getString("contact_email"));
+                    String phone = rs.getString("contact_phone");
+                    fields.put("Phone", phone == null ? "–" : phone);
+                    fields.put("Country", rs.getString("country_code"));
+                    fields.put("Users", String.valueOf(rs.getInt("users")));
+                    fields.put("Yearly total", rs.getBigDecimal("yearly_total").toPlainString() + " "
+                            + rs.getString("currency"));
+                    fields.put("Installation", baseUrl);
+                    send("BuggyWuggy license expires on " + fields.get("Valid until") + ": "
+                            + rs.getString("company_name"),
+                            "The BuggyWuggy license below expires within a month. Time to discuss an extension.",
+                            fields);
+                    jdbc.update("update license set reminder_sent_at = :at where id = :id",
+                            new MapSqlParameterSource().addValue("at", Timestamp.from(clock.instant()))
+                                    .addValue("id", rs.getLong("id")));
+                });
+    }
+}

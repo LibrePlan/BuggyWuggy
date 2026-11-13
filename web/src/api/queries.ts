@@ -8,6 +8,9 @@ import { get, post, seg } from './client';
 import type { IssueQuery } from '../lib/issueQuery';
 import type {
   BoardConfigResponse,
+  LicenseCountry,
+  LicenseQuote,
+  LicenseStatus,
   BoardResponse,
   AttachmentResponse,
   AttachmentSettings,
@@ -70,6 +73,8 @@ export const keys = {
   board: (key: string) => ['project', key, 'board'] as const,
   boardConfig: (key: string) => ['project', key, 'board', 'config'] as const,
   defaultBoard: ['admin', 'board'] as const,
+  license: ['admin', 'license'] as const,
+  donation: ['donation'] as const,
   projectRoles: (key: string) => ['project', key, 'roles'] as const,
   admin: ['admin'] as const,
   adminUsers: (query: string, page: number) => ['admin', 'users', query, page] as const,
@@ -476,4 +481,30 @@ export function useBoardConfig(key: string) {
 /** The default board, for administrators. */
 export function useDefaultBoardConfig() {
   return useQuery({ queryKey: keys.defaultBoard, queryFn: () => get<BoardConfigResponse>('/api/v1/admin/board') });
+}
+
+/** Whether the login page asks for a donation (no login needed). */
+export function useDonation() {
+  return useQuery({ queryKey: keys.donation, queryFn: () => get<{ show: boolean }>('/api/v1/donation') });
+}
+
+export function useLicenseStatus() {
+  return useQuery({ queryKey: keys.license, queryFn: () => get<LicenseStatus>('/api/v1/admin/license') });
+}
+
+export function useLicenseCountries() {
+  return useQuery({
+    queryKey: ['admin', 'license', 'countries'],
+    queryFn: () => get<LicenseCountry[]>('/api/v1/admin/license/countries'),
+    staleTime: LOOKUP_STALE,
+  });
+}
+
+export function useLicenseQuote(country: string | null, users: number | null) {
+  return useQuery({
+    queryKey: ['admin', 'license', 'quote', country, users],
+    queryFn: () => get<LicenseQuote>('/api/v1/admin/license/quote', { country, users }),
+    enabled: country !== null && users !== null && users >= 1,
+    placeholderData: keepPreviousData,
+  });
 }

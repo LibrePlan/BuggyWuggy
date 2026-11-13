@@ -562,7 +562,8 @@
         "open": "Show"
       }
     },
-    "board": "Board"
+    "board": "Board",
+    "license": "License"
   },
   "settings": {
     "title": "Project settings",
@@ -708,6 +709,57 @@
       "swimlanesHelp": "The horizontal lanes until a user chooses others.",
       "resolvedDays": "Resolved issues stay (days)",
       "resolvedDaysHelp": "How long resolved issues remain on the board."
+    }
+  },
+  "donate": {
+    "title": "Donate",
+    "notFree": "Open source is not free!",
+    "findOut": "Click here to find out more.",
+    "loginAsAdmin": "Log in as a BuggyWuggy administrator to see the price for your organisation and request a quotation."
+  },
+  "license": {
+    "why": "Open source is not free",
+    "whyText": "Developing and supporting BuggyWuggy takes time. If your organisation uses it, please support the project with a yearly license: it keeps BuggyWuggy maintained, and the request to donate disappears from the login page while the license is valid.",
+    "thanks": "Thank you for supporting BuggyWuggy!",
+    "validUntil": "The license is valid until {{date}}.",
+    "attribution": "Prices are based on the Big Mac index of The Economist (source data licensed under CC BY 4.0).",
+    "challenge": "Challenge:",
+    "copy": "Copy",
+    "copied": "Copied",
+    "requested": "Requested",
+    "yearlyTotal": "Per year",
+    "quotation": {
+      "title": "Request a quotation",
+      "intro": "Choose your country and the number of users to see the price. The price follows the cost of living in your country, measured by the Big Mac index. Send the request, and you will hear from us with a license code.",
+      "country": "Country",
+      "countryPlaceholder": "Type to search",
+      "users": "Number of users",
+      "usersHelp": "This installation has {{count}} active accounts.",
+      "company": "Company name",
+      "contact": "Contact name",
+      "email": "Contact e-mail address",
+      "phone": "Contact phone number",
+      "send": "Send quotation request email"
+    },
+    "quote": {
+      "perUser": "{{price}} per user per month",
+      "yearly_one": "{{amount}} per year for {{count}} user",
+      "yearly_other": "{{amount}} per year for {{count}} users",
+      "calculation": "{{base}} per user per month in the Netherlands × the price of a Big Mac in {{country}} ({{bigMac}}) / in the Netherlands ({{reference}}), Big Mac index of {{date}}.",
+      "noIndex": "{{base}} per user per month: the Big Mac index has no price for this country."
+    },
+    "sent": {
+      "title": "Quotation request sent",
+      "text": "Your request has been sent to {{to}}. You will receive a license code for the challenge below.",
+      "queuedTitle": "BuggyWuggy cannot send mail yet",
+      "queued": "The request waits until mail is configured (Administration → E-mail). You can also send it yourself to {{to}}:",
+      "mailto": "Open it in your mail program"
+    },
+    "activate": {
+      "title": "Enter the license code",
+      "intro": "Enter the license code you received for one of the challenges below. The request to donate then disappears from the login page until the license expires.",
+      "code": "License code",
+      "submit": "Activate"
     }
   }
 }

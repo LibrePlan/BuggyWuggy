@@ -20,6 +20,7 @@ This guide explains how to install, configure, run, back up and upgrade a BuggyW
 9. [HTTPS with a reverse proxy](#https-with-a-reverse-proxy)
 10. [Administration](#administration)
     - [Importing from other trackers](#importing-from-other-trackers)
+    - [License](#license)
 11. [Backup and restore](#backup-and-restore)
 12. [Upgrading](#upgrading)
 13. [Monitoring](#monitoring)
@@ -370,7 +371,7 @@ it under a sub-path such as `https://example.org/bugs/` is not supported yet.
 ## Administration
 
 Users with the global permission *Administer BuggyWuggy* (by default the group
-`administrators`) see **Administration** in the top bar. It has six pages:
+`administrators`) see **Administration** in the top bar. It has seven pages:
 
 - **Users**: find, create and edit users. On a user's page you can change the name and
   e-mail, deactivate the account, set a new password and change group memberships. Only
@@ -393,6 +394,7 @@ Users with the global permission *Administer BuggyWuggy* (by default the group
   default language cannot be disabled or deleted. Failed mails can be sent again or discarded.
 - **Import**: copy the issues of another issue tracker into BuggyWuggy; see
   [Importing from other trackers](#importing-from-other-trackers).
+- **License**: support the project; see [License](#license).
 
 ### Mail templates
 
@@ -743,6 +745,31 @@ deleted project count as not imported.
 **The access token is never stored**: not in the database and not in the log. BuggyWuggy keeps
 it in memory for 24 hours, so **Run again** works without typing it; after a restart you are
 asked for it again.
+
+### License
+
+BuggyWuggy is free software, but developing and supporting it takes time. Until an installation
+has a license, the login page asks for a donation (**Donate** — *Open source is not free!*);
+the link leads, after logging in as an administrator, to **Administration → License**:
+
+- **Request a quotation**: choose the country (type to search) and the number of users (by
+  default the number of active accounts). The price is 7 € per user per month in the
+  Netherlands, and elsewhere in proportion to the price of a Big Mac there (The Economist's Big
+  Mac index, included with BuggyWuggy, latest survey): 7 € × Big Mac in the country / Big Mac in
+  the Netherlands, in the local currency. Euro countries without a price of their own use the
+  euro area's; countries without any price pay 7 €. The page shows the yearly total in the local
+  currency. Fill in the company, contact name, e-mail address and phone number (it starts with
+  the dialling code of the chosen country) and choose **Send quotation request email**.
+  BuggyWuggy mails the request, with a unique *challenge*, to sales@buggywuggy.org through its
+  own mail server. When mail is not configured yet, the request waits until it is, and the page
+  offers the text to send yourself.
+- **Enter the license code**: the code you receive answers the challenge of your request. Once
+  it is entered, the login page no longer asks for a donation until the license expires,
+  normally after a year. A month before that, BuggyWuggy mails sales@buggywuggy.org once, to
+  discuss an extension.
+
+The request mail contains the details you entered, the price, and the address of this
+installation (`buggywuggy.base-url`).
 
 ### Automating with the REST API
 

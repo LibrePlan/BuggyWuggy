@@ -468,6 +468,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/license": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["status"];
+        put?: never;
+        post: operations["activate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/license/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/languages": {
         parameters: {
             query?: never;
@@ -795,7 +827,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["status"];
+        get: operations["status_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1060,6 +1092,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/donation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["donation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf": {
         parameters: {
             query?: never;
@@ -1131,7 +1179,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["status_1"];
+        get: operations["status_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1148,6 +1196,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["failed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/license/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["quote"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/license/countries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["countries"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1792,6 +1872,62 @@ export interface components {
             line: number;
             message: string;
         };
+        ActivateRequest: {
+            code: string;
+        };
+        LicenseRequestSummary: {
+            challenge: string;
+            /** Format: date-time */
+            createdAt: string;
+            companyName: string;
+            currency: string;
+            yearlyTotal: number;
+            /** Format: int32 */
+            users: number;
+        };
+        LicenseStatus: {
+            licensed: boolean;
+            /** Format: date */
+            validUntil: string | null;
+            /** Format: int32 */
+            userCount: number;
+            mailConfigured: boolean;
+            salesAddress: string;
+            requests: components["schemas"]["LicenseRequestSummary"][];
+        };
+        QuotationRequest: {
+            country: string;
+            /** Format: int32 */
+            users: number;
+            companyName: string;
+            contactName: string;
+            /** Format: email */
+            contactEmail: string;
+            contactPhone?: string;
+        };
+        QuotationResponse: {
+            challenge: string;
+            quote: components["schemas"]["Quote"];
+            mailConfigured: boolean;
+            to: string;
+            subject: string;
+            text: string;
+        };
+        Quote: {
+            countryCode: string;
+            countryName: string;
+            currency: string;
+            currencyName: string;
+            pricePerUserMonth: number;
+            /** Format: int32 */
+            users: number;
+            yearlyTotal: number;
+            basePricePerUserEur: number;
+            bigMacPrice: number | null;
+            referenceBigMacPrice: number | null;
+            /** Format: date */
+            indexDate: string | null;
+        };
         CreateLanguageRequest: {
             code: string;
             name: string;
@@ -2186,6 +2322,9 @@ export interface components {
             /** Format: int32 */
             hierarchyLevel: number;
         };
+        DonationResponse: {
+            show: boolean;
+        };
         CsrfToken: {
             parameterName: string;
             token: string;
@@ -2251,6 +2390,11 @@ export interface components {
             lastError: string | null;
             /** Format: date-time */
             createdAt: string;
+        };
+        Country: {
+            code: string;
+            name: string;
+            dialCode: string;
         };
         LogLine: {
             /** Format: int64 */
@@ -3405,6 +3549,74 @@ export interface operations {
             };
         };
     };
+    status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LicenseStatus"];
+                };
+            };
+        };
+    };
+    activate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LicenseStatus"];
+                };
+            };
+        };
+    };
+    request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuotationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["QuotationResponse"];
+                };
+            };
+        };
+    };
     all: {
         parameters: {
             query?: never;
@@ -4245,7 +4457,7 @@ export interface operations {
             };
         };
     };
-    status: {
+    status_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -4613,6 +4825,26 @@ export interface operations {
             };
         };
     };
+    donation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DonationResponse"];
+                };
+            };
+        };
+    };
     csrf: {
         parameters: {
             query: {
@@ -4697,7 +4929,7 @@ export interface operations {
             };
         };
     };
-    status_1: {
+    status_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -4733,6 +4965,49 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["FailedMail"][];
+                };
+            };
+        };
+    };
+    quote: {
+        parameters: {
+            query: {
+                country: string;
+                users?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Quote"];
+                };
+            };
+        };
+    };
+    countries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Country"][];
                 };
             };
         };

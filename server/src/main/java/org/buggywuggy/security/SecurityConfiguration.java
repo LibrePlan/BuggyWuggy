@@ -10,6 +10,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
@@ -46,6 +47,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/openapi/**", "/api/docs", "/api/swagger-ui/**").permitAll()
                         .requestMatchers("/api/v1/setup/**").permitAll()
                         .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/donation").permitAll()
                         .requestMatchers("/api/v1/admin/**")
                         .hasAnyAuthority(Authorities.SYSTEM_ADMIN, Authorities.ADMINISTER)
                         .requestMatchers("/error").permitAll()
