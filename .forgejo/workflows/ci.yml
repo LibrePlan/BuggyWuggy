@@ -62,9 +62,11 @@ jobs:
             -e POSTGRES_DB=buggywuggy -e POSTGRES_USER="$BUGGYWUGGY_DB_USER" \
             -e POSTGRES_PASSWORD="$BUGGYWUGGY_DB_PASSWORD" postgres:16-alpine > /dev/null
           server=""
-          trap '[ -n "$server" ] && kill $server; docker rm -f "$DB_CONTAINER" > /dev/null' EXIT
+          trap '[ -n "$server" ] && kill $server 2> /dev/null; docker rm -f "$DB_CONTAINER" > /dev/null' EXIT
+          # Over TCP: at its first start the image runs a temporary server for the initialisation,
+          # reachable only through the Unix socket, and restarts after it.
           for i in $(seq 1 30); do
-            docker exec "$DB_CONTAINER" pg_isready -q -U "$BUGGYWUGGY_DB_USER" -d buggywuggy && break
+            docker exec "$DB_CONTAINER" pg_isready -q -h 127.0.0.1 -U "$BUGGYWUGGY_DB_USER" -d buggywuggy && break
             if [ "$i" = 30 ]; then
               docker logs "$DB_CONTAINER"
               echo "PostgreSQL did not start" >&2
