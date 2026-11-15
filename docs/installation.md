@@ -114,6 +114,7 @@ BuggyWuggy is configured with environment variables or a [configuration file](#c
 | `BUGGYWUGGY_DATA_DIR` | `data` (relative to the working directory) | Directory for attachment files. It is created if needed and must be writable by BuggyWuggy. Use an absolute path in production, e.g. `/var/lib/buggywuggy`. |
 | `BUGGYWUGGY_MAX_ATTACHMENT_SIZE` | `50MB` | Largest file that can be attached, e.g. `10MB`, `1GB`. |
 | `BUGGYWUGGY_MAX_UPLOAD_SIZE` | `200MB` | Largest total size of the files in one upload. |
+| `BUGGYWUGGY_DONATION_COMIC_DOWNLOAD` | `true` | Download the xkcd comic of the donation text on the login page once from imgs.xkcd.com (see [Donation](#donation)). `false`: BuggyWuggy never contacts xkcd.com, and the login page shows only the comic's attribution. |
 
 Because BuggyWuggy is a Spring Boot application, any standard Spring Boot setting can also be
 given as an environment variable. One that is useful behind a reverse proxy:
@@ -751,6 +752,13 @@ no valid donation code):
 The request mail contains the details you entered, the price, and the address of this
 installation (`buggywuggy.base-url`).
 
+The explanation on the login page includes the xkcd comic 2347 "Dependency" by Randall Munroe,
+licensed under CC BY-NC 2.5 and shown with that attribution. It is not part of BuggyWuggy:
+after its first start, BuggyWuggy downloads it once from imgs.xkcd.com into
+`<data directory>/cache/xkcd/` and serves it itself, so visitors never contact xkcd.com. When
+the download fails (no internet access), it tries again once a day and the login page shows only
+the attribution meanwhile. `BUGGYWUGGY_DONATION_COMIC_DOWNLOAD=false` switches the download off.
+
 ### Automating with the REST API
 
 Everything in the web interface can also be done through the REST API, for example from
@@ -786,7 +794,8 @@ Changes to project roles take effect immediately; users do not need to log in ag
 BuggyWuggy keeps its data in two places, and a complete backup contains both:
 
 - the **PostgreSQL database**: everything except the contents of attached files;
-- the **data directory** (`BUGGYWUGGY_DATA_DIR`): the attached files.
+- the **data directory** (`BUGGYWUGGY_DATA_DIR`): the attached files. Its `cache` directory
+  need not be backed up: BuggyWuggy downloads its contents again when they are missing.
 
 ### Database
 

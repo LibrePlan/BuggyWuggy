@@ -5,6 +5,7 @@
 import { Alert, Anchor, Box, Button, Collapse, Container, Image, Paper, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
+import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { IconHeart } from '@tabler/icons-react';
 import { Trans, useTranslation } from 'react-i18next';
@@ -147,27 +148,31 @@ function SupportStatusLine({ status }: { status: SupportStatus }) {
 const XKCD_COMIC = 'https://xkcd.com/2347/';
 
 /**
- * xkcd 2347 "Dependency" by Randall Munroe, CC BY-NC 2.5. Embedded from imgs.xkcd.com as
- * xkcd allows, not copied into this repository: its NonCommercial license does not fit the
- * AGPL of BuggyWuggy. Loaded only when the donation text is opened, without a referrer.
+ * xkcd 2347 "Dependency" by Randall Munroe, CC BY-NC 2.5. Not part of this repository (its
+ * NonCommercial license does not fit the AGPL of BuggyWuggy): the server downloads it once
+ * from imgs.xkcd.com and serves it itself, so visitors never contact xkcd.com. Until it has
+ * been downloaded (or when downloading is switched off), only the attribution is shown.
  */
 function XkcdDependency() {
   const { t } = useTranslation();
+  const [missing, setMissing] = useState(false);
   return (
     <Box component="figure" m={0}>
-      <Anchor href={XKCD_COMIC} target="_blank" rel="noopener noreferrer" display="block">
-        <Image
-          src="https://imgs.xkcd.com/comics/dependency.png"
-          srcSet="https://imgs.xkcd.com/comics/dependency_2x.png 2x"
-          alt={t('donate.comicAlt')}
-          title={t('donate.comicAlt')}
-          w="100%"
-          maw={385}
-          mx="auto"
-          loading="lazy"
-          referrerPolicy="no-referrer"
-        />
-      </Anchor>
+      {!missing && (
+        <Anchor href={XKCD_COMIC} target="_blank" rel="noopener noreferrer" display="block">
+          <Image
+            src="/api/v1/donation/comic.png"
+            srcSet="/api/v1/donation/comic-2x.png 2x"
+            alt={t('donate.comicAlt')}
+            title={t('donate.comicAlt')}
+            w="100%"
+            maw={385}
+            mx="auto"
+            loading="lazy"
+            onError={() => setMissing(true)}
+          />
+        </Anchor>
+      )}
       <Text component="figcaption" size="xs" c="dimmed" ta="center" mt={4}>
         <Trans
           i18nKey="donate.comicAttribution"

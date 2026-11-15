@@ -58,6 +58,13 @@
 ##   [BUGGYWUGGY_SETUP_TOKEN]
 #    token: ""
 #
+#  donation:
+#    comic:
+##     Download the xkcd comic of the login page's donation text once from imgs.xkcd.com into
+##     data-dir/cache/xkcd; false: never contact xkcd.com (only its attribution is shown)
+##     [BUGGYWUGGY_DONATION_COMIC_DOWNLOAD]
+#      download: true
+#
 #  security:
 #    login-throttle:
 ##     Failed logins for one username from one address before logins are refused...

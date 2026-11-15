@@ -55,6 +55,12 @@ buggywuggy:
     max-delay: 5m
     max-attempts: 8
     retention: 30d
+  donation:
+    comic:
+      # The login page's donation text shows xkcd 2347 "Dependency". BuggyWuggy downloads it once
+      # from imgs.xkcd.com into data-dir/cache/xkcd and serves it itself; false: never download
+      # it (the page then shows only its attribution).
+      download: ${BUGGYWUGGY_DONATION_COMIC_DOWNLOAD:true}
   setup:
     # Optional fixed setup token (e.g. for automated installs). When empty, a random
     # token is generated and written to the log at startup while setup is required.
