@@ -5,10 +5,10 @@
 import { Alert, Button, Group, Modal, Stack, TextInput, Textarea } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { post } from '../api/client';
-import { keys, useIssueTypes, usePriorities, useProjectPermissions } from '../api/queries';
+import { keys, useIssueTypes, useMyself, usePriorities, useProjectPermissions } from '../api/queries';
 import type { CreateIssueRequest, IssueResponse, UserRef } from '../api/types';
 import { fieldErrorMap } from '../lib/apiError';
 import { childTypes, topLevelTypes } from '../lib/issueTypes';
@@ -51,6 +51,11 @@ export function CreateIssueModal({ projectKey, parent, opened, onClose, onCreate
   const priorities = usePriorities().data;
   const permissions = useProjectPermissions(projectKey).data;
   const canAssign = permissions?.has('ASSIGN_ISSUE') ?? false;
+  // Only someone who may be assigned issues in this project can be the default assignee.
+  const assignableMyself = permissions?.has('ASSIGNABLE_USER') ?? false;
+  const myself = useMyself().data;
+  // The assignee is filled in once per opening, so clearing it is not undone.
+  const assigneeDefaulted = useRef(false);
 
   const types = useMemo(
     () => (allTypes ? (parent ? childTypes(allTypes, parent.hierarchyLevel) : topLevelTypes(allTypes)) : []),
@@ -86,7 +91,13 @@ export function CreateIssueModal({ projectKey, parent, opened, onClose, onCreate
       const preferred = priorities.find((p) => p.isDefault);
       if (preferred) form.setFieldValue('priorityId', String(preferred.id));
     }
-  }, [opened, types, priorities]);
+    // The person creating the issue; it can be changed or cleared (then the project's default
+    // assignee rules decide).
+    if (!assigneeDefaulted.current && canAssign && assignableMyself && myself) {
+      assigneeDefaulted.current = true;
+      form.setFieldValue('assignee', { id: myself.id, username: myself.username, displayName: myself.displayName });
+    }
+  }, [opened, types, priorities, canAssign, assignableMyself, myself]);
 
   const create = useMutation({
     mutationFn: (request: CreateIssueRequest) => post<IssueResponse>('/api/v1/issues', request),
@@ -101,6 +112,7 @@ export function CreateIssueModal({ projectKey, parent, opened, onClose, onCreate
 
   function close() {
     form.reset();
+    assigneeDefaulted.current = false;
     create.reset();
     onClose();
   }
