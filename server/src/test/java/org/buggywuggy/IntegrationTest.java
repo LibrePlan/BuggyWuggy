@@ -13,7 +13,8 @@ import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Base class for HTTP-level integration tests against a running server and a real database.
- * Every test starts without users, sessions or custom groups.
+ * Every test starts without users, sessions or custom groups, and with the default global
+ * permissions.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -36,6 +37,15 @@ public abstract class IntegrationTest {
         jdbc.update("delete from project");
         jdbc.update("delete from user_account");
         jdbc.update("delete from user_group where name not in ('administrators', 'users')");
+        // The global permissions as V9__seed_defaults.sql grants them: a test may have revoked one.
+        jdbc.update("delete from global_permission_grant");
+        jdbc.update("""
+                insert into global_permission_grant (permission, group_id)
+                select p.permission, g.id
+                from (values ('ADMINISTER', 'administrators'),
+                             ('CREATE_PROJECT', 'administrators'),
+                             ('BROWSE_USERS', 'users')) as p (permission, group_name)
+                join user_group g on g.name = p.group_name""");
     }
 
     protected ApiClient client() {
