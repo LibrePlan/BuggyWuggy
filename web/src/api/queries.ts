@@ -11,6 +11,7 @@ import type {
   LicenseCountry,
   LicenseQuote,
   DonationResponse,
+  BuildVersionResponse,
   LicenseStatus,
   BoardResponse,
   AttachmentResponse,
@@ -76,6 +77,7 @@ export const keys = {
   defaultBoard: ['admin', 'board'] as const,
   license: ['admin', 'license'] as const,
   donation: ['donation'] as const,
+  version: ['version'] as const,
   projectRoles: (key: string) => ['project', key, 'roles'] as const,
   admin: ['admin'] as const,
   adminUsers: (query: string, page: number) => ['admin', 'users', query, page] as const,
@@ -487,6 +489,15 @@ export function useDefaultBoardConfig() {
 /** Whether this installation supports the project with a donation (no login needed). */
 export function useDonation() {
   return useQuery({ queryKey: keys.donation, queryFn: () => get<DonationResponse>('/api/v1/donation') });
+}
+
+/** The version of BuggyWuggy and the commit it was built from (no login needed). */
+export function useVersion() {
+  return useQuery({
+    queryKey: keys.version,
+    queryFn: () => get<BuildVersionResponse>('/api/v1/version'),
+    staleTime: Infinity,
+  });
 }
 
 export function useLicenseStatus() {

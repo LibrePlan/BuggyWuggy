@@ -87,6 +87,7 @@ export type MoveRequest = Schemas['MoveRequest'];
 export type Swimlanes = BoardResponse['swimlanes'];
 export type LicenseStatus = Schemas['LicenseStatus'];
 export type DonationResponse = Schemas['DonationResponse'];
+export type BuildVersionResponse = Schemas['BuildVersionResponse'];
 export type SupportStatus = DonationResponse['status'];
 export type LicenseCountry = Schemas['Country'];
 export type LicenseQuote = Schemas['Quote'];

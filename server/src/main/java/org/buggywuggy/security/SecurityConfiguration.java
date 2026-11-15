@@ -48,7 +48,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/setup/**").permitAll()
                         .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/donation", "/api/v1/donation/comic.png",
-                                "/api/v1/donation/comic-2x.png").permitAll()
+                                "/api/v1/donation/comic-2x.png", "/api/v1/version").permitAll()
                         .requestMatchers("/api/v1/admin/**")
                         .hasAnyAuthority(Authorities.SYSTEM_ADMIN, Authorities.ADMINISTER)
                         .requestMatchers("/error").permitAll()

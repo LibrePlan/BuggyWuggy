@@ -11,7 +11,7 @@ import { IconHeart } from '@tabler/icons-react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { post } from '../api/client';
-import { keys, useDonation, useMyself, useSetupStatus } from '../api/queries';
+import { keys, useDonation, useMyself, useSetupStatus, useVersion } from '../api/queries';
 import type { MyselfResponse, SupportStatus } from '../api/types';
 import { PageLoader } from '../components/QueryState';
 
@@ -31,6 +31,7 @@ export function LoginPage() {
   const setup = useSetupStatus();
   const myself = useMyself();
   const donation = useDonation();
+  const version = useVersion().data;
   const next = safeNext(params.get('next'));
   const setupDone = (location.state as { setupDone?: boolean } | null)?.setupDone;
   // Open when the visitor came for the donation page.
@@ -121,6 +122,13 @@ export function LoginPage() {
             </Paper>
           </Collapse>
         </Stack>
+      )}
+      {version && (
+        <Text size="xs" c="dimmed" ta="center" mt="xl">
+          {version.commit
+            ? t('login.versionCommit', { version: version.version, commit: version.commit })
+            : t('login.version', { version: version.version })}
+        </Text>
       )}
     </Container>
   );

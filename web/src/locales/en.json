@@ -48,7 +48,9 @@
   },
   "login": {
     "title": "Log in",
-    "submit": "Log in"
+    "submit": "Log in",
+    "version": "version {{version}}",
+    "versionCommit": "version {{version}} · commit {{commit}}"
   },
   "user": {
     "username": "Username",

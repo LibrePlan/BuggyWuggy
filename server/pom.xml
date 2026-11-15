@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.buggywuggy</groupId>
         <artifactId>buggywuggy-parent</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.1</version>
     </parent>
 
     <artifactId>buggywuggy-server</artifactId>
@@ -127,6 +127,20 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <!-- META-INF/build-info.properties: the version, shown on the login page. -->
+                    <execution>
+                        <goals>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- git.properties: the commit the jar was built from, shown on the login page. Builds
+                 without a git repository (e.g. from a source archive) work, without commit. -->
+            <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

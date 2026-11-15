@@ -788,6 +788,22 @@ export interface paths {
         patch: operations["update_7"];
         trace?: never;
     };
+    "/api/v1/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["version"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/picker": {
         parameters: {
             query?: never;
@@ -2194,6 +2210,10 @@ export interface components {
         UpdateGroupRequest: {
             name?: string;
             description?: string;
+        };
+        BuildVersionResponse: {
+            version: string;
+            commit: string | null;
         };
         StatusResponse: {
             /** Format: int64 */
@@ -4427,6 +4447,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["GroupResponse"];
+                };
+            };
+        };
+    };
+    version: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BuildVersionResponse"];
                 };
             };
         };
