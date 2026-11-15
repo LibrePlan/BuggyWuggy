@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# BuggyWuggy — open source, self-hosted issue tracker
+# Copyright (C) 2026 The BuggyWuggy contributors
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Increases the patch version (x.y.Z) of BuggyWuggy with every commit, in all pom.xml files,
+# and adds them to the commit. Install once per clone:
+#   git config core.hooksPath .githooks
+#
+# - A version changed by hand (scripts/set-version.sh) is committed as it is.
+# - git commit --amend keeps the version of the commit it replaces.
+# - A commit that adds a database migration gets a reminder to raise the minor version.
+# - git commit --no-verify skips this hook.
+set -euo pipefail
+
+POMS=(pom.xml web/pom.xml server/pom.xml)
+MIGRATIONS=server/src/main/resources/db/migration
+
+# The project version in pom content on stdin (see scripts/set-version.sh).
+version_of() {
+    sed -n '/<artifactId>buggywuggy-parent<\/artifactId>/{n;s#.*<version>\([^<]*\)</version>.*#\1#p;q;}'
+}
+minor_of() {
+    cut -d. -f1-2 <<< "$1"
+}
+
+# The very first commit has nothing to compare with.
+git rev-parse --verify --quiet HEAD > /dev/null || exit 0
+
+# git commit --amend: the commit being replaced already got its own version.
+if ps -o args= -p "$PPID" 2> /dev/null | grep -qE -- '(^| )--amend( |$)'; then
+    exit 0
+fi
+
+head_version=$(git show HEAD:pom.xml | version_of)
+staged_version=$(git show :pom.xml | version_of)
+
+new_migrations=$(git diff --cached --name-only --diff-filter=A -- "$MIGRATIONS")
+if [[ -n $new_migrations && $(minor_of "$staged_version") == $(minor_of "$head_version") ]]; then
+    echo "Note: this commit adds a database migration:" >&2
+    sed 's/^/  /' <<< "$new_migrations" >&2
+    echo "A database change is a reason for a new minor version, e.g.:" >&2
+    echo "  scripts/set-version.sh $(minor_of "$head_version" | awk -F. '{print $1 "." $2 + 1}').0 && git add ${POMS[*]}" >&2
+fi
+
+changed_by_hand=false
+for pom in "${POMS[@]}"; do
+    if [[ $(git show ":$pom" | version_of) != "$head_version" ]]; then
+        changed_by_hand=true
+    fi
+done
+if $changed_by_hand; then
+    # Commit it as it is, as long as all poms agree.
+    for pom in "${POMS[@]}"; do
+        if [[ $(git show ":$pom" | version_of) != "$staged_version" ]]; then
+            echo "error: $pom has another version than pom.xml ($staged_version); use scripts/set-version.sh" >&2
+            exit 1
+        fi
+    done
+    exit 0
+fi
+
+if [[ ! $head_version =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+    echo "error: the version $head_version is not x.y.z; set one with scripts/set-version.sh" >&2
+    exit 1
+fi
+new_version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$((BASH_REMATCH[3] + 1))"
+
+# The poms are added to the commit as a whole: other changes in them must be staged already.
+for pom in "${POMS[@]}"; do
+    if ! git diff --quiet -- "$pom"; then
+        echo "error: $pom has changes that are not staged; add them (git add $pom) or put them aside" >&2
+        exit 1
+    fi
+done
+
+scripts/set-version.sh "$new_version" > /dev/null
+git add -- "${POMS[@]}"
+echo "Version $head_version -> $new_version"

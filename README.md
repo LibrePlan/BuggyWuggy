@@ -25,6 +25,21 @@ Node.js 26 (e.g. via nvm) is convenient.
 
 ## Development setup
 
+### Version numbers
+
+The version is `x.y.z` (major, minor, patch) and is in the three `pom.xml` files; the login page
+shows it with the commit the build was made from. The patch version goes up by one with every
+commit, through a git hook in the repository. Switch it on once per clone:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+Major and minor versions are set by hand, e.g. a new minor version for a database change:
+`scripts/set-version.sh 0.2.0`, then commit; a version changed by hand is committed as it is.
+When a commit adds a database migration without a new minor version, the hook reminds you.
+`git commit --amend` keeps the version; `git commit --no-verify` skips the hook.
+
 ### 1. Database
 
 **With Docker:**
