@@ -5,15 +5,16 @@
 import { Alert, Anchor, Box, Button, Collapse, Container, Image, Paper, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { IconHeart } from '@tabler/icons-react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { post } from '../api/client';
 import { keys, useDonation, useMyself, useSetupStatus, useVersion } from '../api/queries';
-import type { MyselfResponse, SupportStatus } from '../api/types';
+import type { LoginResponse, MyselfResponse, SupportStatus } from '../api/types';
 import { PageLoader } from '../components/QueryState';
+import { TwoFactorCode, TwoFactorEnrollment } from './TwoFactorSteps';
 
 const DONATION_PAGE = '/admin/donation';
 
@@ -45,13 +46,30 @@ export function LoginPage() {
     },
   });
 
+  // With two-factor login, a correct password leads to a second step.
+  const [step, setStep] = useState<LoginResponse['step']>('DONE');
+  const [restartError, setRestartError] = useState<Error>();
+
+  const loggedIn = (user: MyselfResponse) => {
+    queryClient.clear();
+    queryClient.setQueryData(keys.setup, { setupRequired: false });
+    queryClient.setQueryData(keys.myself, user);
+    navigate(next, { replace: true });
+  };
+  const restart = useCallback((error?: Error) => {
+    setRestartError(error);
+    setStep('DONE');
+  }, []);
+
   const login = useMutation({
-    mutationFn: (values: { username: string; password: string }) => post<MyselfResponse>('/api/v1/auth/login', values),
-    onSuccess: (user) => {
-      queryClient.clear();
-      queryClient.setQueryData(keys.setup, { setupRequired: false });
-      queryClient.setQueryData(keys.myself, user);
-      navigate(next, { replace: true });
+    mutationFn: (values: { username: string; password: string }) => post<LoginResponse>('/api/v1/auth/login', values),
+    onMutate: () => setRestartError(undefined),
+    onSuccess: (response) => {
+      if (response.step === 'DONE' && response.user) loggedIn(response.user);
+      else {
+        form.setFieldValue('password', '');
+        setStep(response.step);
+      }
     },
   });
 
@@ -68,28 +86,35 @@ export function LoginPage() {
         {t('app.name')}
       </Text>
       <Paper withBorder shadow="sm" p="lg" mt="lg" radius="md">
-        <form onSubmit={form.onSubmit((values) => login.mutate(values))}>
-          <Stack>
-            {setupDone && <Alert color="green">{t('setup.done')}</Alert>}
-            {login.isError && <Alert color="red">{login.error.message}</Alert>}
-            <TextInput
-              label={t('user.username')}
-              required
-              autoFocus
-              autoComplete="username"
-              {...form.getInputProps('username')}
-            />
-            <PasswordInput
-              label={t('user.password')}
-              required
-              autoComplete="current-password"
-              {...form.getInputProps('password')}
-            />
-            <Button type="submit" loading={login.isPending}>
-              {t('login.submit')}
-            </Button>
-          </Stack>
-        </form>
+        {step === 'TWO_FACTOR' ? (
+          <TwoFactorCode onDone={loggedIn} onRestart={restart} />
+        ) : step === 'TWO_FACTOR_ENROLLMENT' ? (
+          <TwoFactorEnrollment onDone={loggedIn} onRestart={restart} />
+        ) : (
+          <form onSubmit={form.onSubmit((values) => login.mutate(values))}>
+            <Stack>
+              {setupDone && <Alert color="green">{t('setup.done')}</Alert>}
+              {login.isError && <Alert color="red">{login.error.message}</Alert>}
+              {restartError && <Alert color="red">{restartError.message}</Alert>}
+              <TextInput
+                label={t('user.username')}
+                required
+                autoFocus
+                autoComplete="username"
+                {...form.getInputProps('username')}
+              />
+              <PasswordInput
+                label={t('user.password')}
+                required
+                autoComplete="current-password"
+                {...form.getInputProps('password')}
+              />
+              <Button type="submit" loading={login.isPending}>
+                {t('login.submit')}
+              </Button>
+            </Stack>
+          </form>
+        )}
       </Paper>
       {donation.data && (
         <Stack gap="sm" mt="xl">

@@ -7,6 +7,8 @@ package org.buggywuggy.security;
 
 import java.util.List;
 import java.util.Map;
+import org.buggywuggy.security.twofactor.TwoFactorSessionFilter;
+import org.buggywuggy.security.twofactor.TwoFactorSettings;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +28,7 @@ import org.springframework.security.web.authentication.logout.HttpStatusReturnin
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -40,13 +43,15 @@ public class SecurityConfiguration {
     SecurityFilterChain securityFilterChain(HttpSecurity http,
             CsrfTokenRepository csrfTokenRepository,
             SecurityContextRepository securityContextRepository,
+            TwoFactorSettings twoFactorSettings,
             @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/api/openapi/**", "/api/docs", "/api/swagger-ui/**").permitAll()
                         .requestMatchers("/api/v1/setup/**").permitAll()
-                        .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/login").permitAll()
+                        .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/login",
+                                "/api/v1/auth/two-factor", "/api/v1/auth/two-factor/enrollment").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/donation", "/api/v1/donation/comic.png",
                                 "/api/v1/donation/comic-2x.png", "/api/v1/version").permitAll()
                         .requestMatchers("/api/v1/admin/**")
@@ -59,6 +64,8 @@ public class SecurityConfiguration {
                 // echoed in the X-XSRF-TOKEN header on every state-changing request.
                 .csrf(csrf -> csrf.spa().csrfTokenRepository(csrfTokenRepository))
                 .securityContext(ctx -> ctx.securityContextRepository(securityContextRepository))
+                // Not a bean: a filter bean would also be registered outside Spring Security.
+                .addFilterAfter(new TwoFactorSessionFilter(twoFactorSettings), SecurityContextHolderFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(logout -> logout

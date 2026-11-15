@@ -78,7 +78,7 @@ public final class UserDtos {
     public record UserResponse(
             long id, String username, String displayName, @ApiNullable String email, boolean active,
             boolean systemAdmin, @ApiNullable String locale, @ApiNullable String timeZone, Instant createdAt,
-            @ApiNullable Instant lastLoginAt, List<GroupRef> groups) {
+            @ApiNullable Instant lastLoginAt, List<GroupRef> groups, boolean twoFactorEnrolled) {
 
         public static UserResponse of(UserAccount u) {
             List<GroupRef> groups = u.getGroups().stream()
@@ -86,7 +86,8 @@ public final class UserDtos {
                     .sorted(Comparator.comparing(GroupRef::name, String.CASE_INSENSITIVE_ORDER))
                     .toList();
             return new UserResponse(u.getId(), u.getUsername(), u.getDisplayName(), u.getEmail(), u.isActive(),
-                    u.isSystemAdmin(), u.getLocale(), u.getTimeZone(), u.getCreatedAt(), u.getLastLoginAt(), groups);
+                    u.isSystemAdmin(), u.getLocale(), u.getTimeZone(), u.getCreatedAt(), u.getLastLoginAt(), groups,
+                    u.isTwoFactorEnrolled());
         }
     }
 

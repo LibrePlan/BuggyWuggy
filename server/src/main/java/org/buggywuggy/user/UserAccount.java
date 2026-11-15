@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Formula;
 
 @Entity
 @Table(name = "user_account")
@@ -38,6 +39,10 @@ public class UserAccount {
     private String timeZone;
     private Instant createdAt;
     private Instant lastLoginAt;
+
+    /** Whether the user has set up two-factor login (table user_two_factor). */
+    @Formula("(exists (select 1 from user_two_factor t where t.user_id = id))")
+    private boolean twoFactorEnrolled;
 
     @Version
     private long version;
@@ -78,6 +83,7 @@ public class UserAccount {
     public void setTimeZone(String timeZone) { this.timeZone = timeZone; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getLastLoginAt() { return lastLoginAt; }
+    public boolean isTwoFactorEnrolled() { return twoFactorEnrolled; }
     public void setLastLoginAt(Instant lastLoginAt) { this.lastLoginAt = lastLoginAt; }
     public long getVersion() { return version; }
     public Set<UserGroup> getGroups() { return groups; }

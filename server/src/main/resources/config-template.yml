@@ -71,6 +71,14 @@
 #      max-failures: 5
 ##     ...for this long
 #      window: 15m
+#    two-factor:
+##     Every user logs in with a code from an authenticator app (TOTP) besides the password.
+##     Users without it set up get a setup wizard at their next login; logins from before it
+##     was switched on end. The secrets are encrypted with data-dir/secrets/two-factor.key
+##     [BUGGYWUGGY_TWO_FACTOR]
+#      enabled: false
+##     The name authenticator apps show with the code [BUGGYWUGGY_TWO_FACTOR_ISSUER]
+#      issuer: BuggyWuggy
 #
 ## --- E-mail -----------------------------------------------------------------------------
 #  mail:

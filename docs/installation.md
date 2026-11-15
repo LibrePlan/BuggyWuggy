@@ -14,6 +14,7 @@ This guide explains how to install, configure, run, back up and upgrade a BuggyW
 4. [Building BuggyWuggy](#building-buggywuggy)
 5. [Configuration](#configuration)
    - [E-mail](#e-mail)
+   - [Two-factor login](#two-factor-login)
 6. [Running BuggyWuggy](#running-buggywuggy)
 7. [First-time setup](#first-time-setup)
 8. [Running as a service (systemd)](#running-as-a-service-systemd)
@@ -114,6 +115,8 @@ BuggyWuggy is configured with environment variables or a [configuration file](#c
 | `BUGGYWUGGY_DATA_DIR` | `data` (relative to the working directory) | Directory for attachment files. It is created if needed and must be writable by BuggyWuggy. Use an absolute path in production, e.g. `/var/lib/buggywuggy`. |
 | `BUGGYWUGGY_MAX_ATTACHMENT_SIZE` | `50MB` | Largest file that can be attached, e.g. `10MB`, `1GB`. |
 | `BUGGYWUGGY_MAX_UPLOAD_SIZE` | `200MB` | Largest total size of the files in one upload. |
+| `BUGGYWUGGY_TWO_FACTOR` | `false` | `true`: every user logs in with a code from an authenticator app besides the password; see [Two-factor login](#two-factor-login). |
+| `BUGGYWUGGY_TWO_FACTOR_ISSUER` | `BuggyWuggy` | The name authenticator apps show with the code, e.g. `BuggyWuggy ACME` when users have several installations. |
 | `BUGGYWUGGY_DONATION_COMIC_DOWNLOAD` | `true` | Download the xkcd comic of the donation text on the login page once from imgs.xkcd.com (see [Donation](#donation)). `false`: BuggyWuggy never contacts xkcd.com, and the login page shows only the comic's attribution. |
 
 Because BuggyWuggy is a Spring Boot application, any standard Spring Boot setting can also be
@@ -217,6 +220,42 @@ BuggyWuggy instances can share one database; each mail is sent once.
 
 After changing the settings, restart BuggyWuggy and use **Send test mail** on the
 **Administration → E-mail** page.
+
+### Two-factor login
+
+With `BUGGYWUGGY_TWO_FACTOR=true` (or `buggywuggy.security.two-factor.enabled: true` in the
+configuration file) every user logs in with a second factor: after the password, a 6-digit code
+from an authenticator app on their phone (TOTP, RFC 6238), such as Aegis, FreeOTP, Google
+Authenticator or Microsoft Authenticator. It applies to all users, administrators included.
+
+- **Setting it up.** A user who has no second factor yet goes through a wizard right after the
+  password at the next login: scan the QR code with the app, enter the code the app shows to
+  check that it works, and save the 10 **recovery codes**. Each recovery code logs in once
+  instead of a code from the app, for when the phone is not at hand. They are shown only
+  then; BuggyWuggy keeps only their hashes.
+- **Switching it on** ends every login made without a second factor: users log in again, and
+  go through the wizard. Switching it off again keeps the users' second factors; they are used
+  again when it is switched back on.
+- **Lost phone.** An administrator opens the user under **Administration → Users** and
+  clicks **Reset two-factor login**. This removes the secret and the recovery codes and logs
+  the user out everywhere; the next login starts the wizard again. Only system
+  administrators can reset it for a system administrator. When the last system administrator
+  has lost both phone and recovery codes, remove the second factor in the database:
+  `delete from user_two_factor where user_id = (select id from user_account where username = 'admin');`
+  (and the same for `user_recovery_code`).
+- **Clock.** The codes depend on the time: keep the server's clock synchronised (NTP, e.g.
+  `timedatectl set-ntp true`). Codes from 30 seconds before or after are accepted too; every
+  code works only once.
+- **Wrong codes** count as failed logins (see the login protection above): after 5, the user
+  has to wait 15 minutes and start again with the password. A login waits at most 5 minutes
+  for the code.
+- **The key.** The secrets are stored encrypted in the database (AES-256-GCM). The key is
+  `<data directory>/secrets/two-factor.key`, created at the first setup, readable only for
+  the BuggyWuggy user. Back it up (see [Backup and restore](#backup-and-restore)); without
+  it every user has to set up two-factor login again, after an administrator reset theirs.
+- **Scripts and the REST API** log in like the web interface (`POST /api/v1/auth/login`, then
+  `POST /api/v1/auth/two-factor` with `{"code": "123456"}`), so with two-factor login on,
+  unattended scripts cannot log in.
 
 ## Running BuggyWuggy
 
@@ -349,6 +388,8 @@ Users with the global permission *Administer BuggyWuggy* (by default the group
   - Deactivated users cannot log in, but their name stays on their issues and comments.
     BuggyWuggy does not delete users.
   - Setting a password or deactivating a user logs that user out everywhere.
+  - **Reset two-factor login** makes the user set up a new second factor at the next login;
+    see [Two-factor login](#two-factor-login).
 - **Groups**: create, rename and delete groups and manage their members. The built-in groups
   `administrators` and `users` cannot be renamed or deleted.
 - **Global permissions**: which groups may administer BuggyWuggy, create projects and browse
@@ -794,8 +835,13 @@ Changes to project roles take effect immediately; users do not need to log in ag
 BuggyWuggy keeps its data in two places, and a complete backup contains both:
 
 - the **PostgreSQL database**: everything except the contents of attached files;
-- the **data directory** (`BUGGYWUGGY_DATA_DIR`): the attached files. Its `cache` directory
-  need not be backed up: BuggyWuggy downloads its contents again when they are missing.
+- the **data directory** (`BUGGYWUGGY_DATA_DIR`): the attached files, and with
+  [two-factor login](#two-factor-login) the key `secrets/two-factor.key`. Its `cache`
+  directory need not be backed up: BuggyWuggy downloads its contents again when they are
+  missing.
+
+The key of two-factor login protects the secrets in the database: keep backups of the
+`secrets` directory apart from the database backups where you can, and only readable for root.
 
 ### Database
 

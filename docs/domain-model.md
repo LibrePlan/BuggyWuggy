@@ -66,6 +66,19 @@ erDiagram
 
 Case-insensitive uniqueness via a unique index on `lower(username)` / `lower(email)`.
 
+### `user_two_factor`, `user_recovery_code`
+Two-factor login (TOTP), used when `buggywuggy.security.two-factor.enabled` is on.
+- `user_two_factor(user_id pk fk, secret, enrolled_at, last_step)` — the TOTP secret, encrypted
+  with AES-256-GCM under `<data dir>/secrets/two-factor.key` (nonce + ciphertext + tag, the
+  user id bound as associated data); `last_step` is the last accepted 30-second step, so a code
+  is never accepted twice. No row: the user goes through the enrollment wizard at the next
+  login. An administrator reset deletes the row.
+- `user_recovery_code(id, user_id fk, code_hash, used_at)` — 10 one-time codes per user,
+  SHA-256 hashed; replaced at every enrollment, deleted with a reset.
+
+A login that passed the second factor carries the authority `TWO_FACTOR_VERIFIED` in its
+session; with two-factor login on, sessions without it are ended.
+
 ### `user_group`, `group_membership`
 - `user_group(id, name unique, description)`
 - `group_membership(group_id, user_id)` — composite PK.

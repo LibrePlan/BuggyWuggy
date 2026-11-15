@@ -69,6 +69,12 @@ buggywuggy:
     login-throttle:
       max-failures: 5
       window: 15m
+    # Two-factor login (TOTP, authenticator app) for all users. Users without it set up go
+    # through a setup wizard at their next login; sessions without it end when it is switched on.
+    two-factor:
+      enabled: ${BUGGYWUGGY_TWO_FACTOR:false}
+      # The name authenticator apps show with the code.
+      issuer: ${BUGGYWUGGY_TWO_FACTOR_ISSUER:BuggyWuggy}
 
 # The API documentation is intentionally public: it describes an open source API.
 springdoc:

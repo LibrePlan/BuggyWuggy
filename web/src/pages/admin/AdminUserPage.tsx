@@ -21,7 +21,7 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
-import { IconKey, IconX } from '@tabler/icons-react';
+import { IconKey, IconShieldOff, IconX } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -44,6 +44,7 @@ export function AdminUserPage() {
   const myself = useMyself().data;
   const queryClient = useQueryClient();
   const [settingPassword, passwordModal] = useDisclosure(false);
+  const [resettingTwoFactor, resetTwoFactorModal] = useDisclosure(false);
 
   const refresh = (updated?: UserResponse) => {
     if (updated) queryClient.setQueryData(keys.adminUser(id), updated);
@@ -119,6 +120,19 @@ export function AdminUserPage() {
                 {t('admin.user.setPassword')}
               </Button>
             </Group>
+            <Title order={4}>{t('admin.user.twoFactor')}</Title>
+            <Text size="sm">{u.twoFactorEnrolled ? t('admin.user.twoFactorEnrolled') : t('admin.user.twoFactorNotEnrolled')}</Text>
+            <Group>
+              <Button
+                variant="default"
+                color="red"
+                leftSection={<IconShieldOff size={16} />}
+                disabled={!mayManage || !u.twoFactorEnrolled}
+                onClick={resetTwoFactorModal.open}
+              >
+                {t('admin.user.resetTwoFactor')}
+              </Button>
+            </Group>
           </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 6 }}>
@@ -164,6 +178,7 @@ export function AdminUserPage() {
         </Grid.Col>
       </Grid>
       <SetPasswordModal user={u} opened={settingPassword} onClose={passwordModal.close} />
+      <ResetTwoFactorModal user={u} opened={resettingTwoFactor} onClose={resetTwoFactorModal.close} />
     </Stack>
   );
 }
@@ -277,6 +292,36 @@ function SetPasswordModal({ user, opened, onClose }: { user: UserResponse; opene
           </Group>
         </Stack>
       </form>
+    </Modal>
+  );
+}
+
+/** Forgets the user's second factor, e.g. after losing the phone: the next login sets it up again. */
+function ResetTwoFactorModal({ user, opened, onClose }: { user: UserResponse; opened: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const reset = useMutation({
+    mutationFn: () => del(`/api/v1/admin/users/${user.id}/two-factor`),
+    onSuccess: () => {
+      notifySaved(t('admin.user.twoFactorReset', { name: user.displayName }));
+      void queryClient.invalidateQueries({ queryKey: keys.admin });
+      onClose();
+    },
+    onError: notifyError,
+  });
+  return (
+    <Modal opened={opened} onClose={onClose} title={t('admin.user.resetTwoFactorFor', { name: user.displayName })}>
+      <Stack>
+        <Text size="sm">{t('admin.user.resetTwoFactorText', { name: user.displayName })}</Text>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button color="red" loading={reset.isPending} onClick={() => reset.mutate()}>
+            {t('admin.user.resetTwoFactorConfirm')}
+          </Button>
+        </Group>
+      </Stack>
     </Modal>
   );
 }

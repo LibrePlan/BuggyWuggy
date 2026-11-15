@@ -15,11 +15,14 @@ import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.buggywuggy.common.PageResponse;
 import org.buggywuggy.common.SqlLike;
 import org.buggywuggy.notification.NotificationPreferences;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
 import org.buggywuggy.security.SessionInvalidator;
+import org.buggywuggy.security.twofactor.TwoFactorService;
 import org.buggywuggy.user.UserDtos.CreateUserRequest;
 import org.buggywuggy.user.UserDtos.MyselfResponse;
 import org.buggywuggy.user.UserDtos.UpdateMyselfRequest;
@@ -35,6 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class UserService {
 
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+
     private final NotificationPreferences notifications;
 
     private final UserAccountRepository users;
@@ -42,9 +47,12 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final SessionInvalidator sessions;
     private final Clock clock;
+    private final TwoFactorService twoFactor;
 
     public UserService(UserAccountRepository users, UserGroupRepository groups, PasswordEncoder passwordEncoder,
-            SessionInvalidator sessions, Clock clock, NotificationPreferences notifications) {
+            SessionInvalidator sessions, Clock clock, NotificationPreferences notifications,
+            TwoFactorService twoFactor) {
+        this.twoFactor = twoFactor;
         this.notifications = notifications;
         this.users = users;
         this.groups = groups;
@@ -151,6 +159,19 @@ public class UserService {
         UserAccount user = find(id);
         requireMayManage(user, actor);
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        sessions.invalidateAll(user.getUsername());
+    }
+
+    /**
+     * Forgets the user's second factor (e.g. after losing the phone) and ends their sessions:
+     * the next login starts the wizard that sets up two-factor login again.
+     */
+    public void resetTwoFactor(long id, BuggyWuggyPrincipal actor) {
+        UserAccount user = find(id);
+        requireMayManage(user, actor);
+        if (twoFactor.reset(user.getId())) {
+            log.info("Two-factor login of user {} reset by {}", user.getUsername(), actor.getUsername());
+        }
         sessions.invalidateAll(user.getUsername());
     }
 

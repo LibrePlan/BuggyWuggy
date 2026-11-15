@@ -50,7 +50,15 @@
     "title": "Log in",
     "submit": "Log in",
     "version": "version {{version}}",
-    "versionCommit": "version {{version}} · commit {{commit}}"
+    "versionCommit": "version {{version}} · commit {{commit}}",
+    "codeTitle": "Two-factor login",
+    "codeIntro": "Enter the 6-digit code from your authenticator app.",
+    "code": "Code",
+    "codeHelp": "Lost your phone? Enter one of your recovery codes instead.",
+    "verify": "Verify",
+    "restart": "Log in as someone else",
+    "recoveryCodeUsed": "You logged in with a recovery code; {{count}} unused codes left.",
+    "recoveryCodesLow": "Ask an administrator to reset your two-factor login to get new recovery codes."
   },
   "user": {
     "username": "Username",
@@ -317,7 +325,15 @@
       "setPasswordHelp": "The user is logged out everywhere and must log in with the new password.",
       "leaveGroup": "Remove from {{group}}",
       "addToGroup": "Add to group…",
-      "groupsHelp": "When membership of a group with global permissions changes, the user is logged out and gets the new permissions at the next login."
+      "groupsHelp": "When membership of a group with global permissions changes, the user is logged out and gets the new permissions at the next login.",
+      "twoFactor": "Two-factor login",
+      "twoFactorEnrolled": "Set up: the user logs in with a code from an authenticator app.",
+      "twoFactorNotEnrolled": "Not set up. When two-factor login is switched on, the user sets it up at the next login.",
+      "resetTwoFactor": "Reset two-factor login",
+      "resetTwoFactorFor": "Reset two-factor login of {{name}}",
+      "resetTwoFactorText": "Use this when {{name}} lost the phone with the authenticator app, or the recovery codes. The secret and the recovery codes are removed, {{name}} is logged out everywhere, and sets up two-factor login again at the next login.",
+      "resetTwoFactorConfirm": "Reset",
+      "twoFactorReset": "The two-factor login of {{name}} has been reset."
     },
     "group": {
       "search": "Search groups",
@@ -790,5 +806,25 @@
     "expired": "The support of this BuggyWuggy installation has expired",
     "expiredText": "Renew your annual contribution to continue supporting BuggyWuggy development.",
     "requestQuotation": "Request a quotation"
+  },
+  "twoFactor": {
+    "title": "Set up two-factor login",
+    "intro": "This BuggyWuggy installation requires a code from an authenticator app at every login, besides your password.",
+    "stepScan": "Scan",
+    "stepVerify": "Verify",
+    "stepRecovery": "Recovery codes",
+    "scan": "Open an authenticator app on your phone (for example Aegis, FreeOTP, Google Authenticator or Microsoft Authenticator) and scan this QR code.",
+    "qrAlt": "QR code with the two-factor secret",
+    "manual": "Cannot scan? Enter this key in the app instead:",
+    "openApp": "Open in the authenticator app on this device",
+    "next": "Next",
+    "back": "Back",
+    "verifyIntro": "Enter the 6-digit code the app now shows for {{issuer}}, to check that it works.",
+    "recoveryIntro": "Two-factor login is set up. Keep these recovery codes in a safe place, apart from your phone: each logs you in once when you do not have your phone. They are shown only now.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "download": "Download",
+    "saved": "I have saved my recovery codes",
+    "continue": "Continue"
   }
 }

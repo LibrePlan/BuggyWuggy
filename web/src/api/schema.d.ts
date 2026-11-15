@@ -372,6 +372,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/two-factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["twoFactor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/two-factor/enrollment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["enrollment"];
+        put?: never;
+        post: operations["enroll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -1396,6 +1428,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/users/{id}/two-factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["resetTwoFactor"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/mail/failed/{id}": {
         parameters: {
             query?: never;
@@ -1535,6 +1583,7 @@ export interface components {
             /** Format: date-time */
             lastLoginAt: string | null;
             groups: components["schemas"]["GroupRef"][];
+            twoFactorEnrolled: boolean;
         };
         CreateProjectRequest: {
             key: string;
@@ -1867,9 +1916,8 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
-        LoginRequest: {
-            username: string;
-            password: string;
+        TwoFactorCodeRequest: {
+            code: string;
         };
         MyselfResponse: {
             /** Format: int64 */
@@ -1883,6 +1931,25 @@ export interface components {
             globalPermissions: string[];
             emailNotifications: boolean;
             notifyOwnChanges: boolean;
+        };
+        TwoFactorLoginResponse: {
+            user: components["schemas"]["MyselfResponse"];
+            recoveryCodeUsed: boolean;
+            /** Format: int32 */
+            recoveryCodesLeft: number;
+        };
+        EnrollmentResult: {
+            recoveryCodes: string[];
+            user: components["schemas"]["MyselfResponse"];
+        };
+        LoginRequest: {
+            username: string;
+            password: string;
+        };
+        LoginResponse: {
+            /** @enum {string} */
+            step: "DONE" | "TWO_FACTOR" | "TWO_FACTOR_ENROLLMENT";
+            user: components["schemas"]["MyselfResponse"] | null;
         };
         CreateUserRequest: {
             username: string;
@@ -2362,6 +2429,11 @@ export interface components {
             show: boolean;
             /** @enum {string} */
             status: "NONE" | "ACTIVE" | "EXPIRED";
+        };
+        EnrollmentResponse: {
+            secret: string;
+            uri: string;
+            qrCodeSvg: string;
         };
         CsrfToken: {
             parameterName: string;
@@ -3425,6 +3497,74 @@ export interface operations {
             };
         };
     };
+    twoFactor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TwoFactorCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TwoFactorLoginResponse"];
+                };
+            };
+        };
+    };
+    enrollment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EnrollmentResponse"];
+                };
+            };
+        };
+    };
+    enroll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TwoFactorCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EnrollmentResult"];
+                };
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;
@@ -3444,7 +3584,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["MyselfResponse"];
+                    "*/*": components["schemas"]["LoginResponse"];
                 };
             };
         };
@@ -5253,6 +5393,26 @@ export interface operations {
             path: {
                 idOrKey: string;
                 attachmentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resetTwoFactor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
             };
             cookie?: never;
         };

@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.buggywuggy</groupId>
         <artifactId>buggywuggy-parent</artifactId>
-        <version>0.1.1</version>
+        <version>0.2.0</version>
     </parent>
 
     <artifactId>buggywuggy-server</artifactId>
@@ -53,6 +53,12 @@
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
             <version>${bouncycastle.version}</version>
+        </dependency>
+        <dependency>
+            <!-- QR code of the two-factor enrollment -->
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>${zxing.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>

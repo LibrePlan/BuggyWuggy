@@ -13,7 +13,7 @@
 
     <groupId>org.buggywuggy</groupId>
     <artifactId>buggywuggy-parent</artifactId>
-    <version>0.1.1</version>
+    <version>0.2.0</version>
     <packaging>pom</packaging>
 
     <name>BuggyWuggy</name>
@@ -36,6 +36,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <bouncycastle.version>1.87</bouncycastle.version>
         <springdoc.version>3.2.0</springdoc.version>
+        <zxing.version>3.5.3</zxing.version>
         <jsoup.version>1.23.2</jsoup.version>
         <greenmail.version>2.1.15</greenmail.version>
         <!-- Only the server module is an application; see server/pom.xml. -->

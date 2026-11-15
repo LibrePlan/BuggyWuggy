@@ -57,6 +57,25 @@ in again.
 After several failed login attempts, logging in is blocked for a while. Wait 15 minutes or
 ask your administrator to reset your password.
 
+### Two-factor login
+
+Your administrator can make BuggyWuggy ask for a second factor: after your password, a 6-digit
+code from an authenticator app on your phone, such as Aegis, FreeOTP, Google Authenticator or
+Microsoft Authenticator.
+
+The first time, BuggyWuggy shows a wizard:
+
+1. **Scan**: scan the QR code with the app. If you cannot, type the key below it into the app.
+2. **Verify**: enter the code the app now shows for BuggyWuggy.
+3. **Recovery codes**: save the 10 recovery codes (**Copy** or **Download**) somewhere safe,
+   not on your phone. Each one logs you in once when you do not have your phone. They are
+   shown only this once.
+
+After that, every login asks for the current code from the app. Instead of it you can enter a
+recovery code; BuggyWuggy then tells you how many you have left. Lost your phone or used up
+your recovery codes? Ask your administrator to reset your two-factor login: you then go
+through the wizard again at the next login.
+
 ## Finding your way around
 
 The bar at the top of every page contains:
