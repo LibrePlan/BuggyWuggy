@@ -267,6 +267,7 @@
     "users": "Users",
     "groups": "Groups",
     "permissions": {
+      "title": "Permissions",
       "intro": "Global permissions apply to all of BuggyWuggy, not to one project. They are granted to groups. Members of a group that gains or loses a permission are logged out and get the change at their next login — that includes you, if you are a member.",
       "permission": "Permission",
       "groups": "Groups",
@@ -760,6 +761,9 @@
       "intro": "Enter the license code you received for one of the challenges below. The request to donate then disappears from the login page until the license expires.",
       "code": "License code",
       "submit": "Activate"
-    }
+    },
+    "unlicensed": "This BuggyWuggy installation has no license",
+    "unlicensedText": "Open source is not free: developing and supporting BuggyWuggy takes time. Please support the project with a yearly license.",
+    "requestQuotation": "Request a quotation"
   }
 }

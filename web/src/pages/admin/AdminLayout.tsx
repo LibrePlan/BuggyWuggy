@@ -2,10 +2,11 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Stack, Tabs, Title } from '@mantine/core';
+import { Alert, Anchor, Stack, Tabs, Text, Title } from '@mantine/core';
+import { IconHeart } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { Outlet, useLocation, useNavigate } from 'react-router';
-import { useMyself } from '../../api/queries';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router';
+import { useDonation, useMyself } from '../../api/queries';
 import { NotFoundPage } from '../NotFoundPage';
 import { ImportStatusLine } from './ImportPage';
 
@@ -17,6 +18,7 @@ export function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const myself = useMyself().data;
+  const donation = useDonation().data;
   if (!myself?.globalPermissions.includes('ADMINISTER')) return <NotFoundPage />;
   const current = SECTIONS.find((s) => location.pathname.startsWith(`/admin/${s}`)) ?? 'users';
 
@@ -27,11 +29,21 @@ export function AdminLayout() {
         <Tabs.List>
           {SECTIONS.map((s) => (
             <Tabs.Tab key={s} value={s}>
-              {t(`admin.${s}`)}
+              {t(s === 'permissions' ? 'admin.permissions.title' : `admin.${s}`)}
             </Tabs.Tab>
           ))}
         </Tabs.List>
       </Tabs>
+      {donation?.show && current !== 'license' && (
+        <Alert color="blue" variant="light" icon={<IconHeart />} title={t('license.unlicensed')}>
+          <Text size="sm">
+            {t('license.unlicensedText')}{' '}
+            <Anchor component={Link} to="/admin/license" size="sm">
+              {t('license.requestQuotation')}
+            </Anchor>
+          </Text>
+        </Alert>
+      )}
       <ImportStatusLine />
       <Outlet />
     </Stack>
