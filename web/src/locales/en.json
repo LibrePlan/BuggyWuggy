@@ -720,7 +720,9 @@
     "people": "Real people work on BuggyWuggy. They write and review the code, fix bugs, answer questions and keep it secure and up to date, often in their own time.",
     "continuity": "Your donation keeps the project going and makes new features possible. Organisations can support BuggyWuggy with a yearly license.",
     "request": "Request a quotation",
-    "loginAsAdmin": "Log in as a BuggyWuggy administrator to see the price for your organisation and request a quotation."
+    "loginAsAdmin": "Log in as a BuggyWuggy administrator to see the price for your organisation and request a quotation.",
+    "comicAlt": "xkcd 2347, Dependency: all modern digital infrastructure rests on a project some random person in Nebraska has been thanklessly maintaining since 2003.",
+    "comicAttribution": "<work>“Dependency” (xkcd 2347)</work> by Randall Munroe, licensed under <license>CC BY-NC 2.5</license>."
   },
   "license": {
     "why": "Free software is about freedom, not price",

@@ -2,11 +2,11 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Alert, Anchor, Button, Collapse, Container, Paper, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Anchor, Box, Button, Collapse, Container, Image, Paper, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { post } from '../api/client';
 import { keys, useDonation, useMyself, useSetupStatus } from '../api/queries';
@@ -110,11 +110,56 @@ export function LoginPage() {
                     {t('donate.loginAsAdmin')}
                   </Text>
                 )}
+                <XkcdDependency />
               </Stack>
             </Paper>
           </Collapse>
         </Stack>
       )}
     </Container>
+  );
+}
+
+const XKCD_COMIC = 'https://xkcd.com/2347/';
+
+/**
+ * xkcd 2347 "Dependency" by Randall Munroe, CC BY-NC 2.5. Embedded from imgs.xkcd.com as
+ * xkcd allows, not copied into this repository: its NonCommercial license does not fit the
+ * AGPL of BuggyWuggy. Loaded only when the donation text is opened, without a referrer.
+ */
+function XkcdDependency() {
+  const { t } = useTranslation();
+  return (
+    <Box component="figure" m={0}>
+      <Anchor href={XKCD_COMIC} target="_blank" rel="noopener noreferrer" display="block">
+        <Image
+          src="https://imgs.xkcd.com/comics/dependency.png"
+          srcSet="https://imgs.xkcd.com/comics/dependency_2x.png 2x"
+          alt={t('donate.comicAlt')}
+          title={t('donate.comicAlt')}
+          w="100%"
+          maw={385}
+          mx="auto"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
+      </Anchor>
+      <Text component="figcaption" size="xs" c="dimmed" ta="center" mt={4}>
+        <Trans
+          i18nKey="donate.comicAttribution"
+          components={{
+            work: <Anchor href={XKCD_COMIC} target="_blank" rel="noopener noreferrer" inherit />,
+            license: (
+              <Anchor
+                href="https://creativecommons.org/licenses/by-nc/2.5/"
+                target="_blank"
+                rel="license noopener noreferrer"
+                inherit
+              />
+            ),
+          }}
+        />
+      </Text>
+    </Box>
   );
 }
