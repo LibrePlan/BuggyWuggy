@@ -1,0 +1,69 @@
+# BuggyWuggy as a systemd service.
+#
+# Install (as root), with the jar in /opt/buggywuggy and the settings in
+# /etc/buggywuggy/buggywuggy.env (template: buggywuggy.env next to this file):
+#
+#   useradd --system --home /opt/buggywuggy --shell /usr/sbin/nologin buggywuggy
+#   install -d -m 755 -o root -g root /opt/buggywuggy
+#   install -m 644 -o root -g root buggywuggy.jar /opt/buggywuggy/buggywuggy.jar
+#   install -d -m 750 -o buggywuggy -g buggywuggy /var/lib/buggywuggy
+#   install -d -m 750 -o root -g buggywuggy /etc/buggywuggy
+#   install -m 600 -o root -g root buggywuggy.env /etc/buggywuggy/buggywuggy.env   # then edit it
+#
+#   # Optional, for mail and other settings: the configuration file with all settings
+#   # commented out (the service itself may not write to /etc).
+#   java -jar /opt/buggywuggy/buggywuggy.jar config-template \
+#     | install -m 640 -o root -g buggywuggy /dev/stdin /etc/buggywuggy/application.yml
+#
+#   install -m 644 -o root -g root buggywuggy.service /etc/systemd/system/buggywuggy.service
+#   systemctl daemon-reload
+#   systemctl enable --now buggywuggy
+#   journalctl -u buggywuggy -f        # the setup token of the first start appears here
+#
+# The service may only write to /var/lib/buggywuggy (the attachments, BUGGYWUGGY_DATA_DIR).
+# If you change the paths, change them in buggywuggy.env as well.
+
+[Unit]
+Description=BuggyWuggy issue tracker
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=buggywuggy
+Group=buggywuggy
+EnvironmentFile=/etc/buggywuggy/buggywuggy.env
+WorkingDirectory=/var/lib/buggywuggy
+# -Xmx: the most memory Java may use for BuggyWuggy; 1 GB is plenty for a few hundred users.
+ExecStart=/usr/bin/java -Xmx1g -jar /opt/buggywuggy/buggywuggy.jar
+# Java exits with 143 after SIGTERM: that is a normal stop.
+SuccessExitStatus=143
+TimeoutStopSec=60
+Restart=on-failure
+RestartSec=5
+UMask=0027
+
+# Hardening: the whole file system is read-only except the data directory, no access to home
+# directories, devices or kernel settings, and no way to gain privileges.
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/buggywuggy
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

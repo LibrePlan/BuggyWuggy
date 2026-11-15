@@ -1,0 +1,87 @@
+#!/bin/bash
+# BuggyWuggy — open source, self-hosted issue tracker
+# Copyright (C) 2026 The BuggyWuggy contributors
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Installs a new buggywuggy.jar on a (test) server and restarts BuggyWuggy. Used by the CI job
+# "deploy-test" (.forgejo/workflows/ci.yml): the deploy user copies the jar to its home
+# directory and runs this script with sudo, without arguments.
+#
+# It installs the jar as /opt/buggywuggy/buggywuggy.jar (the old one is kept as
+# buggywuggy.jar.previous), restarts the service and waits until /actuator/health reports UP.
+# If BuggyWuggy does not get healthy, it puts the previous jar back and exits with an error.
+# Note that database migrations of the new version are not undone by that.
+#
+# Install as root:root, mode 755, in /usr/local/sbin, and allow only this script in sudoers:
+#   deploy ALL=(root) NOPASSWD: /usr/local/sbin/buggywuggy-deploy
+# See "Automatic deployment to a test server" in docs/installation.md.
+
+set -euo pipefail
+
+SERVICE=buggywuggy
+JAR=/opt/buggywuggy/buggywuggy.jar
+ENV_FILE=/etc/buggywuggy/buggywuggy.env
+WAIT_SECONDS=180
+
+fail() {
+    echo "buggywuggy-deploy: $*" >&2
+    exit 1
+}
+
+[ "$(id -u)" = 0 ] || fail "run this with sudo"
+user=${SUDO_USER:-}
+[ -n "$user" ] && [ "$user" != root ] || fail "run this with sudo as the deploy user"
+home=$(getent passwd "$user" | cut -d: -f6)
+incoming="$home/buggywuggy.jar"
+[ -e "$incoming" ] || fail "$incoming not found: copy the new jar there first"
+
+port=$(sed -n 's/^BUGGYWUGGY_PORT=//p' "$ENV_FILE" 2> /dev/null | tail -n 1 | tr -d '"'"'"' ')
+health="http://127.0.0.1:${port:-8080}/actuator/health"
+
+healthy() {
+    local i
+    for ((i = 0; i < WAIT_SECONDS; i += 3)); do
+        if curl -fsS -m 5 "$health" 2> /dev/null | grep -q '"status":"UP"'; then
+            return 0
+        fi
+        sleep 3
+    done
+    return 1
+}
+
+# Copy without following a symbolic link (the deploy user owns the incoming file), into the
+# same directory as the jar so that the final move is atomic, and check that it is a jar.
+staged=$(mktemp "$(dirname "$JAR")/.buggywuggy.jar.XXXXXX")
+trap 'rm -f "$staged"' EXIT
+cp -P --remove-destination "$incoming" "$staged"
+[ -f "$staged" ] && [ ! -L "$staged" ] || fail "$incoming is not a regular file"
+[ "$(head -c 4 "$staged" | od -An -tx1 | tr -d ' \n')" = 504b0304 ] || fail "$incoming is not a jar"
+chown root:root "$staged"
+chmod 644 "$staged"
+
+if [ -f "$JAR" ]; then
+    cp -p "$JAR" "$JAR.previous"
+fi
+mv -f "$staged" "$JAR"
+rm -f "$incoming"
+
+echo "Restarting $SERVICE ..."
+systemctl restart "$SERVICE"
+if healthy; then
+    echo "BuggyWuggy is up with the new version."
+    exit 0
+fi
+
+echo "BuggyWuggy did not get healthy within $WAIT_SECONDS seconds. Last log lines:" >&2
+journalctl -u "$SERVICE" -n 60 --no-pager >&2 || true
+if [ -f "$JAR.previous" ]; then
+    echo "Putting the previous version back ..." >&2
+    cp -p "$JAR.previous" "$JAR"
+    systemctl restart "$SERVICE"
+    if healthy; then
+        echo "The previous version runs again." >&2
+    else
+        echo "The previous version does not get healthy either." >&2
+    fi
+fi
+exit 1

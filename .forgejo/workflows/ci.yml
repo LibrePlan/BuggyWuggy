@@ -6,6 +6,11 @@
 # tests against a PostgreSQL service, checks that the generated API types are up to date,
 # and keeps the jar as an artifact. Needs a Forgejo runner with the label "docker"; the tests
 # use the PostgreSQL service instead of Testcontainers, so the job needs no Docker socket.
+#
+# After a successful build of a push to main, the job "deploy-test" installs the jar on a
+# test server over SSH, when the repository variable DEPLOY_HOST is set. See "Automatic
+# deployment to a test server" in docs/installation.md for the variables, secrets and the
+# preparation of the server.
 
 name: CI
 
@@ -105,3 +110,43 @@ jobs:
             server/target/surefire-reports/
             server/target/failsafe-reports/
           retention-days: 14
+
+  deploy-test:
+    name: Deploy to the test server
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_HOST != ''
+    runs-on: docker
+    timeout-minutes: 15
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER || 'deploy' }}
+    steps:
+      - name: Fetch the jar of the build
+        uses: https://data.forgejo.org/forgejo/download-artifact@v4
+        with:
+          name: buggywuggy-jar
+
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$SSH_KEY" ] || [ -z "$KNOWN_HOSTS" ]; then
+            echo "::error::Set the secrets DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS (see docs/installation.md)." >&2
+            exit 1
+          fi
+          if ! command -v ssh > /dev/null; then
+            apt-get update -qq && apt-get install -y -qq openssh-client > /dev/null
+          fi
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/deploy_key"
+          chmod 600 "$HOME/.ssh/deploy_key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+
+      - name: Install the jar and restart BuggyWuggy
+        shell: bash
+        run: |
+          ssh_options=(-i "$HOME/.ssh/deploy_key" -o BatchMode=yes -o StrictHostKeyChecking=yes)
+          scp "${ssh_options[@]}" buggywuggy.jar "$DEPLOY_USER@$DEPLOY_HOST:buggywuggy.jar"
+          # Installs it, restarts the service and waits until it is healthy; rolls back otherwise.
+          ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" sudo /usr/local/sbin/buggywuggy-deploy

@@ -23,6 +23,7 @@ This guide explains how to install, configure, run, back up and upgrade a BuggyW
     - [License](#license)
 11. [Backup and restore](#backup-and-restore)
 12. [Upgrading](#upgrading)
+    - [Automatic deployment to a test server](#automatic-deployment-to-a-test-server)
 13. [Monitoring](#monitoring)
 14. [Troubleshooting](#troubleshooting)
 
@@ -259,111 +260,78 @@ This first account is a *system administrator* and a member of the groups `admin
 
 ## Running as a service (systemd)
 
-Create a system user and an environment file:
+There are templates for the service and its settings, with instructions at the top:
+
+- the unit: [docs/systemd/buggywuggy.service](systemd/buggywuggy.service), installed as
+  `/etc/systemd/system/buggywuggy.service`;
+- the settings: [docs/systemd/buggywuggy.env](systemd/buggywuggy.env), installed as
+  `/etc/buggywuggy/buggywuggy.env` (only readable for root: it contains the database
+  password).
+
+Install them as root, from the directory with the jar and both templates:
 
 ```sh
-sudo useradd --system --home /opt/buggywuggy --shell /usr/sbin/nologin buggywuggy
-sudo install -d -o buggywuggy -g buggywuggy /opt/buggywuggy
-sudo install -d -m 750 -o buggywuggy -g buggywuggy /var/lib/buggywuggy
-sudo install -m 600 -o root -g root /dev/null /etc/buggywuggy.env
+useradd --system --home /opt/buggywuggy --shell /usr/sbin/nologin buggywuggy
+install -d -m 755 -o root -g root /opt/buggywuggy
+install -m 644 -o root -g root buggywuggy.jar /opt/buggywuggy/buggywuggy.jar
+install -d -m 750 -o buggywuggy -g buggywuggy /var/lib/buggywuggy
+install -d -m 750 -o root -g buggywuggy /etc/buggywuggy
+install -m 600 -o root -g root buggywuggy.env /etc/buggywuggy/buggywuggy.env
 ```
 
-For mail settings, also create a [configuration file](#configuration-file):
+Edit `/etc/buggywuggy/buggywuggy.env`: at least the database password and
+`BUGGYWUGGY_BASE_URL`. Without a reverse proxy, set `BUGGYWUGGY_SECURE_COOKIES=false` and
+remove `SERVER_FORWARD_HEADERS_STRATEGY`. For mail settings, also create the
+[configuration file](#configuration-file) in the same directory, with all settings commented
+out:
 
 ```sh
-sudo install -d -m 750 -o root -g buggywuggy /etc/buggywuggy
 java -jar /opt/buggywuggy/buggywuggy.jar config-template \
-  | sudo install -m 640 -o root -g buggywuggy /dev/stdin /etc/buggywuggy/application.yml
+  | install -m 640 -o root -g buggywuggy /dev/stdin /etc/buggywuggy/application.yml
 ```
 
-This fills the file with the commented-out [template](#configuration-file). The service
-cannot write to `/etc` itself (`ProtectSystem=strict` below), so it would not be able to
-create the template on its first start.
-
-`/etc/buggywuggy.env`:
-
-```sh
-BUGGYWUGGY_DB_URL=jdbc:postgresql://localhost:5432/buggywuggy
-BUGGYWUGGY_DB_USER=buggywuggy
-BUGGYWUGGY_DB_PASSWORD=choose-a-strong-password
-BUGGYWUGGY_PORT=8080
-BUGGYWUGGY_SECURE_COOKIES=true
-BUGGYWUGGY_DATA_DIR=/var/lib/buggywuggy
-BUGGYWUGGY_BASE_URL=https://bugs.example.org
-SERVER_FORWARD_HEADERS_STRATEGY=framework
-SPRING_CONFIG_ADDITIONAL_LOCATION=file:/etc/buggywuggy/application.yml
-```
-
-`/etc/systemd/system/buggywuggy.service`:
-
-```ini
-[Unit]
-Description=BuggyWuggy issue tracker
-After=network-online.target postgresql.service
-Wants=network-online.target
-
-[Service]
-User=buggywuggy
-Group=buggywuggy
-EnvironmentFile=/etc/buggywuggy.env
-ExecStart=/usr/bin/java -Xmx1g -jar /opt/buggywuggy/buggywuggy.jar
-SuccessExitStatus=143
-Restart=on-failure
-# Hardening
-NoNewPrivileges=true
-ProtectSystem=strict
-ReadWritePaths=/var/lib/buggywuggy
-ProtectHome=true
-PrivateTmp=true
-
-[Install]
-WantedBy=multi-user.target
-```
-
-`ProtectSystem=strict` makes the whole file system read-only for the service;
-`ReadWritePaths` makes an exception for the data directory.
+The service cannot create it on its own first start: the whole file system is read-only for
+it, except the data directory `/var/lib/buggywuggy`. The template also keeps BuggyWuggy away
+from home directories, devices and kernel settings (`systemd-analyze security buggywuggy`
+rates it 3.0, "OK").
 
 Start it and follow the log (this is also where the setup token appears):
 
 ```sh
-sudo systemctl daemon-reload
-sudo systemctl enable --now buggywuggy
-sudo journalctl -u buggywuggy -f
+install -m 644 -o root -g root buggywuggy.service /etc/systemd/system/buggywuggy.service
+systemctl daemon-reload
+systemctl enable --now buggywuggy
+journalctl -u buggywuggy -f
 ```
+
+If you put the jar or the data elsewhere, change the paths in both files. `-Xmx1g` in
+`ExecStart` is the most memory Java may use for BuggyWuggy itself.
 
 ## HTTPS with a reverse proxy
 
 Run BuggyWuggy behind a reverse proxy that handles TLS, and let it listen only on localhost or
-an internal network. Example for nginx:
+an internal network. There are ready-to-use templates, with instructions at the top:
 
-```nginx
-server {
-    listen 443 ssl;
-    server_name bugs.example.org;
+- nginx: [docs/reverse-proxy/nginx.conf](reverse-proxy/nginx.conf)
+- Apache httpd 2.4: [docs/reverse-proxy/apache.conf](reverse-proxy/apache.conf)
 
-    ssl_certificate     /etc/letsencrypt/live/bugs.example.org/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/bugs.example.org/privkey.pem;
+Replace `bugs.example.org`, the certificate paths and the port of BuggyWuggy (`8080`). Both
+templates redirect HTTP to HTTPS (except for Let's Encrypt's `/.well-known/acme-challenge/`),
+pass the original host and scheme in `X-Forwarded-*` headers, allow uploads up to the default
+`BUGGYWUGGY_MAX_UPLOAD_SIZE` of 200 MB (change both together) and wait up to 5 minutes for
+large attachments. Strict-Transport-Security is in the templates but commented out: enable it
+once HTTPS works.
 
-    # At least BUGGYWUGGY_MAX_UPLOAD_SIZE, or larger uploads are refused by nginx.
-    client_max_body_size 200m;
+Then set in `/etc/buggywuggy/buggywuggy.env`:
 
-    location / {
-        proxy_pass         http://127.0.0.1:8080;
-        proxy_set_header   Host              $host;
-        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header   X-Forwarded-Proto $scheme;
-        proxy_set_header   X-Forwarded-Host  $host;
-    }
-}
-
-server {
-    listen 80;
-    server_name bugs.example.org;
-    return 301 https://$host$request_uri;
-}
+```sh
+BUGGYWUGGY_BASE_URL=https://bugs.example.org
+BUGGYWUGGY_SECURE_COOKIES=true
+SERVER_FORWARD_HEADERS_STRATEGY=framework
 ```
 
-With HTTPS in place, set `BUGGYWUGGY_SECURE_COOKIES=true`.
+Only set `SERVER_FORWARD_HEADERS_STRATEGY=framework` when BuggyWuggy can **only** be reached
+through the proxy: it makes BuggyWuggy trust the `X-Forwarded-*` headers.
 
 BuggyWuggy must be served at the root of a host name (`https://bugs.example.org/`). Serving
 it under a sub-path such as `https://example.org/bugs/` is not supported yet.
@@ -749,8 +717,11 @@ asked for it again.
 ### License
 
 BuggyWuggy is free software, but developing and supporting it takes time. Until an installation
-has a license, the login page asks for a donation (**Donate** — *Open source is not free!*);
-the link leads, after logging in as an administrator, to **Administration → License**:
+has a license, the login page asks for a donation (**Please donate**). *Click here for more
+information* explains why: free software is about freedom, not price; real people work on
+BuggyWuggy; and donations keep the project going and pay for new features. Its link *Request a
+quotation* leads, after logging in as an administrator, to **Administration → License** (the
+administration pages show the same request until there is a license):
 
 - **Request a quotation**: choose the country (type to search) and the number of users (by
   default the number of active accounts). The price is 7 € per user per month in the
@@ -858,6 +829,56 @@ Database changes are applied automatically at startup and are recorded in the ta
 `flyway_schema_history`. Do not downgrade to an older jar after an upgrade has changed the
 database; restore the backup instead.
 
+### Automatic deployment to a test server
+
+The CI workflow (`.forgejo/workflows/ci.yml`) can install every successful build of `main` on
+a test server: after the job `build`, the job `deploy-test` copies the jar over SSH and runs
+[`deploy/buggywuggy-deploy`](../deploy/buggywuggy-deploy) on the server with sudo. That script
+installs the jar as `/opt/buggywuggy/buggywuggy.jar` (keeping the old one as
+`buggywuggy.jar.previous`), restarts the service and waits up to three minutes until
+`/actuator/health` reports `UP`. If it does not, it puts the previous jar back, restarts again
+and the job fails. Database migrations of the failed version are not undone, so use this for a
+test server only, never for production.
+
+**The test server.** Install BuggyWuggy as described above (Java 25, PostgreSQL,
+[systemd service](#running-as-a-service-systemd), optionally a
+[reverse proxy](#https-with-a-reverse-proxy)), and `curl`. Then create a user for the
+deployments that may only run the deploy script as root:
+
+```sh
+sudo useradd --create-home --shell /bin/bash deploy
+sudo install -m 755 -o root -g root deploy/buggywuggy-deploy /usr/local/sbin/buggywuggy-deploy
+echo 'deploy ALL=(root) NOPASSWD: /usr/local/sbin/buggywuggy-deploy' \
+  | sudo install -m 440 -o root -g root /dev/stdin /etc/sudoers.d/buggywuggy-deploy
+sudo visudo -cf /etc/sudoers.d/buggywuggy-deploy
+```
+
+The script reads the port from `BUGGYWUGGY_PORT` in `/etc/buggywuggy/buggywuggy.env` (default
+8080). The service and paths are at the top of the script.
+
+**An SSH key for the workflow.** Make a key pair without a passphrase, only for this, and allow
+it for the user `deploy` on the test server:
+
+```sh
+ssh-keygen -t ed25519 -N '' -C 'buggywuggy ci deploy' -f deploy_key
+sudo install -d -m 700 -o deploy -g deploy ~deploy/.ssh
+sudo install -m 600 -o deploy -g deploy deploy_key.pub ~deploy/.ssh/authorized_keys
+ssh-keyscan TEST-SERVER > known_hosts    # check the fingerprint with ssh-keygen -lf known_hosts
+```
+
+**Forgejo.** In the repository settings, under *Actions*:
+
+| Kind | Name | Value |
+|---|---|---|
+| Variable | `DEPLOY_HOST` | The host name of the test server. Without it the job `deploy-test` is skipped. |
+| Variable | `DEPLOY_USER` | Optional; default `deploy`. |
+| Secret | `DEPLOY_SSH_KEY` | The contents of `deploy_key` (the private key). |
+| Secret | `DEPLOY_KNOWN_HOSTS` | The contents of `known_hosts`: the job only connects to a server with this host key. |
+
+Then delete the local `deploy_key`. The Forgejo runner must be able to reach the test server
+on port 22. The job runs on pushes to `main` only; pull requests and other branches are built
+and tested, not deployed.
+
 ## Monitoring
 
 | URL | Purpose |
@@ -896,7 +917,7 @@ the file yourself with `java -jar buggywuggy.jar config-template`, see
 Check on **Administration → E-mail** which configuration file is used, that you removed the `#`
 in front of the setting *and* in front of the keys above it, that the indentation is unchanged,
 and that you restarted BuggyWuggy. Also check that the setting is not set as an environment
-variable as well (for systemd in `/etc/buggywuggy.env`).
+variable as well (for systemd in `/etc/buggywuggy/buggywuggy.env`).
 
 **An import fails with "The server refused the access token" or "may not read".**
 The token is wrong, expired, or lacks read access to repositories or issues. Create a new one in
