@@ -87,6 +87,8 @@ jobs:
             sleep 2
           done
           cd web
+          # The Node.js and npm that the Maven build installed; the runner need not have them.
+          export PATH="$PWD/node:$PATH"
           npm run -s api:types
           if ! git diff --exit-code -- src/api/schema.d.ts; then
             echo "::error::web/src/api/schema.d.ts is out of date: run 'npm run api:types' against the server and commit it." >&2
