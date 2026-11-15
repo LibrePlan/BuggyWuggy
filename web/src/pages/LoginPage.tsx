@@ -2,8 +2,9 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Alert, Anchor, Button, Container, Paper, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Anchor, Button, Collapse, Container, Paper, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router';
@@ -30,6 +31,8 @@ export function LoginPage() {
   const donation = useDonation();
   const next = safeNext(params.get('next'));
   const setupDone = (location.state as { setupDone?: boolean } | null)?.setupDone;
+  // Open when the visitor came for the license page.
+  const [moreInfo, { toggle: toggleMoreInfo }] = useDisclosure(next === LICENSE_PAGE);
 
   const form = useForm({
     initialValues: { username: '', password: '' },
@@ -86,19 +89,30 @@ export function LoginPage() {
         </form>
       </Paper>
       {donation.data?.show && (
-        <Stack gap={4} mt="xl" align="center" ta="center">
-          <Title order={1}>{t('donate.title')}</Title>
-          <Text>
-            {t('donate.notFree')}{' '}
-            <Anchor component={Link} to={`/login?next=${encodeURIComponent(LICENSE_PAGE)}`} replace>
-              {t('donate.findOut')}
-            </Anchor>
-          </Text>
-          {next === LICENSE_PAGE && (
-            <Text size="sm" c="dimmed">
-              {t('donate.loginAsAdmin')}
-            </Text>
-          )}
+        <Stack gap="xs" mt="xl">
+          <Title order={1} ta="center">
+            {t('donate.title')}
+          </Title>
+          <Anchor component="button" type="button" onClick={toggleMoreInfo} aria-expanded={moreInfo} ta="center">
+            {moreInfo ? t('donate.lessInfo') : t('donate.moreInfo')}
+          </Anchor>
+          <Collapse expanded={moreInfo}>
+            <Paper withBorder p="md" radius="md">
+              <Stack gap="sm">
+                <Text size="sm">{t('donate.freedom')}</Text>
+                <Text size="sm">{t('donate.people')}</Text>
+                <Text size="sm">{t('donate.continuity')}</Text>
+                <Anchor component={Link} to={`/login?next=${encodeURIComponent(LICENSE_PAGE)}`} replace size="sm">
+                  {t('donate.request')}
+                </Anchor>
+                {next === LICENSE_PAGE && (
+                  <Text size="sm" c="dimmed">
+                    {t('donate.loginAsAdmin')}
+                  </Text>
+                )}
+              </Stack>
+            </Paper>
+          </Collapse>
         </Stack>
       )}
     </Container>

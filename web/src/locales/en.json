@@ -713,13 +713,17 @@
     }
   },
   "donate": {
-    "title": "Donate",
-    "notFree": "Open source is not free!",
-    "findOut": "Click here to find out more.",
+    "title": "Please donate",
+    "moreInfo": "Click here for more information.",
+    "lessInfo": "Hide this information.",
+    "freedom": "BuggyWuggy is free software. Free as in freedom, not as in free of charge: you may use, study, change and share it under the GNU Affero General Public License. That freedom does not mean that making it costs nothing.",
+    "people": "Real people work on BuggyWuggy. They write and review the code, fix bugs, answer questions and keep it secure and up to date, often in their own time.",
+    "continuity": "Your donation keeps the project going and makes new features possible. Organisations can support BuggyWuggy with a yearly license.",
+    "request": "Request a quotation",
     "loginAsAdmin": "Log in as a BuggyWuggy administrator to see the price for your organisation and request a quotation."
   },
   "license": {
-    "why": "Open source is not free",
+    "why": "Free software is about freedom, not price",
     "whyText": "Developing and supporting BuggyWuggy takes time. If your organisation uses it, please support the project with a yearly license: it keeps BuggyWuggy maintained, and the request to donate disappears from the login page while the license is valid.",
     "thanks": "Thank you for supporting BuggyWuggy!",
     "validUntil": "The license is valid until {{date}}.",
@@ -763,7 +767,7 @@
       "submit": "Activate"
     },
     "unlicensed": "This BuggyWuggy installation has no license",
-    "unlicensedText": "Open source is not free: developing and supporting BuggyWuggy takes time. Please support the project with a yearly license.",
+    "unlicensedText": "Free software is about freedom, not price: developing and supporting BuggyWuggy takes time. Please support the project with a yearly license.",
     "requestQuotation": "Request a quotation"
   }
 }
