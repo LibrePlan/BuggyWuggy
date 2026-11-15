@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # Continuous integration for Forgejo Actions: builds the server and the web UI, runs all
-# tests against a PostgreSQL service, checks that the generated API types are up to date,
-# and keeps the jar as an artifact. Needs a Forgejo runner with the label "docker"; the tests
-# use the PostgreSQL service instead of Testcontainers, so the job needs no Docker socket.
+# tests, checks that the generated API types are up to date, and keeps the jar as an
+# artifact. Needs a Forgejo runner with the label "docker" whose jobs can use Docker: the
+# tests start their PostgreSQL with Testcontainers, as on a developer machine.
 #
 # After a successful build of a push to main, the job "deploy-test" installs the jar on a
 # test server over SSH, when the repository variable DEPLOY_HOST is set. See "Automatic
@@ -23,19 +23,6 @@ jobs:
   build:
     runs-on: docker
     timeout-minutes: 45
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: buggywuggy_test
-          POSTGRES_USER: buggywuggy
-          POSTGRES_PASSWORD: buggywuggy
-    env:
-      # The tests use the service above, not a container of their own.
-      BUGGYWUGGY_TEST_TESTCONTAINERS: "false"
-      BUGGYWUGGY_DB_URL: jdbc:postgresql://postgres:5432/buggywuggy_test
-      BUGGYWUGGY_DB_USER: buggywuggy
-      BUGGYWUGGY_DB_PASSWORD: buggywuggy
     steps:
       - name: Check out
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -56,28 +43,40 @@ jobs:
           key: web-${{ hashFiles('web/pom.xml', 'web/package-lock.json') }}
           restore-keys: web-
 
-      - name: Wait for PostgreSQL
-        run: |
-          for i in $(seq 1 30); do
-            (echo > /dev/tcp/postgres/5432) 2>/dev/null && exit 0
-            sleep 2
-          done
-          echo "PostgreSQL did not start" >&2
-          exit 1
-
       - name: Build and test
         run: ./mvnw -B -ntp verify
 
       - name: Check that the API types are up to date
+        shell: bash
         env:
+          DB_CONTAINER: buggywuggy-ci-${{ github.run_id }}-${{ github.run_attempt }}
+          BUGGYWUGGY_DB_USER: buggywuggy
+          BUGGYWUGGY_DB_PASSWORD: buggywuggy
           BUGGYWUGGY_PORT: "18080"
           BUGGYWUGGY_DATA_DIR: ${{ runner.temp }}/buggywuggy-data
           BUGGYWUGGY_CONFIG_GENERATE: "false"
           BUGGYWUGGY_API_URL: http://localhost:18080
         run: |
+          # A throwaway database for the server, on a free port of localhost only.
+          docker run -d --rm --name "$DB_CONTAINER" -p 127.0.0.1::5432 \
+            -e POSTGRES_DB=buggywuggy -e POSTGRES_USER="$BUGGYWUGGY_DB_USER" \
+            -e POSTGRES_PASSWORD="$BUGGYWUGGY_DB_PASSWORD" postgres:16-alpine > /dev/null
+          server=""
+          trap '[ -n "$server" ] && kill $server; docker rm -f "$DB_CONTAINER" > /dev/null' EXIT
+          for i in $(seq 1 30); do
+            docker exec "$DB_CONTAINER" pg_isready -q -U "$BUGGYWUGGY_DB_USER" -d buggywuggy && break
+            if [ "$i" = 30 ]; then
+              docker logs "$DB_CONTAINER"
+              echo "PostgreSQL did not start" >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          db_port=$(docker port "$DB_CONTAINER" 5432/tcp | head -n 1 | sed 's/.*://')
+          export BUGGYWUGGY_DB_URL="jdbc:postgresql://127.0.0.1:$db_port/buggywuggy"
+
           java -jar server/target/buggywuggy.jar > "$RUNNER_TEMP/server.log" 2>&1 &
           server=$!
-          trap 'kill $server' EXIT
           for i in $(seq 1 60); do
             curl -fsS -o /dev/null "$BUGGYWUGGY_API_URL/api/openapi" && break
             if ! kill -0 $server 2>/dev/null || [ "$i" = 60 ]; then
@@ -136,17 +135,27 @@ jobs:
             exit 1
           fi
           if ! command -v ssh > /dev/null; then
-            apt-get update -qq && apt-get install -y -qq openssh-client > /dev/null
+            echo "::error::The runner needs the OpenSSH client (ssh and scp)." >&2
+            exit 1
           fi
-          install -d -m 700 "$HOME/.ssh"
-          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/deploy_key"
-          chmod 600 "$HOME/.ssh/deploy_key"
-          printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          # In the job's temporary directory, not in ~/.ssh: the job may run on the runner
+          # host itself, whose own SSH files must stay as they are.
+          ssh_dir="$RUNNER_TEMP/deploy-ssh"
+          install -d -m 700 "$ssh_dir"
+          (umask 077 && printf '%s\n' "$SSH_KEY" > "$ssh_dir/deploy_key")
+          printf '%s\n' "$KNOWN_HOSTS" > "$ssh_dir/known_hosts"
 
       - name: Install the jar and restart BuggyWuggy
         shell: bash
         run: |
-          ssh_options=(-i "$HOME/.ssh/deploy_key" -o BatchMode=yes -o StrictHostKeyChecking=yes)
+          ssh_dir="$RUNNER_TEMP/deploy-ssh"
+          # -F none: no ~/.ssh/config of the runner user; only this key and these host keys.
+          ssh_options=(-F none -i "$ssh_dir/deploy_key" -o IdentitiesOnly=yes -o BatchMode=yes
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$ssh_dir/known_hosts")
           scp "${ssh_options[@]}" buggywuggy.jar "$DEPLOY_USER@$DEPLOY_HOST:buggywuggy.jar"
           # Installs it, restarts the service and waits until it is healthy; rolls back otherwise.
           ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" sudo /usr/local/sbin/buggywuggy-deploy
+
+      - name: Remove the SSH key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/deploy-ssh"

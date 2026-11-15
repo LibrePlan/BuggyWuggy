@@ -110,14 +110,15 @@ BUGGYWUGGY_DB_URL=jdbc:postgresql://localhost:5432/buggywuggy_test \
 
 `.forgejo/workflows/ci.yml` runs on every push and pull request in Forgejo Actions. It:
 
-1. builds the server and the web UI and runs all tests (`./mvnw -B verify`), against a
-   PostgreSQL 16 service instead of Testcontainers;
+1. builds the server and the web UI and runs all tests (`./mvnw -B verify`), with
+   Testcontainers as on a developer machine;
 2. starts the built jar and checks that `web/src/api/schema.d.ts` matches its OpenAPI
    document, so a forgotten `npm run api:types` fails the build;
 3. keeps `buggywuggy.jar` as an artifact for 14 days (and the test reports when tests fail).
 
 It needs a Forgejo runner with the label `docker` (the default of `forgejo-runner`), with
-Actions enabled for the repository. The job does not need access to a Docker socket. The
+Actions enabled for the repository, whose jobs can use Docker: the tests and the check of
+the API types each start a throwaway PostgreSQL container. The
 runner downloads the actions from data.forgejo.org, Java 25 (Temurin), Node.js (through the
 Maven build) and the npm and Maven packages, so it needs internet access.
 
