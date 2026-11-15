@@ -833,17 +833,29 @@ database; restore the backup instead.
 
 The CI workflow (`.forgejo/workflows/ci.yml`) can install every successful build of `main` on
 a test server: after the job `build`, the job `deploy-test` copies the jar over SSH and runs
-[`deploy/buggywuggy-deploy`](../deploy/buggywuggy-deploy) on the server with sudo. That script
-installs the jar as `/opt/buggywuggy/buggywuggy.jar` (keeping the old one as
-`buggywuggy.jar.previous`), restarts the service and waits up to three minutes until
-`/actuator/health` reports `UP`. If it does not, it puts the previous jar back, restarts again
-and the job fails. Database migrations of the failed version are not undone, so use this for a
-test server only, never for production.
+[`deploy/buggywuggy-deploy`](../deploy/buggywuggy-deploy) on the server with sudo. That script:
+
+1. makes a backup of the database with `pg_dump` in `/var/backups/buggywuggy/` (only readable
+   for root; the last 10 are kept). If the backup fails, it stops: nothing is installed and the
+   running version keeps running;
+2. installs the jar as `/opt/buggywuggy/buggywuggy.jar`, keeping the old one as
+   `buggywuggy.jar.previous`;
+3. restarts the service and waits up to three minutes until `/actuator/health` reports `UP`.
+   If it does not, it puts the previous jar back, restarts again, names the backup of step 1
+   and the job fails.
+
+The data on the test server is kept: a new version only applies its database migrations, as
+with any [upgrade](#upgrading). Those migrations are not undone when the previous jar is put
+back. If the previous version does not start any more after a failed deploy, restore the
+backup that the job log names (see [Database](#database), with the dump from
+`/var/backups/buggywuggy/`).
 
 **The test server.** Install BuggyWuggy as described above (Java 25, PostgreSQL,
 [systemd service](#running-as-a-service-systemd), optionally a
-[reverse proxy](#https-with-a-reverse-proxy)), and `curl`. Then create a user for the
-deployments that may only run the deploy script as root:
+[reverse proxy](#https-with-a-reverse-proxy)), `curl` and `pg_dump` (package
+`postgresql-client`, at least the version of the database server; it comes with the
+`postgresql` package). Then create a user for the deployments that may only run the deploy
+script as root:
 
 ```sh
 sudo useradd --create-home --shell /bin/bash deploy
@@ -853,8 +865,10 @@ echo 'deploy ALL=(root) NOPASSWD: /usr/local/sbin/buggywuggy-deploy' \
 sudo visudo -cf /etc/sudoers.d/buggywuggy-deploy
 ```
 
-The script reads the port from `BUGGYWUGGY_PORT` in `/etc/buggywuggy/buggywuggy.env` (default
-8080). The service and paths are at the top of the script.
+The script reads the port and the database settings (`BUGGYWUGGY_PORT`, `BUGGYWUGGY_DB_URL`,
+`BUGGYWUGGY_DB_USER`, `BUGGYWUGGY_DB_PASSWORD`) from `/etc/buggywuggy/buggywuggy.env`; it reads
+that file, it does not execute it. The service, paths and the number of backups to keep are at
+the top of the script.
 
 **An SSH key for the workflow.** Make a key pair without a passphrase, only for this, and allow
 it for the user `deploy` on the test server:

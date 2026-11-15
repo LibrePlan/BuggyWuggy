@@ -7,10 +7,14 @@
 # "deploy-test" (.forgejo/workflows/ci.yml): the deploy user copies the jar to its home
 # directory and runs this script with sudo, without arguments.
 #
-# It installs the jar as /opt/buggywuggy/buggywuggy.jar (the old one is kept as
-# buggywuggy.jar.previous), restarts the service and waits until /actuator/health reports UP.
-# If BuggyWuggy does not get healthy, it puts the previous jar back and exits with an error.
-# Note that database migrations of the new version are not undone by that.
+# It first makes a backup of the database with pg_dump in /var/backups/buggywuggy (the last
+# 10 are kept; when the backup fails, nothing is installed). Then it installs the jar as
+# /opt/buggywuggy/buggywuggy.jar (the old one is kept as buggywuggy.jar.previous), restarts
+# the service and waits until /actuator/health reports UP. If BuggyWuggy does not get
+# healthy, it puts the previous jar back and exits with an error. Database migrations of the
+# new version are not undone by that: restore the backup for that (see docs/installation.md).
+#
+# Needs curl and pg_dump (package postgresql-client, at least the version of the server).
 #
 # Install as root:root, mode 755, in /usr/local/sbin, and allow only this script in sudoers:
 #   deploy ALL=(root) NOPASSWD: /usr/local/sbin/buggywuggy-deploy
@@ -21,7 +25,11 @@ set -euo pipefail
 SERVICE=buggywuggy
 JAR=/opt/buggywuggy/buggywuggy.jar
 ENV_FILE=/etc/buggywuggy/buggywuggy.env
+BACKUP_DIR=/var/backups/buggywuggy
+KEEP_BACKUPS=10
 WAIT_SECONDS=180
+
+umask 077
 
 fail() {
     echo "buggywuggy-deploy: $*" >&2
@@ -35,8 +43,50 @@ home=$(getent passwd "$user" | cut -d: -f6)
 incoming="$home/buggywuggy.jar"
 [ -e "$incoming" ] || fail "$incoming not found: copy the new jar there first"
 
-port=$(sed -n 's/^BUGGYWUGGY_PORT=//p' "$ENV_FILE" 2> /dev/null | tail -n 1 | tr -d '"'"'"' ')
+# The last value of a setting in the environment file, without quotes around it. The file is
+# read, not executed.
+setting() {
+    local value
+    value=$(sed -n "s/^$1=//p" "$ENV_FILE" 2> /dev/null | tail -n 1)
+    value=${value%\"}
+    value=${value#\"}
+    value=${value%\'}
+    value=${value#\'}
+    printf '%s' "$value"
+}
+
+port=$(setting BUGGYWUGGY_PORT)
 health="http://127.0.0.1:${port:-8080}/actuator/health"
+backup_file=
+
+# A backup of the database in the custom format of pg_dump (restore with pg_restore). The
+# defaults are those of BuggyWuggy itself.
+backup() {
+    local url user password host db db_port
+    url=$(setting BUGGYWUGGY_DB_URL)
+    user=$(setting BUGGYWUGGY_DB_USER)
+    password=$(setting BUGGYWUGGY_DB_PASSWORD)
+    url=${url:-jdbc:postgresql://localhost:5432/buggywuggy}
+    [[ $url =~ ^jdbc:postgresql://([^/:?,]+)(:([0-9]+))?/([^?]+) ]] \
+        || fail "cannot read host and database from BUGGYWUGGY_DB_URL ($url); nothing was installed"
+    host=${BASH_REMATCH[1]}
+    db_port=${BASH_REMATCH[3]:-5432}
+    db=${BASH_REMATCH[4]}
+    command -v pg_dump > /dev/null || fail "pg_dump not found: install postgresql-client; nothing was installed"
+
+    install -d -m 700 -o root -g root "$BACKUP_DIR"
+    backup_file="$BACKUP_DIR/$db-$(date +%Y%m%d-%H%M%S).dump"
+    echo "Backing up database $db to $backup_file ..."
+    if ! PGPASSWORD=${password:-buggywuggy} pg_dump -h "$host" -p "$db_port" -U "${user:-buggywuggy}" \
+            --format=custom --file="$backup_file.partial" "$db"; then
+        rm -f "$backup_file.partial"
+        fail "the backup of the database failed; nothing was installed"
+    fi
+    mv "$backup_file.partial" "$backup_file"
+    # Keep the newest KEEP_BACKUPS backups.
+    find "$BACKUP_DIR" -maxdepth 1 -name '*.dump' -printf '%T@ %p\n' | sort -rn \
+        | tail -n +$((KEEP_BACKUPS + 1)) | cut -d' ' -f2- | xargs -r -d '\n' rm -f --
+}
 
 healthy() {
     local i
@@ -58,6 +108,8 @@ cp -P --remove-destination "$incoming" "$staged"
 [ "$(head -c 4 "$staged" | od -An -tx1 | tr -d ' \n')" = 504b0304 ] || fail "$incoming is not a jar"
 chown root:root "$staged"
 chmod 644 "$staged"
+
+backup
 
 if [ -f "$JAR" ]; then
     cp -p "$JAR" "$JAR.previous"
@@ -84,4 +136,6 @@ if [ -f "$JAR.previous" ]; then
         echo "The previous version does not get healthy either." >&2
     fi
 fi
+echo "If the new version changed the database, restore the backup made before this deploy:" >&2
+echo "  $backup_file" >&2
 exit 1
