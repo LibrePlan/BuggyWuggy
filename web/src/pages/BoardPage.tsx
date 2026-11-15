@@ -3,17 +3,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import {
-  closestCorners,
+  closestCenter,
   DndContext,
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
+  pointerWithin,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
+  type UniqueIdentifier,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -81,6 +84,24 @@ interface Lane {
 const ALL: Lane = { id: 'all', value: null, label: '' };
 
 const cellId = (lane: string, column: number) => `cell|${lane}|${column}`;
+
+const isCell = (id: UniqueIdentifier) => String(id).startsWith('cell|');
+
+/**
+ * Where a dragged card is: the cell under the pointer (with the keyboard: the nearest cell), and
+ * in it the nearest card, or the cell itself when it is empty. (dnd-kit's closestCorners compares
+ * the corners of the dragged card with those of every card and cell; the cells are as tall as the
+ * board, so a card in the next column was nearly always "closer" than the cell under the pointer,
+ * and a card dropped in another column went back to its own.)
+ */
+const boardCollision: CollisionDetection = (args) => {
+  const cells = args.droppableContainers.filter((c) => isCell(c.id));
+  const under = args.pointerCoordinates ? pointerWithin({ ...args, droppableContainers: cells }) : [];
+  const cell = (under.length > 0 ? under : closestCenter({ ...args, droppableContainers: cells }))[0];
+  if (!cell) return [];
+  const cards = args.droppableContainers.filter((c) => !isCell(c.id) && c.data.current?.cell === cell.id);
+  return cards.length > 0 ? closestCenter({ ...args, droppableContainers: cards }) : [cell];
+};
 
 function parseCell(id: string): { lane: string; column: number } {
   const [, lane, column] = id.split('|');
@@ -195,7 +216,7 @@ export function BoardPage() {
 
   function cellOf(id: string | number, data: Record<string, unknown> | undefined): string | null {
     if (typeof data?.cell === 'string') return data.cell;
-    return typeof id === 'string' && id.startsWith('cell|') ? id : null;
+    return isCell(id) ? String(id) : null;
   }
 
   function onDragStart(event: DragStartEvent) {
@@ -372,7 +393,7 @@ export function BoardPage() {
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={boardCollision}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={(e) => void onDragEnd(e)}

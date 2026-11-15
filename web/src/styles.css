@@ -40,9 +40,13 @@
   min-height: 72px;
   padding: 6px;
   border-radius: var(--mantine-radius-sm);
-  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+  background: var(--mantine-color-gray-1);
   outline: 2px solid transparent;
   transition: outline-color 120ms;
+}
+
+[data-mantine-color-scheme='dark'] .bw-board-cell {
+  background: var(--mantine-color-dark-6);
 }
 
 .bw-board-cell[data-over] {
