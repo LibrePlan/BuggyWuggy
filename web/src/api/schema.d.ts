@@ -2324,6 +2324,8 @@ export interface components {
         };
         DonationResponse: {
             show: boolean;
+            /** @enum {string} */
+            status: "NONE" | "ACTIVE" | "EXPIRED";
         };
         CsrfToken: {
             parameterName: string;

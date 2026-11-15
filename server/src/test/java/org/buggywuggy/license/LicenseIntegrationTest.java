@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.util.ReflectionTestUtils;
 
-/** Quotation requests, license codes and the donation text, with a key pair of the test. */
+/** Quotation requests, donation codes and the support status, with a key pair of the test. */
 class LicenseIntegrationTest extends IntegrationTest {
 
     @Autowired
@@ -50,8 +50,9 @@ class LicenseIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    void licenseHidesTheDonationUntilItExpires() {
+    void donationCodeMakesAnActiveSupporterUntilItExpires() {
         assertThat((Boolean) client().get("/api/v1/donation").json("$.show")).isTrue();
+        assertThat((String) client().get("/api/v1/donation").json("$.status")).isEqualTo("NONE");
         ApiClient admin = setupAndLoginAdmin();
         createUser(admin, "otto", "otto-password-12");
 
@@ -93,6 +94,7 @@ class LicenseIntegrationTest extends IntegrationTest {
         assertThat((Boolean) activated.json("$.licensed")).isTrue();
         assertThat((String) activated.json("$.validUntil")).isEqualTo(until.toString());
         assertThat((Boolean) client().get("/api/v1/donation").json("$.show")).isFalse();
+        assertThat((String) client().get("/api/v1/donation").json("$.status")).isEqualTo("ACTIVE");
 
         // No reminder yet; one, once, when the license ends within a month.
         licenses.remindBeforeExpiry();
@@ -102,11 +104,12 @@ class LicenseIntegrationTest extends IntegrationTest {
         licenses.remindBeforeExpiry();
         assertThat(mailsToSales()).isEqualTo(2);
         assertThat(jdbc.queryForObject("select subject from mail_message order by id desc limit 1", String.class))
-                .startsWith("BuggyWuggy license expires on");
+                .startsWith("BuggyWuggy donation expires on");
 
-        // After the last day, the donation text is back.
+        // After the last day, the support has expired and the request to donate is back.
         jdbc.update("update license set valid_until = current_date - 1");
         assertThat((Boolean) client().get("/api/v1/donation").json("$.show")).isTrue();
+        assertThat((String) client().get("/api/v1/donation").json("$.status")).isEqualTo("EXPIRED");
 
         // Only for administrators.
         ApiClient otto = loginAs("otto", "otto-password-12");

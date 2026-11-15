@@ -40,11 +40,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.HtmlUtils;
 
 /**
- * Licenses that support the project. An administrator asks for a quotation: the request is
- * mailed to {@link #SALES} with a new challenge. The signed answer (a license code, see
- * {@link LicenseCode}) entered by the administrator makes a license valid until the date in the
- * code; while one is valid, the login page asks for no donation. A month before it expires,
- * {@link #SALES} is told so, to discuss an extension.
+ * Annual donations that support the project (called licenses in the code and the database). An
+ * administrator asks for a quotation: the request is mailed to {@link #SALES} with a new
+ * challenge. The signed answer (a donation code, see {@link LicenseCode}) entered by the
+ * administrator is valid until the date in the code; while one is valid, the login page shows
+ * the installation as an active supporter. A month before it expires, {@link #SALES} is told so,
+ * to discuss a renewal.
  */
 @Service
 @Transactional
@@ -54,6 +55,16 @@ public class LicenseService {
     public static final String SALES = "sales@buggywuggy.org";
 
     private static final Logger log = LoggerFactory.getLogger(LicenseService.class);
+
+    /** Whether this installation supports the project, as the login page shows it. */
+    public enum SupportStatus {
+        /** No donation code was ever entered. */
+        NONE,
+        /** A donation code is valid today. */
+        ACTIVE,
+        /** Donation codes were entered, but all have expired. */
+        EXPIRED
+    }
 
     public record LicenseRequestSummary(String challenge, Instant createdAt, String companyName, String currency,
             BigDecimal yearlyTotal, int users) {
@@ -118,10 +129,13 @@ public class LicenseService {
                 Map.of("today", today()), LocalDate.class));
     }
 
-    /** Whether the login page asks for a donation: when no license is valid. */
     @Transactional(readOnly = true)
-    public boolean showDonation() {
-        return validUntil().isEmpty();
+    public SupportStatus supportStatus() {
+        if (validUntil().isPresent()) {
+            return SupportStatus.ACTIVE;
+        }
+        boolean ever = jdbc.queryForObject("select exists (select 1 from license)", Map.of(), Boolean.class);
+        return ever ? SupportStatus.EXPIRED : SupportStatus.NONE;
     }
 
     @Transactional(readOnly = true)
@@ -187,8 +201,8 @@ public class LicenseService {
         fields.put("Installation", baseUrl);
         fields.put("Requested by", user.getUsername());
         String subject = "BuggyWuggy quotation request: " + request.companyName().strip();
-        String intro = "A BuggyWuggy administrator asks for a quotation for a license. Answer with a license code for "
-                + "the challenge below.";
+        String intro = "A BuggyWuggy administrator asks for a quotation for an annual donation. Answer with a donation "
+                + "code for the challenge below.";
         String text = send(subject, intro, fields);
         return new QuotationResponse(challenge, quote, transport.configured(), SALES, subject, text);
     }
@@ -216,7 +230,7 @@ public class LicenseService {
         return text.toString();
     }
 
-    /** Enters a license code; it must answer one of the challenges of earlier requests. */
+    /** Enters a donation code; it must answer one of the challenges of earlier requests. */
     public LicenseStatus activate(BuggyWuggyPrincipal user, ActivateRequest request) {
         List<String> challenges = jdbc.queryForList("""
                 select challenge from license_request r
@@ -233,7 +247,8 @@ public class LicenseService {
                         values (:challenge, :until, :at, :by)""",
                         new MapSqlParameterSource().addValue("challenge", challenge).addValue("until", until.get())
                                 .addValue("at", Timestamp.from(clock.instant())).addValue("by", user.id()));
-                log.info("License {} entered by {}, valid until {}", challenge, user.getUsername(), until.get());
+                log.info("Donation code for {} entered by {}, valid until {}", challenge, user.getUsername(),
+                        until.get());
                 return status();
             }
         }
@@ -241,8 +256,8 @@ public class LicenseService {
     }
 
     /**
-     * Once a day: when the current license ends within a month, tells {@link #SALES} once, so
-     * they can discuss an extension.
+     * Once a day: when the current donation ends within a month, tells {@link #SALES} once, so
+     * they can discuss a renewal.
      */
     @Scheduled(cron = "0 23 9 * * *")
     public void remindBeforeExpiry() {
@@ -268,9 +283,9 @@ public class LicenseService {
                     fields.put("Yearly total", rs.getBigDecimal("yearly_total").toPlainString() + " "
                             + rs.getString("currency"));
                     fields.put("Installation", baseUrl);
-                    send("BuggyWuggy license expires on " + fields.get("Valid until") + ": "
+                    send("BuggyWuggy donation expires on " + fields.get("Valid until") + ": "
                             + rs.getString("company_name"),
-                            "The BuggyWuggy license below expires within a month. Time to discuss an extension.",
+                            "The annual BuggyWuggy donation below expires within a month. Time to discuss a renewal.",
                             fields);
                     jdbc.update("update license set reminder_sent_at = :at where id = :id",
                             new MapSqlParameterSource().addValue("at", Timestamp.from(clock.instant()))

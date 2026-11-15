@@ -10,7 +10,7 @@ import { useDonation, useMyself } from '../../api/queries';
 import { NotFoundPage } from '../NotFoundPage';
 import { ImportStatusLine } from './ImportPage';
 
-const SECTIONS = ['users', 'groups', 'permissions', 'board', 'email', 'import', 'license'] as const;
+const SECTIONS = ['users', 'groups', 'permissions', 'board', 'email', 'import', 'donation'] as const;
 
 /** Frame of the administration pages; only for users with the ADMINISTER permission. */
 export function AdminLayout() {
@@ -34,11 +34,16 @@ export function AdminLayout() {
           ))}
         </Tabs.List>
       </Tabs>
-      {donation?.show && current !== 'license' && (
-        <Alert color="blue" variant="light" icon={<IconHeart />} title={t('license.unlicensed')}>
+      {donation?.show && current !== 'donation' && (
+        <Alert
+          color={donation.status === 'EXPIRED' ? 'orange' : 'blue'}
+          variant="light"
+          icon={<IconHeart />}
+          title={t(donation.status === 'EXPIRED' ? 'license.expired' : 'license.unlicensed')}
+        >
           <Text size="sm">
-            {t('license.unlicensedText')}{' '}
-            <Anchor component={Link} to="/admin/license" size="sm">
+            {t(donation.status === 'EXPIRED' ? 'license.expiredText' : 'license.unlicensedText')}{' '}
+            <Anchor component={Link} to="/admin/donation" size="sm">
               {t('license.requestQuotation')}
             </Anchor>
           </Text>

@@ -5,14 +5,22 @@
  */
 package org.buggywuggy.license;
 
+import org.buggywuggy.license.LicenseService.SupportStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** For the login page, without logging in: whether it asks for a donation. */
+/**
+ * For the login page, without logging in: whether this installation supports the project with
+ * a donation, and so whether the login page asks for one.
+ */
 @RestController
 public class DonationController {
 
-    public record DonationResponse(boolean show) {
+    /**
+     * {@code show}: whether to ask for a donation (no valid donation code); {@code status}: whether
+     * this installation has never entered a donation code, has a valid one, or only expired ones.
+     */
+    public record DonationResponse(boolean show, SupportStatus status) {
     }
 
     private final LicenseService licenses;
@@ -23,6 +31,7 @@ public class DonationController {
 
     @GetMapping("/api/v1/donation")
     public DonationResponse donation() {
-        return new DonationResponse(licenses.showDonation());
+        SupportStatus status = licenses.supportStatus();
+        return new DonationResponse(status != SupportStatus.ACTIVE, status);
     }
 }

@@ -395,10 +395,11 @@ Indexes are maintained transactionally by PostgreSQL; no re-indexing is ever nee
 - `license_request(challenge pk, created_at, created_by, country_code, users, currency,
   yearly_total, company_name, contact_name, contact_email, contact_phone)` — quotation requests,
   mailed to sales@buggywuggy.org; `license(id, challenge unique fk, valid_until, activated_at,
-  activated_by, reminder_sent_at)` — entered license codes. A code is an Ed25519 signature (by
-  the BuggyWuggy project) of the challenge and the last valid day; BuggyWuggy holds only the
-  public key. While a license is valid, the login page asks for no donation; a month
-  before it ends, one reminder goes to sales.
+  activated_by, reminder_sent_at)` — entered donation codes (the tables keep the older name
+  "license"). A code is an Ed25519 signature (by the BuggyWuggy project) of the challenge and the
+  last valid day; BuggyWuggy holds only the public key. The login page shows the support status
+  (`/api/v1/donation`): NONE without any code, ACTIVE while one is valid, EXPIRED after the
+  last one ended. A month before a code ends, one reminder goes to sales.
 - `board(id, project_id unique nullable, swimlanes, resolved_days)` — kanban boards. The one row
   with `project_id = null` is the default board (set by administrators); a project without a
   row of its own uses it. `swimlanes` ∈ `NONE`, `ASSIGNEE`, `EPIC`, `PRIORITY` is the default

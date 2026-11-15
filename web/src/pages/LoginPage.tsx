@@ -6,14 +6,15 @@ import { Alert, Anchor, Box, Button, Collapse, Container, Image, Paper, Password
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { IconHeart } from '@tabler/icons-react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { post } from '../api/client';
 import { keys, useDonation, useMyself, useSetupStatus } from '../api/queries';
-import type { MyselfResponse } from '../api/types';
+import type { MyselfResponse, SupportStatus } from '../api/types';
 import { PageLoader } from '../components/QueryState';
 
-const LICENSE_PAGE = '/admin/license';
+const DONATION_PAGE = '/admin/donation';
 
 /** Only follow redirects within the app. */
 function safeNext(next: string | null): string {
@@ -31,8 +32,8 @@ export function LoginPage() {
   const donation = useDonation();
   const next = safeNext(params.get('next'));
   const setupDone = (location.state as { setupDone?: boolean } | null)?.setupDone;
-  // Open when the visitor came for the license page.
-  const [moreInfo, { toggle: toggleMoreInfo }] = useDisclosure(next === LICENSE_PAGE);
+  // Open when the visitor came for the donation page.
+  const [moreInfo, { toggle: toggleMoreInfo }] = useDisclosure(next === DONATION_PAGE);
 
   const form = useForm({
     initialValues: { username: '', password: '' },
@@ -88,11 +89,23 @@ export function LoginPage() {
           </Stack>
         </form>
       </Paper>
-      {donation.data?.show && (
-        <Stack gap="xs" mt="xl">
-          <Title order={1} ta="center">
+      {donation.data && (
+        <Stack gap="sm" mt="xl">
+          <Title order={2} ta="center">
             {t('donate.title')}
           </Title>
+          <Text size="sm" ta="center">
+            {t('donate.intro')}
+          </Text>
+          <Anchor component={Link} to={`/login?next=${encodeURIComponent(DONATION_PAGE)}`} replace size="sm" ta="center">
+            {t('donate.request')}
+          </Anchor>
+          {next === DONATION_PAGE && (
+            <Text size="sm" c="dimmed" ta="center">
+              {t('donate.loginAsAdmin')}
+            </Text>
+          )}
+          <SupportStatusLine status={donation.data.status} />
           <Anchor component="button" type="button" onClick={toggleMoreInfo} aria-expanded={moreInfo} ta="center">
             {moreInfo ? t('donate.lessInfo') : t('donate.moreInfo')}
           </Anchor>
@@ -102,14 +115,6 @@ export function LoginPage() {
                 <Text size="sm">{t('donate.freedom')}</Text>
                 <Text size="sm">{t('donate.people')}</Text>
                 <Text size="sm">{t('donate.continuity')}</Text>
-                <Anchor component={Link} to={`/login?next=${encodeURIComponent(LICENSE_PAGE)}`} replace size="sm">
-                  {t('donate.request')}
-                </Anchor>
-                {next === LICENSE_PAGE && (
-                  <Text size="sm" c="dimmed">
-                    {t('donate.loginAsAdmin')}
-                  </Text>
-                )}
                 <XkcdDependency />
               </Stack>
             </Paper>
@@ -117,6 +122,25 @@ export function LoginPage() {
         </Stack>
       )}
     </Container>
+  );
+}
+
+const SUPPORT_COLORS: Record<SupportStatus, string> = { NONE: 'blue', ACTIVE: 'green', EXPIRED: 'orange' };
+
+/** Whether this installation supports the project: never, with a valid donation code, or no longer. */
+function SupportStatusLine({ status }: { status: SupportStatus }) {
+  const { t } = useTranslation();
+  const key = status.toLowerCase() as Lowercase<SupportStatus>;
+  return (
+    <Alert color={SUPPORT_COLORS[status]} variant="light" icon={<IconHeart />} py="xs">
+      <Text size="sm">
+        <Text span inherit fw={700}>
+          {t(`donate.status.${key}.title`)}
+        </Text>
+        {' — '}
+        {t(`donate.status.${key}.text`)}
+      </Text>
+    </Alert>
   );
 }
 

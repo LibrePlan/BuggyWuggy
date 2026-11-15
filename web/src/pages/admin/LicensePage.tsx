@@ -42,8 +42,9 @@ export function formatMoney(amount: number, currency: string, language: string) 
 }
 
 /**
- * The license of this installation: the price per country (based on the Big Mac index), a
- * quotation request mailed to sales@buggywuggy.org, and entering the license code.
+ * The annual donation of this installation: the suggested contribution per country (based on the
+ * Big Mac index), a quotation request mailed to sales@buggywuggy.org, and entering the donation
+ * code.
  */
 export function LicensePage() {
   const { t } = useTranslation();

@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The license of this installation: quotation requests and license codes. Requires the
+ * The annual donation of this installation: quotation requests and donation codes. Requires the
  * ADMINISTER global permission (see SecurityConfiguration).
  */
 @RestController
@@ -61,7 +61,7 @@ public class LicenseController {
         return licenses.requestQuotation(user, request);
     }
 
-    /** Enters a license code. */
+    /** Enters a donation code. */
     @PostMapping
     public LicenseStatus activate(@AuthenticationPrincipal BuggyWuggyPrincipal user,
             @Valid @RequestBody ActivateRequest request) {

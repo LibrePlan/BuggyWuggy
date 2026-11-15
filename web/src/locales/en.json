@@ -564,7 +564,7 @@
       }
     },
     "board": "Board",
-    "license": "License"
+    "donation": "Donation"
   },
   "settings": {
     "title": "Project settings",
@@ -713,22 +713,37 @@
     }
   },
   "donate": {
-    "title": "Please donate",
+    "title": "Support BuggyWuggy's continued development",
+    "intro": "BuggyWuggy is free and open-source software. Organisations can help sustain its development and maintenance through an optional annual contribution.",
     "moreInfo": "Click here for more information.",
     "lessInfo": "Hide this information.",
     "freedom": "BuggyWuggy is free software. Free as in freedom, not as in free of charge: you may use, study, change and share it under the GNU Affero General Public License. That freedom does not mean that making it costs nothing.",
     "people": "Real people work on BuggyWuggy. They write and review the code, fix bugs, answer questions and keep it secure and up to date, often in their own time.",
-    "continuity": "Your donation keeps the project going and makes new features possible. Organisations can support BuggyWuggy with a yearly license.",
+    "continuity": "Your donation keeps the project going and makes new features possible.",
     "request": "Request a quotation",
-    "loginAsAdmin": "Log in as a BuggyWuggy administrator to see the price for your organisation and request a quotation.",
+    "loginAsAdmin": "Log in as a BuggyWuggy administrator to view the suggested annual contribution for your organisation and request a quotation.",
     "comicAlt": "xkcd 2347, Dependency: all modern digital infrastructure rests on a project some random person in Nebraska has been thanklessly maintaining since 2003.",
-    "comicAttribution": "<work>“Dependency” (xkcd 2347)</work> by Randall Munroe, licensed under <license>CC BY-NC 2.5</license>."
+    "comicAttribution": "<work>“Dependency” (xkcd 2347)</work> by Randall Munroe, licensed under <license>CC BY-NC 2.5</license>.",
+    "status": {
+      "none": {
+        "title": "Not supporting yet",
+        "text": "Become a BuggyWuggy supporter!"
+      },
+      "active": {
+        "title": "Active supporter",
+        "text": "Thank you for supporting BuggyWuggy!"
+      },
+      "expired": {
+        "title": "Support expired",
+        "text": "Renew your annual contribution to continue supporting BuggyWuggy development."
+      }
+    }
   },
   "license": {
     "why": "Free software is about freedom, not price",
-    "whyText": "Developing and supporting BuggyWuggy takes time. If your organisation uses it, please support the project with a yearly license: it keeps BuggyWuggy maintained, and the request to donate disappears from the login page while the license is valid.",
+    "whyText": "Developing and supporting BuggyWuggy takes time. If your organisation uses it, please support the project with an annual donation: it keeps BuggyWuggy maintained, and the login page shows this installation as an active supporter while the donation code is valid.",
     "thanks": "Thank you for supporting BuggyWuggy!",
-    "validUntil": "The license is valid until {{date}}.",
+    "validUntil": "The donation code is valid until {{date}}.",
     "attribution": "Prices are based on the Big Mac index of The Economist (source data licensed under CC BY 4.0).",
     "challenge": "Challenge:",
     "copy": "Copy",
@@ -737,7 +752,7 @@
     "yearlyTotal": "Per year",
     "quotation": {
       "title": "Request a quotation",
-      "intro": "Choose your country and the number of users to see the price. The price follows the cost of living in your country, measured by the Big Mac index. Send the request, and you will hear from us with a license code.",
+      "intro": "Choose your country and the number of users to see the suggested annual contribution. It follows the cost of living in your country, measured by the Big Mac index. Send the request, and you will hear from us with an invoice and a donation code.",
       "country": "Country",
       "countryPlaceholder": "Type to search",
       "users": "Number of users",
@@ -757,19 +772,21 @@
     },
     "sent": {
       "title": "Quotation request sent",
-      "text": "Your request has been sent to {{to}}. You will receive a license code for the challenge below.",
+      "text": "Your request has been sent to {{to}}. You will receive a donation code for the challenge below.",
       "queuedTitle": "BuggyWuggy cannot send mail yet",
       "queued": "The request waits until mail is configured (Administration → E-mail). You can also send it yourself to {{to}}:",
       "mailto": "Open it in your mail program"
     },
     "activate": {
-      "title": "Enter the license code",
-      "intro": "Enter the license code you received for one of the challenges below. The request to donate then disappears from the login page until the license expires.",
-      "code": "License code",
+      "title": "Enter the donation code",
+      "intro": "Enter the donation code you received for one of the challenges below. The login page then shows this installation as an active supporter until the donation code expires.",
+      "code": "Donation code",
       "submit": "Activate"
     },
-    "unlicensed": "This BuggyWuggy installation has no license",
-    "unlicensedText": "Free software is about freedom, not price: developing and supporting BuggyWuggy takes time. Please support the project with a yearly license.",
+    "unlicensed": "This BuggyWuggy installation does not support the project yet",
+    "unlicensedText": "Free software is about freedom, not price: developing and supporting BuggyWuggy takes time. Please support the project with an annual donation.",
+    "expired": "The support of this BuggyWuggy installation has expired",
+    "expiredText": "Renew your annual contribution to continue supporting BuggyWuggy development.",
     "requestQuotation": "Request a quotation"
   }
 }

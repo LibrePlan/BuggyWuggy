@@ -20,7 +20,7 @@ This guide explains how to install, configure, run, back up and upgrade a BuggyW
 9. [HTTPS with a reverse proxy](#https-with-a-reverse-proxy)
 10. [Administration](#administration)
     - [Importing from other trackers](#importing-from-other-trackers)
-    - [License](#license)
+    - [Donation](#donation)
 11. [Backup and restore](#backup-and-restore)
 12. [Upgrading](#upgrading)
     - [Automatic deployment to a test server](#automatic-deployment-to-a-test-server)
@@ -362,7 +362,7 @@ Users with the global permission *Administer BuggyWuggy* (by default the group
   default language cannot be disabled or deleted. Failed mails can be sent again or discarded.
 - **Import**: copy the issues of another issue tracker into BuggyWuggy; see
   [Importing from other trackers](#importing-from-other-trackers).
-- **License**: support the project; see [License](#license).
+- **Donation**: support the project; see [Donation](#donation).
 
 ### Mail templates
 
@@ -714,17 +714,26 @@ deleted project count as not imported.
 it in memory for 24 hours, so **Run again** works without typing it; after a restart you are
 asked for it again.
 
-### License
+### Donation
 
-BuggyWuggy is free software, but developing and supporting it takes time. Until an installation
-has a license, the login page asks for a donation (**Please donate**). *Click here for more
-information* explains why: free software is about freedom, not price; real people work on
-BuggyWuggy; and donations keep the project going and pay for new features. Its link *Request a
-quotation* leads, after logging in as an administrator, to **Administration → License** (the
-administration pages show the same request until there is a license):
+BuggyWuggy is free software, but developing and supporting it takes time. Organisations can
+support it with an optional annual contribution: a donation, invoiced per year, that comes with a
+*donation code* valid for that year. Below the login form, **Support BuggyWuggy's continued
+development** shows whether this installation supports the project:
+
+- *Not supporting yet — Become a BuggyWuggy supporter!* when no donation code was ever entered;
+- *Active supporter — Thank you for supporting BuggyWuggy!* while a donation code is valid;
+- *Support expired — Renew your annual contribution to continue supporting BuggyWuggy
+  development.* when all donation codes have expired.
+
+*Click here for more information* explains why donations matter: free software is about
+freedom, not price; real people work on BuggyWuggy; and donations keep the project going and pay
+for new features. The link *Request a quotation* leads, after logging in as an administrator,
+to **Administration → Donation** (the administration pages show the same request while there is
+no valid donation code):
 
 - **Request a quotation**: choose the country (type to search) and the number of users (by
-  default the number of active accounts). The price is 7 € per user per month in the
+  default the number of active accounts). The suggested contribution is 7 € per user per month in the
   Netherlands, and elsewhere in proportion to the price of a Big Mac there (The Economist's Big
   Mac index, included with BuggyWuggy, latest survey): 7 € × Big Mac in the country / Big Mac in
   the Netherlands, in the local currency. Euro countries without a price of their own use the
@@ -734,10 +743,10 @@ administration pages show the same request until there is a license):
   BuggyWuggy mails the request, with a unique *challenge*, to sales@buggywuggy.org through its
   own mail server. When mail is not configured yet, the request waits until it is, and the page
   offers the text to send yourself.
-- **Enter the license code**: the code you receive answers the challenge of your request. Once
-  it is entered, the login page no longer asks for a donation until the license expires,
-  normally after a year. A month before that, BuggyWuggy mails sales@buggywuggy.org once, to
-  discuss an extension.
+- **Enter the donation code**: the code you receive with the invoice answers the challenge of
+  your request. Once it is entered, the login page shows this installation as an active
+  supporter until the code expires, normally after a year. A month before that, BuggyWuggy
+  mails sales@buggywuggy.org once, to discuss a renewal.
 
 The request mail contains the details you entered, the price, and the address of this
 installation (`buggywuggy.base-url`).

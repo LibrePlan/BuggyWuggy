@@ -10,6 +10,7 @@ import type {
   BoardConfigResponse,
   LicenseCountry,
   LicenseQuote,
+  DonationResponse,
   LicenseStatus,
   BoardResponse,
   AttachmentResponse,
@@ -483,9 +484,9 @@ export function useDefaultBoardConfig() {
   return useQuery({ queryKey: keys.defaultBoard, queryFn: () => get<BoardConfigResponse>('/api/v1/admin/board') });
 }
 
-/** Whether the login page asks for a donation (no login needed). */
+/** Whether this installation supports the project with a donation (no login needed). */
 export function useDonation() {
-  return useQuery({ queryKey: keys.donation, queryFn: () => get<{ show: boolean }>('/api/v1/donation') });
+  return useQuery({ queryKey: keys.donation, queryFn: () => get<DonationResponse>('/api/v1/donation') });
 }
 
 export function useLicenseStatus() {
