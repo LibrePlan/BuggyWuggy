@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.buggywuggy</groupId>
         <artifactId>buggywuggy-parent</artifactId>
-        <version>0.2.0</version>
+        <version>0.2.1</version>
     </parent>
 
     <artifactId>buggywuggy-server</artifactId>
@@ -141,6 +141,12 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <!-- CycloneDX SBOM of the server and its Java libraries, configured by Spring Boot:
+                     META-INF/sbom/application.cdx.json in the jar (also target/classes) -->
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
             </plugin>
             <!-- git.properties: the commit the jar was built from, shown on the login page. Builds
                  without a git repository (e.g. from a source archive) work, without commit. -->

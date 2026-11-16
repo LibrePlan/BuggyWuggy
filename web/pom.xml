@@ -12,7 +12,7 @@
     <parent>
         <groupId>org.buggywuggy</groupId>
         <artifactId>buggywuggy-parent</artifactId>
-        <version>0.2.0</version>
+        <version>0.2.1</version>
     </parent>
 
     <artifactId>buggywuggy-web</artifactId>
@@ -61,6 +61,18 @@
                         </goals>
                         <configuration>
                             <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- CycloneDX SBOM of the npm packages in the UI (not the build tools):
+                             META-INF/sbom/web.cdx.json, next to the server's application.cdx.json -->
+                        <id>npm-sbom</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>run sbom</arguments>
                         </configuration>
                     </execution>
                     <execution>

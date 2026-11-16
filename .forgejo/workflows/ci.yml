@@ -104,6 +104,15 @@ jobs:
           path: server/target/buggywuggy.jar
           retention-days: 14
 
+      - name: Keep the SBOMs
+        uses: https://data.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          name: sbom
+          path: |
+            server/target/classes/META-INF/sbom/application.cdx.json
+            web/target/classes/META-INF/sbom/web.cdx.json
+          retention-days: 14
+
       - name: Keep the test reports when tests failed
         if: failure()
         uses: https://data.forgejo.org/forgejo/upload-artifact@v4

@@ -27,7 +27,8 @@ Node.js 26 (e.g. via nvm) is convenient.
 
 ### Version numbers
 
-The version is `x.y.z` (major, minor, patch) and is in the three `pom.xml` files; the login page
+The version is `x.y.z` (major, minor, patch) and is in the three `pom.xml` files and in
+`web/package.json` (with its lock file); the login page
 shows it with the commit the build was made from. The patch version goes up by one with every
 commit, through a git hook in the repository. Switch it on once per clone:
 
@@ -129,7 +130,8 @@ BUGGYWUGGY_DB_URL=jdbc:postgresql://localhost:5432/buggywuggy_test \
    Testcontainers as on a developer machine;
 2. starts the built jar and checks that `web/src/api/schema.d.ts` matches its OpenAPI
    document, so a forgotten `npm run api:types` fails the build;
-3. keeps `buggywuggy.jar` as an artifact for 14 days (and the test reports when tests fail).
+3. keeps `buggywuggy.jar` and the SBOMs (see [Building](#building)) as artifacts for 14 days
+   (and the test reports when tests fail).
 
 It needs a Forgejo runner with the label `docker` (the default of `forgejo-runner`), with
 Actions enabled for the repository, whose jobs can use Docker: the tests and the check of
@@ -158,6 +160,18 @@ skipping the UI build: `./mvnw -Dskip.npm ...`.
 ./mvnw package
 java -jar server/target/buggywuggy.jar
 ```
+
+The build also makes a software bill of materials (SBOM) in CycloneDX JSON format, in two parts:
+
+- `server/target/classes/META-INF/sbom/application.cdx.json`: the server and the Java libraries
+  in the jar (made by the CycloneDX Maven plugin);
+- `web/target/classes/META-INF/sbom/web.cdx.json`: the npm packages in the web UI, without the
+  build tools (made by `npm run sbom` with `@cyclonedx/cyclonedx-npm`).
+
+Both are in the jar as well (`META-INF/sbom/application.cdx.json`, and `META-INF/sbom/web.cdx.json`
+inside `BOOT-INF/lib/buggywuggy-web-*.jar`), and the CI keeps them as the artifact `sbom`. They
+list every component with its version, license and package URL, e.g. for licence checks or
+vulnerability scanners such as Dependency-Track or Grype.
 
 ## License
 

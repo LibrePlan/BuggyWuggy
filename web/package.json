@@ -1,7 +1,7 @@
 {
   "name": "buggywuggy-web",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.1",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "sbom": "cyclonedx-npm --omit dev --output-reproducible --validate --output-file target/classes/META-INF/sbom/web.cdx.json",
     "api:types": "npx --yes -p typescript@5.9.3 -p openapi-typescript@7.13.0 openapi-typescript ${BUGGYWUGGY_API_URL:-http://localhost:8080}/api/openapi -o src/api/schema.d.ts"
   },
   "dependencies": {
@@ -28,6 +29,7 @@
     "react-router": "8.5.1"
   },
   "devDependencies": {
+    "@cyclonedx/cyclonedx-npm": "6.0.1",
     "@types/node": "26.6.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",

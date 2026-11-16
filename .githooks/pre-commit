@@ -3,8 +3,8 @@
 # Copyright (C) 2026 The BuggyWuggy contributors
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Increases the patch version (x.y.Z) of BuggyWuggy with every commit, in all pom.xml files,
-# and adds them to the commit. Install once per clone:
+# Increases the patch version (x.y.Z) of BuggyWuggy with every commit, in all pom.xml files and
+# web/package.json (with its lock file), and adds them to the commit. Install once per clone:
 #   git config core.hooksPath .githooks
 #
 # - A version changed by hand (scripts/set-version.sh) is committed as it is.
@@ -14,6 +14,8 @@
 set -euo pipefail
 
 POMS=(pom.xml web/pom.xml server/pom.xml)
+# Every file scripts/set-version.sh changes.
+VERSION_FILES=("${POMS[@]}" web/package.json web/package-lock.json)
 MIGRATIONS=server/src/main/resources/db/migration
 
 # The project version in pom content on stdin (see scripts/set-version.sh).
@@ -40,7 +42,7 @@ if [[ -n $new_migrations && $(minor_of "$staged_version") == $(minor_of "$head_v
     echo "Note: this commit adds a database migration:" >&2
     sed 's/^/  /' <<< "$new_migrations" >&2
     echo "A database change is a reason for a new minor version, e.g.:" >&2
-    echo "  scripts/set-version.sh $(minor_of "$head_version" | awk -F. '{print $1 "." $2 + 1}').0 && git add ${POMS[*]}" >&2
+    echo "  scripts/set-version.sh $(minor_of "$head_version" | awk -F. '{print $1 "." $2 + 1}').0 && git add ${VERSION_FILES[*]}" >&2
 fi
 
 changed_by_hand=false
@@ -57,6 +59,10 @@ if $changed_by_hand; then
             exit 1
         fi
     done
+    if ! git show :web/package.json | grep -q '^  "version": "'"$staged_version"'"'; then
+        echo "error: web/package.json has another version than pom.xml ($staged_version); use scripts/set-version.sh" >&2
+        exit 1
+    fi
     exit 0
 fi
 
@@ -66,14 +72,14 @@ if [[ ! $head_version =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
 fi
 new_version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$((BASH_REMATCH[3] + 1))"
 
-# The poms are added to the commit as a whole: other changes in them must be staged already.
-for pom in "${POMS[@]}"; do
-    if ! git diff --quiet -- "$pom"; then
-        echo "error: $pom has changes that are not staged; add them (git add $pom) or put them aside" >&2
+# These files are added to the commit as a whole: other changes in them must be staged already.
+for file in "${VERSION_FILES[@]}"; do
+    if ! git diff --quiet -- "$file"; then
+        echo "error: $file has changes that are not staged; add them (git add $file) or put them aside" >&2
         exit 1
     fi
 done
 
 scripts/set-version.sh "$new_version" > /dev/null
-git add -- "${POMS[@]}"
+git add -- "${VERSION_FILES[@]}"
 echo "Version $head_version -> $new_version"
