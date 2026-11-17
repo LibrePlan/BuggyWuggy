@@ -7,6 +7,7 @@ coming from a self-hosted Jira installation.
 > search, saved filters, kanban boards, TaskWarrior urgency, administration screens, e-mail notifications and importing from Forgejo, GitHub, GitLab, Jira, Redmine and Trac work; much of
 > Jira's feature set is still to come.
 
+- Features: [docs/features.md](docs/features.md)
 - Installation guide: [docs/installation.md](docs/installation.md)
 - User guide: [docs/user-guide.md](docs/user-guide.md)
 - Single sign-on (OpenID Connect): [docs/single-sign-on.md](docs/single-sign-on.md)
