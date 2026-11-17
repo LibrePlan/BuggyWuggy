@@ -7,6 +7,7 @@ package org.buggywuggy.mail;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Function;
 import org.buggywuggy.mail.MailTemplateService.RenderedMail;
 import org.buggywuggy.mail.MailTemplateService.Template;
@@ -20,11 +21,15 @@ public final class IssueMail {
     public record Change(String field, String from, String to) {
     }
 
-    /** Everything an issue mail can show. Nullable: assignee, priority, description. */
+    /**
+     * Everything an issue mail can show. Nullable: assignee, priority, description. The
+     * description and the comments are Markdown; {@code projectKeys} (all projects) decides
+     * which issue keys in them become links.
+     */
     public record Model(String actorName, String issueKey, String summary, String issueUrl, String issueType,
             String status, String priority, String assignee, String reporter, String description,
             String projectKey, String projectName, List<Change> changes, List<String> comments,
-            List<String> attachments) {
+            List<String> attachments, Set<String> projectKeys) {
     }
 
     /** Who the mail is for and where BuggyWuggy is. */
@@ -40,7 +45,7 @@ public final class IssueMail {
     public static RenderedMail render(MailTemplateKey key, Template template, Model model, Recipient recipient,
             Locale locale, MessageSource messages) {
         return MailTemplateService.render(key, template, values(model, recipient, locale, messages),
-                blocks(model, locale, messages));
+                blocks(model, recipient, locale, messages));
     }
 
     public static Function<String, String> values(Model m, Recipient r, Locale locale, MessageSource messages) {
@@ -66,23 +71,24 @@ public final class IssueMail {
         };
     }
 
-    public static Function<String, String> blocks(Model m, Locale locale, MessageSource messages) {
+    public static Function<String, String> blocks(Model m, Recipient r, Locale locale, MessageSource messages) {
         return name -> {
             if (m == null) {
                 return "";
             }
+            IssueMarkdown.Links links = new IssueMarkdown.Links(r.instanceUrl(), m.issueUrl(), m.projectKeys());
             return switch (name) {
                 case "changes" -> changesTable(m.changes(), locale, messages);
                 case "comments" -> {
                     StringBuilder html = new StringBuilder();
                     for (String comment : m.comments()) {
                         html.append("<div style=\"margin: 8px 0; padding: 4px 12px; border-left: 3px solid #d0d7de;\">")
-                                .append(multiline(comment)).append("</div>");
+                                .append(IssueMarkdown.toHtml(comment, links)).append("</div>");
                     }
                     yield html.toString();
                 }
                 case "issue.description" -> m.description() == null || m.description().isBlank() ? ""
-                        : "<div>" + multiline(m.description()) + "</div>";
+                        : "<div>" + IssueMarkdown.toHtml(m.description(), links) + "</div>";
                 default -> "";
             };
         };

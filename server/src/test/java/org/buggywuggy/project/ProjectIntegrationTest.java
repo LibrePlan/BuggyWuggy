@@ -60,6 +60,10 @@ class ProjectIntegrationTest extends IntegrationTest {
         ApiClient pia = loginAs("pia", "pia-password-123");
 
         assertThat((Integer) pia.get("/api/v1/projects").json("$.total")).isZero();
+        // The keys for linking issue keys in texts: only visible projects.
+        createProject(admin, "OPEN", "Open project");
+        assertThat((List<String>) pia.get("/api/v1/projects/keys").json("$")).containsExactly("OPEN");
+        assertThat((List<String>) admin.get("/api/v1/projects/keys").json("$")).containsExactly("OPEN", "SECRET");
         var response = pia.get("/api/v1/projects/SECRET");
         assertThat(response.status()).isEqualTo(404);
         assertThat((String) response.json("$.code")).isEqualTo("project.not-found");

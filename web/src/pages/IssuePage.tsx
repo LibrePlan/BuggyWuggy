@@ -28,11 +28,12 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 import { del, seg } from '../api/client';
 import { useIssueMutations } from '../api/issueMutations';
-import { useIssue, useIssueTypes, useLinks, useProjectPermissions, useTransitions } from '../api/queries';
+import { useAttachments, useIssue, useIssueTypes, useLinks, useProjectPermissions, useTransitions } from '../api/queries';
 import type { IssueResponse, TransitionResponse } from '../api/types';
 import { CreateIssueModal } from '../components/CreateIssueModal';
 import { EditIssueModal } from '../components/EditIssueModal';
 import { IssueAttachments } from '../components/IssueAttachments';
+import { Markdown } from '../components/Markdown';
 import { IssueComments } from '../components/IssueComments';
 import { IssueHistory } from '../components/IssueHistory';
 import { IssueLinks } from '../components/IssueLinks';
@@ -67,6 +68,7 @@ export function IssuePage() {
 }
 
 function IssueView({ issue }: { issue: IssueResponse }) {
+  const attachments = useAttachments(issue.key).data;
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -173,7 +175,7 @@ function IssueView({ issue }: { issue: IssueResponse }) {
           <Stack gap="xl">
             <Section title={t('issue.description')}>
               {issue.description ? (
-                <Text className="bw-pre-wrap">{issue.description}</Text>
+                <Markdown text={issue.description} attachments={attachments} />
               ) : (
                 <Text c="dimmed" size="sm">
                   {t('issue.noDescription')}

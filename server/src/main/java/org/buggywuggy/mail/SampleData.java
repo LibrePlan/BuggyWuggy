@@ -7,6 +7,7 @@ package org.buggywuggy.mail;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import org.buggywuggy.mail.IssueMail.Change;
 import org.buggywuggy.mail.IssueMail.Model;
 import org.buggywuggy.mail.IssueMail.Recipient;
@@ -25,13 +26,13 @@ final class SampleData {
     static RenderedMail render(MailTemplateKey key, Template template, Locale locale, MessageSource messages) {
         Model model = new Model("Ada Lovelace", "BUG-123", "Login page shows an error after a password reset",
                 INSTANCE_URL + "/browse/BUG-123", "Bug", "In Progress", "High", "Ada Lovelace", "Grace Hopper",
-                "Steps to reproduce:\n1. Reset the password\n2. Log in with the new password",
+                "Steps to reproduce:\n1. Reset the password\n2. Log in with the **new** password\n\nProbably caused by BUG-120.",
                 "BUG", "Customer Portal",
                 List.of(new Change("status", "Open", "In Progress"),
                         new Change("assignee", null, "Ada Lovelace"),
                         new Change("priority", "Medium", "High")),
                 List.of("I can reproduce this in Firefox and Chrome.\nLooking into it now."),
-                List.of("screenshot.png", "server.log"));
+                List.of("screenshot.png", "server.log"), Set.of("BUG"));
         Recipient recipient = new Recipient("Grace Hopper", "grace", INSTANCE_URL, INSTANCE_URL + "/profile");
         return IssueMail.render(key, template, key == MailTemplateKey.TEST_MAIL ? null : model, recipient, locale,
                 messages);

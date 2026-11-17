@@ -892,5 +892,25 @@
     "rules": "This is a demonstration of BuggyWuggy. Log in as <b>{{username}}</b> with password <b>{{password}}</b> (already filled in) to try it: in the project <b>{{project}}</b> you may create, change and delete issues as you like; all other projects can only be read. Everything you enter can be seen by every visitor. BuggyWuggy sends no e-mail in demo mode.",
     "short": "Demo mode: the account <b>{{username}}</b> (password <b>{{password}}</b>) may change anything in project <project>{{project}}</project> and only read the other projects. No e-mail is sent.",
     "noMail": "BuggyWuggy sends no e-mail in demo mode."
+  },
+  "markdown": {
+    "write": "Write",
+    "preview": "Preview",
+    "nothingToPreview": "Nothing to preview.",
+    "help": "Formatting with Markdown",
+    "bold": "Bold (Ctrl+B)",
+    "italic": "Italic (Ctrl+I)",
+    "strikethrough": "Strikethrough",
+    "code": "Code",
+    "link": "Link (Ctrl+K)",
+    "bulletList": "Bulleted list",
+    "numberedList": "Numbered list",
+    "taskList": "Task list",
+    "quote": "Quote",
+    "codeBlock": "Code block",
+    "image": "Insert an image from the attachments",
+    "sample": "text",
+    "sampleCode": "code",
+    "linkText": "link text"
   }
 }

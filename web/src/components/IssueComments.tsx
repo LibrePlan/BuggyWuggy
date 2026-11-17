@@ -2,17 +2,19 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { ActionIcon, Avatar, Button, Group, Menu, Paper, Stack, Text, Textarea } from '@mantine/core';
+import { ActionIcon, Avatar, Box, Button, Group, Menu, Paper, Stack, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconDots, IconPencil, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { del, patch, post, seg } from '../api/client';
-import { keys, useComments } from '../api/queries';
+import { keys, useAttachments, useComments } from '../api/queries';
 import type { CommentResponse } from '../api/types';
 import { ApiError } from '../lib/apiError';
 import { formatDateTime } from '../lib/format';
+import { Markdown } from './Markdown';
+import { MarkdownEditor } from './MarkdownEditor';
 import { ErrorAlert, PageLoader } from './QueryState';
 import { initials } from './UserLabel';
 
@@ -24,6 +26,7 @@ export function IssueComments({ issueKey, canAdd }: { issueKey: string; canAdd: 
   const comments = useComments(issueKey);
   const invalidate = useInvalidateComments(issueKey);
   const [draft, setDraft] = useState('');
+  const attachments = useAttachments(issueKey).data;
 
   const add = useMutation({
     mutationFn: (body: string) => post<CommentResponse>(`/api/v1/issues/${seg(issueKey)}/comments`, { body }),
@@ -49,15 +52,16 @@ export function IssueComments({ issueKey, canAdd }: { issueKey: string; canAdd: 
       ))}
       {canAdd && (
         <Stack gap="xs">
-          <Textarea
+          <MarkdownEditor
             placeholder={t('comment.placeholder')}
             aria-label={t('comment.add')}
-            autosize
-            minRows={2}
+            minRows={3}
             maxRows={16}
             maxLength={MAX_LENGTH}
             value={draft}
-            onChange={(e) => setDraft(e.currentTarget.value)}
+            onChange={setDraft}
+            attachments={attachments}
+            previewSize="sm"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && draft.trim()) add.mutate(draft);
             }}
@@ -88,6 +92,7 @@ function useInvalidateComments(issueKey: string) {
 function Comment({ issueKey, comment }: { issueKey: string; comment: CommentResponse }) {
   const { t, i18n } = useTranslation();
   const invalidate = useInvalidateComments(issueKey);
+  const attachments = useAttachments(issueKey).data;
   const [editing, setEditing] = useState<string | null>(null);
   const path = `/api/v1/issues/${seg(issueKey)}/comments/${comment.id}`;
 
@@ -163,19 +168,20 @@ function Comment({ issueKey, comment }: { issueKey: string; comment: CommentResp
         )}
       </Group>
       {editing === null ? (
-        <Text size="sm" mt="xs" className="bw-pre-wrap">
-          {comment.body}
-        </Text>
+        <Box mt="xs">
+          <Markdown text={comment.body} attachments={attachments} size="sm" />
+        </Box>
       ) : (
         <Stack gap="xs" mt="xs">
-          <Textarea
-            autosize
-            minRows={2}
+          <MarkdownEditor
+            minRows={3}
             maxRows={16}
             maxLength={MAX_LENGTH}
             value={editing}
-            onChange={(e) => setEditing(e.currentTarget.value)}
+            onChange={setEditing}
             aria-label={t('common.edit')}
+            attachments={attachments}
+            previewSize="sm"
             autoFocus
           />
           <Group justify="flex-end" gap="xs">

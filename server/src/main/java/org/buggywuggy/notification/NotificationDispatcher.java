@@ -210,7 +210,8 @@ public class NotificationDispatcher {
 
         Model model = new Model(actorName(actorId), issue.key(), issue.summary(), issueUrl(issue.key()),
                 issue.type(), issue.status(), issue.priority(), issue.assignee(), issue.reporter(),
-                issue.description(), issue.projectKey(), issue.projectName(), changes, comments, attachments);
+                issue.description(), issue.projectKey(), issue.projectName(), changes, comments, attachments,
+                projectKeys());
         return send(key, model, recipients, actorId);
     }
 
@@ -219,7 +220,8 @@ public class NotificationDispatcher {
                 .orElseThrow();
         Deleted d = json.readValue(event.payload(), Deleted.class);
         Model model = new Model(actorName(event.actorId()), d.key(), d.summary(), baseUrl, d.issueType(),
-                d.status(), null, null, null, null, d.projectKey(), d.projectName(), List.of(), List.of(), List.of());
+                d.status(), null, null, null, null, d.projectKey(), d.projectName(), List.of(), List.of(), List.of(),
+                Set.of());
         return send(MailTemplateKey.ISSUE_DELETED, model, new LinkedHashSet<>(d.recipients()), event.actorId());
     }
 
@@ -251,6 +253,11 @@ public class NotificationDispatcher {
     }
 
     // --- helpers ---------------------------------------------------------------------
+
+    /** All project keys: issue keys in descriptions and comments link only for these. */
+    private Set<String> projectKeys() {
+        return Set.copyOf(jdbc.queryForList("select key from project", Map.of(), String.class));
+    }
 
     /** The most important change decides the template. */
     static MailTemplateKey templateFor(boolean created, List<Item> items, List<Change> changes, List<String> comments) {

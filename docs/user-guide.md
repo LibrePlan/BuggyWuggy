@@ -17,17 +17,18 @@ tasks and other work. If you have used Jira, most of it will feel familiar.
 7. [Working on an issue](#working-on-an-issue)
 8. [Sub-tasks and epics](#sub-tasks-and-epics)
 9. [Comments](#comments)
-10. [Attachments](#attachments)
-11. [Linking issues](#linking-issues)
-12. [Watching issues](#watching-issues)
-13. [Searching for issues](#searching-for-issues)
-14. [The board](#the-board)
-15. [Saved filters](#saved-filters)
-16. [Your profile](#your-profile)
-17. [E-mail notifications](#e-mail-notifications)
-18. [Project settings](#project-settings)
-19. [Permissions: why can't I…?](#permissions-why-cant-i)
-20. [Not available yet](#not-available-yet)
+10. [Formatting text with Markdown](#formatting-text-with-markdown)
+11. [Attachments](#attachments)
+12. [Linking issues](#linking-issues)
+13. [Watching issues](#watching-issues)
+14. [Searching for issues](#searching-for-issues)
+15. [The board](#the-board)
+16. [Saved filters](#saved-filters)
+17. [Your profile](#your-profile)
+18. [E-mail notifications](#e-mail-notifications)
+19. [Project settings](#project-settings)
+20. [Permissions: why can't I…?](#permissions-why-cant-i)
+21. [Not available yet](#not-available-yet)
 
 ## Concepts
 
@@ -247,10 +248,44 @@ The **Comments** tab shows the discussion on an issue, oldest first.
 - **Edit or delete** your own comment with the **⋯** menu on the comment. Edited comments are
   marked *edited*. Project administrators can edit and delete anyone's comments.
 
-Comments are shown as plain text: line breaks are kept, formatting is not applied yet.
+Comments, like descriptions, can be formatted with Markdown: see the next section.
 
 Adding a comment updates the issue's *Updated* time, but never interferes with someone who is
 editing the issue at the same time.
+
+## Formatting text with Markdown
+
+Descriptions and comments are written in **Markdown**, the format GitHub and GitLab use. Text
+without any formatting simply stays as you typed it: every line break is kept.
+
+While you type, a **preview** next to the text shows the result; when there is little room,
+switch between **Write** and **Preview** above the text. The toolbar above the text adds the
+formatting for you, around the selected text or at the cursor: bold, italic, strikethrough,
+code, link, lists, a task list, a quote and a code block. **Ctrl+B**, **Ctrl+I** and **Ctrl+K**
+(**⌘** on a Mac) make the selection bold, italic or a link; **Ctrl+Z** undoes it.
+
+| You type | You get |
+|---|---|
+| `**bold**`, `_italic_`, `~~struck~~` | **bold**, *italic*, struck through |
+| `` `code` `` | `code`, for names, commands and short pieces of code |
+| A line with three backticks, the code, and again three backticks | A block of code |
+| `# Heading`, `## Smaller heading` | Headings |
+| `- item` or `1. item` at the start of lines | A bulleted or numbered list |
+| `- [ ] to do` and `- [x] done` | A task list with check boxes |
+| `> text` | A quote |
+| `[text](https://example.org)` | A link; a bare `https://…` address becomes a link by itself |
+| `BUG-12` | A link to issue BUG-12, when the project BUG exists |
+| `![screenshot](attachment:screen.png)` | The image `screen.png` from the issue's attachments |
+| A table with `\|` between the columns and a line `\|---\|---\|` below the header | A table |
+
+**Images** are shown only from the issue's own attachments: attach the image first, then
+choose the image button in the toolbar and pick it, or type `![description](attachment:file
+name)`. Write a file name with spaces as `<attachment:my screen.png>`. An image from another
+website is shown as a link instead, so that reading an issue never tells another server who
+you are. `[the log](attachment:server.log)` links to an attachment that is not an image.
+
+HTML in the text is shown as text, not as HTML. E-mail notifications show the same formatting;
+images appear there as links.
 
 ## Attachments
 
@@ -491,7 +526,6 @@ A project or issue you have no access to looks exactly like one that does not ex
 
 These features are planned but not available in the current version:
 
-- Formatted text (Markdown) in descriptions and comments
 - Scrum boards with sprints and a backlog, dashboards and reports
 - A text query language like Jira's JQL
 - The web interface in other languages than English (e-mails are available in English and Dutch)

@@ -135,3 +135,54 @@
 .bw-help-result:hover {
   background-color: var(--mantine-color-default-hover);
 }
+
+/* Markdown in descriptions and comments (components/Markdown.tsx). */
+.bw-markdown-sm {
+  font-size: var(--mantine-font-size-sm);
+}
+
+.bw-markdown > :first-child {
+  margin-top: 0;
+}
+
+.bw-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.bw-markdown img {
+  max-width: 100%;
+  height: auto;
+}
+
+.bw-markdown table {
+  display: block;
+  overflow-x: auto;
+}
+
+.bw-markdown li.bw-task {
+  list-style: none;
+  margin-left: -1.3em;
+}
+
+.bw-markdown .bw-task-box {
+  margin: 0 0.4em 0 0;
+  vertical-align: middle;
+}
+
+.bw-markdown .bw-missing {
+  color: var(--mantine-color-dimmed);
+  text-decoration: underline dotted;
+  cursor: help;
+}
+
+/* The Markdown editor: text and preview side by side. */
+.bw-md-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--mantine-spacing-sm);
+  align-items: start;
+}
+
+.bw-md-preview {
+  overflow: auto;
+}

@@ -95,7 +95,7 @@ class MailNotificationIntegrationTest extends IssueTestSupport {
         ada.patch("/api/v1/issues/" + key, """
                 {"version": %d, "summary": "Login fails <after> reset"}""".formatted(version));
         ada.post("/api/v1/issues/" + key + "/comments", """
-                {"body": "Looking into it.\\nSecond line"}""");
+                {"body": "Looking into it.\\nSecond **line**, see %s"}""".formatted(key));
 
         MimeMessage[] mails = deliver();
         assertThat(mails).hasSize(1); // bob only: ada made the changes, the admin is not involved
@@ -103,7 +103,8 @@ class MailNotificationIntegrationTest extends IssueTestSupport {
         assertThat(to(mail)).contains("bob@example.org");
         assertThat(mail.getSubject()).isEqualTo("[" + key + "] ada commented: Login fails <after> reset");
         assertThat(part(mail, "text/html")).contains("Login fails &lt;after&gt; reset",
-                "Looking into it.<br>Second line", "http://bugs.test/browse/" + key, "Summary");
+                "Looking into it.<br>\nSecond <strong>line</strong>, see <a href=\"http://bugs.test/browse/" + key + "\">",
+                "Summary");
         assertThat(part(mail, "text/plain")).contains("Login fails <after> reset", "Looking into it.\nSecond line");
     }
 

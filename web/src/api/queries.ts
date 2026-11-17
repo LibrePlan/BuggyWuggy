@@ -339,6 +339,16 @@ export function useLabelSuggestions(query: string, enabled: boolean) {
   });
 }
 
+/** The keys of the projects the user may see: issue keys in texts link only for these. */
+export function useProjectKeys() {
+  return useQuery({
+    // Under 'projects', so creating or deleting a project refreshes it.
+    queryKey: [...keys.allProjects, 'keys'] as const,
+    queryFn: () => get<string[]>('/api/v1/projects/keys'),
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function useAttachments(key: string) {
   return useQuery({
     queryKey: keys.attachments(key),

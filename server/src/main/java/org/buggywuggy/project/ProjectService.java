@@ -130,6 +130,18 @@ public class ProjectService {
         return new PageResponse<>(items, page, size, total == null ? 0 : total);
     }
 
+    /**
+     * The keys of all projects the user may browse, archived ones included: the web interface
+     * links issue keys in texts (BUG-12) only for these, not for look-alikes such as UTF-8.
+     */
+    @Transactional(readOnly = true)
+    public List<String> keys(BuggyWuggyPrincipal user) {
+        String where = user.hasAuthority(Authorities.ADMINISTER) ? ""
+                : " where " + ProjectPermissionService.PROJECT_BROWSABLE;
+        return jdbc.queryForList("select p.key from project p" + where + " order by p.key",
+                Map.of("userId", user.id()), String.class);
+    }
+
     @Transactional(readOnly = true)
     public ProjectResponse get(BuggyWuggyPrincipal user, String idOrKey) {
         return ProjectResponse.of(access(user, idOrKey).project());

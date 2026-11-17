@@ -2,7 +2,7 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Alert, Button, Group, Modal, Stack, TextInput, Textarea } from '@mantine/core';
+import { Alert, Button, Group, Modal, Stack, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef } from 'react';
@@ -21,6 +21,7 @@ import {
   VersionsSelect,
   toIds,
 } from './IssueFormFields';
+import { MarkdownEditor } from './MarkdownEditor';
 import { UserPicker } from './UserPicker';
 
 interface Props {
@@ -136,7 +137,7 @@ export function CreateIssueModal({ projectKey, parent, opened, onClose, onCreate
   const title = parent ? t('issue.createChild', { parent: parent.key }) : t('issue.create');
 
   return (
-    <Modal opened={opened} onClose={close} title={title} size="lg">
+    <Modal opened={opened} onClose={close} title={title} size="70rem">
       <form onSubmit={form.onSubmit(submit)}>
         <Stack>
           {create.isError && Object.keys(fieldErrorMap(create.error)).length === 0 && (
@@ -149,13 +150,7 @@ export function CreateIssueModal({ projectKey, parent, opened, onClose, onCreate
             error={form.errors.issueTypeId}
           />
           <TextInput label={t('issue.summary')} required data-autofocus maxLength={255} {...form.getInputProps('summary')} />
-          <Textarea
-            label={t('issue.description')}
-            autosize
-            minRows={4}
-            maxRows={16}
-            {...form.getInputProps('description')}
-          />
+          <MarkdownEditor label={t('issue.description')} minRows={6} maxRows={20} {...form.getInputProps('description')} />
           <PrioritySelect value={form.values.priorityId} onChange={(v) => form.setFieldValue('priorityId', v)} />
           {canAssign && (
             <UserPicker

@@ -2,14 +2,16 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Button, Group, Modal, Stack, TextInput, Textarea } from '@mantine/core';
+import { Button, Group, Modal, Stack, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useIssueMutations } from '../api/issueMutations';
+import { useAttachments } from '../api/queries';
 import type { IssueResponse, UpdateIssueRequest } from '../api/types';
 import { fieldErrorMap } from '../lib/apiError';
 import { changedFields } from '../lib/format';
+import { MarkdownEditor } from './MarkdownEditor';
 import {
   ComponentsSelect,
   DueDateInput,
@@ -47,6 +49,7 @@ function valuesOf(issue: IssueResponse): Values {
 export function EditIssueModal({ issue, opened, onClose }: { issue: IssueResponse; opened: boolean; onClose: () => void }) {
   const { t } = useTranslation();
   const { update } = useIssueMutations(issue);
+  const attachments = useAttachments(issue.key).data;
   const form = useForm<Values>({
     initialValues: valuesOf(issue),
     validate: { summary: (v) => (v.trim() ? null : t('validation.required')) },
@@ -88,11 +91,17 @@ export function EditIssueModal({ issue, opened, onClose }: { issue: IssueRespons
 
   const projectKey = issue.project.key;
   return (
-    <Modal opened={opened} onClose={onClose} title={t('issue.editTitle', { key: issue.key })} size="lg">
+    <Modal opened={opened} onClose={onClose} title={t('issue.editTitle', { key: issue.key })} size="70rem">
       <form onSubmit={form.onSubmit(submit)}>
         <Stack>
           <TextInput label={t('issue.summary')} required maxLength={255} data-autofocus {...form.getInputProps('summary')} />
-          <Textarea label={t('issue.description')} autosize minRows={4} maxRows={20} {...form.getInputProps('description')} />
+          <MarkdownEditor
+            label={t('issue.description')}
+            minRows={6}
+            maxRows={24}
+            attachments={attachments}
+            {...form.getInputProps('description')}
+          />
           <PrioritySelect value={form.values.priorityId} onChange={(v) => form.setFieldValue('priorityId', v)} />
           <LabelsInput value={form.values.labels} onChange={(v) => form.setFieldValue('labels', v)} />
           <ComponentsSelect

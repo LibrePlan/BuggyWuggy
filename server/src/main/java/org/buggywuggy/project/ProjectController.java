@@ -51,6 +51,12 @@ public class ProjectController {
         return projectService.list(user, query, includeArchived, page, size);
     }
 
+    /** The keys of all projects the user may see, archived ones included. */
+    @GetMapping("/keys")
+    public List<String> keys(@AuthenticationPrincipal BuggyWuggyPrincipal user) {
+        return projectService.keys(user);
+    }
+
     @PostMapping
     public ResponseEntity<ProjectResponse> create(@AuthenticationPrincipal BuggyWuggyPrincipal user,
             @Valid @RequestBody CreateProjectRequest request) {
