@@ -55,8 +55,8 @@ export function IssueComments({ issueKey, canAdd }: { issueKey: string; canAdd: 
           <MarkdownEditor
             placeholder={t('comment.placeholder')}
             aria-label={t('comment.add')}
-            minRows={3}
-            maxRows={16}
+            minRows={7}
+            resizable
             maxLength={MAX_LENGTH}
             value={draft}
             onChange={setDraft}
@@ -174,8 +174,8 @@ function Comment({ issueKey, comment }: { issueKey: string; comment: CommentResp
       ) : (
         <Stack gap="xs" mt="xs">
           <MarkdownEditor
-            minRows={3}
-            maxRows={16}
+            minRows={7}
+            resizable
             maxLength={MAX_LENGTH}
             value={editing}
             onChange={setEditing}

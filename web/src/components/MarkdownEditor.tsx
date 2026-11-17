@@ -37,6 +37,11 @@ export interface MarkdownEditorProps {
   placeholder?: string;
   minRows?: number;
   maxRows?: number;
+  /**
+   * The text field has a fixed height of minRows that the user can drag larger or smaller,
+   * instead of growing with the text up to maxRows; the preview follows.
+   */
+  resizable?: boolean;
   maxLength?: number;
   autoFocus?: boolean;
   disabled?: boolean;
@@ -54,6 +59,7 @@ export interface MarkdownEditorProps {
  * A text field for Markdown with a toolbar and a live preview: to the right of the text when
  * there is room, otherwise behind a "Preview" tab. Ctrl+B, Ctrl+I and Ctrl+K make text bold,
  * italic or a link. Toolbar changes go through the browser's editing, so Ctrl+Z undoes them.
+ * The preview is always as high as the text field, also when the user resizes it.
  */
 export function MarkdownEditor({
   value = '',
@@ -65,6 +71,7 @@ export function MarkdownEditor({
   placeholder,
   minRows = 4,
   maxRows = 20,
+  resizable,
   maxLength,
   autoFocus,
   disabled,
@@ -192,9 +199,11 @@ export function MarkdownEditor({
       onScroll={syncScroll}
       placeholder={placeholder}
       aria-label={ariaLabel ?? (typeof label === 'string' ? label : undefined)}
-      autosize
+      autosize={!resizable}
       minRows={minRows}
       maxRows={maxRows}
+      rows={resizable ? minRows : undefined}
+      resize={resizable ? 'vertical' : undefined}
       maxLength={maxLength}
       autoFocus={autoFocus}
       disabled={disabled}
