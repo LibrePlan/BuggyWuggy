@@ -23,6 +23,7 @@ import { post } from '../api/client';
 import { keys, useMyself } from '../api/queries';
 import { normalizeIssueKey } from '../lib/links';
 import { DemoNotice } from './DemoNotice';
+import { LogoMark } from './Logo';
 import { initials } from './UserLabel';
 
 export function AppLayout() {
@@ -53,7 +54,7 @@ export function AppLayout() {
           <Group gap="lg" wrap="nowrap">
             <Anchor component={Link} to="/" underline="never" c="inherit">
               <Group gap={8} wrap="nowrap">
-                <img src="/favicon.svg" alt="" width={26} height={26} />
+                <LogoMark height={36} />
                 <Text fw={700} size="lg" visibleFrom="sm">
                   {t('app.name')}
                 </Text>

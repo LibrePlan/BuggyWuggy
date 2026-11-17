@@ -2,7 +2,21 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Alert, Anchor, Button, Container, Divider, Paper, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
+import {
+  Alert,
+  Anchor,
+  Box,
+  Button,
+  Container,
+  Divider,
+  Flex,
+  Paper,
+  PasswordInput,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import { useCallback, useEffect, useState } from 'react';
@@ -14,6 +28,7 @@ import { post } from '../api/client';
 import { keys, useDonation, useMyself, useSetupStatus, useSso, useVersion } from '../api/queries';
 import type { LoginResponse, MyselfResponse } from '../api/types';
 import { DemoNotice } from '../components/DemoNotice';
+import { Logo } from '../components/Logo';
 import { PageLoader } from '../components/QueryState';
 import { SupportProject } from '../components/SupportProject';
 import { TwoFactorCode, TwoFactorEnrollment } from './TwoFactorSteps';
@@ -92,88 +107,98 @@ export function LoginPage() {
   if (myself.data) return <Navigate to={next} replace />;
 
   return (
-    <Container size={420} py={80}>
-      <Title order={2} ta="center">
-        {t('login.title')}
-      </Title>
-      <Text c="dimmed" size="sm" ta="center" mt={5}>
-        {t('app.name')}
-      </Text>
-      <Paper withBorder shadow="sm" p="lg" mt="lg" radius="md">
-        {step === 'TWO_FACTOR' ? (
-          <TwoFactorCode onDone={loggedIn} onRestart={restart} />
-        ) : step === 'TWO_FACTOR_ENROLLMENT' ? (
-          <TwoFactorEnrollment onDone={loggedIn} onRestart={restart} />
-        ) : (
-          <Stack>
-            {ssoError && <Alert color="red">{t([`login.ssoError.${ssoError}`, 'login.ssoError.sso.failed'])}</Alert>}
-            {sso?.providers.map((p) => (
-              <Button
-                key={p.id}
-                component="a"
-                href={`/oauth2/authorization/${encodeURIComponent(p.id)}?next=${encodeURIComponent(next)}`}
-                variant={sso.passwordLogin === 'ALL' ? 'default' : 'filled'}
-                leftSection={<IconLogin2 size={16} />}
-              >
-                {t('login.withProvider', { name: p.name })}
-              </Button>
-            ))}
-            {sso?.passwordLogin === 'SYSTEM_ADMINS' && (
-              <Anchor component="button" type="button" size="sm" ta="center" onClick={toggleAdminLogin}>
-                {t('login.adminLogin')}
-              </Anchor>
-            )}
-            {sso && sso.providers.length > 0 && sso.passwordLogin === 'ALL' && (
-              <Divider label={t('login.orPassword')} labelPosition="center" />
-            )}
-            {passwordForm && (
-              <form onSubmit={form.onSubmit((values) => login.mutate(values))}>
-                <Stack>
-                  {setupDone && <Alert color="green">{t('setup.done')}</Alert>}
-                  {login.isError && <Alert color="red">{login.error.message}</Alert>}
-                  {restartError && <Alert color="red">{restartError.message}</Alert>}
-                  <TextInput
-                    label={t('user.username')}
-                    required
-                    autoFocus={!sso || sso.providers.length === 0}
-                    autoComplete="username"
-                    {...form.getInputProps('username')}
-                  />
-                  <PasswordInput
-                    label={t('user.password')}
-                    required
-                    autoComplete="current-password"
-                    {...form.getInputProps('password')}
-                  />
-                  <Button type="submit" loading={login.isPending}>
-                    {t('login.submit')}
+    <Container size={760} py={{ base: 40, sm: 80 }}>
+      {/* The logo left of the login fields; on a narrow screen above them. */}
+      <Flex direction={{ base: 'column', sm: 'row' }} align="center" justify="center" gap={{ base: 'lg', sm: 56 }}>
+        <Box visibleFrom="sm">
+          <Logo width={240} />
+        </Box>
+        <Box hiddenFrom="sm">
+          <Logo width={150} />
+        </Box>
+        <Box w="100%" maw={420}>
+          <Title order={2} ta="center">
+            {t('login.title')}
+          </Title>
+          <Paper withBorder shadow="sm" p="lg" mt="lg" radius="md">
+            {step === 'TWO_FACTOR' ? (
+              <TwoFactorCode onDone={loggedIn} onRestart={restart} />
+            ) : step === 'TWO_FACTOR_ENROLLMENT' ? (
+              <TwoFactorEnrollment onDone={loggedIn} onRestart={restart} />
+            ) : (
+              <Stack>
+                {ssoError && <Alert color="red">{t([`login.ssoError.${ssoError}`, 'login.ssoError.sso.failed'])}</Alert>}
+                {sso?.providers.map((p) => (
+                  <Button
+                    key={p.id}
+                    component="a"
+                    href={`/oauth2/authorization/${encodeURIComponent(p.id)}?next=${encodeURIComponent(next)}`}
+                    variant={sso.passwordLogin === 'ALL' ? 'default' : 'filled'}
+                    leftSection={<IconLogin2 size={16} />}
+                  >
+                    {t('login.withProvider', { name: p.name })}
                   </Button>
-                </Stack>
-              </form>
+                ))}
+                {sso?.passwordLogin === 'SYSTEM_ADMINS' && (
+                  <Anchor component="button" type="button" size="sm" ta="center" onClick={toggleAdminLogin}>
+                    {t('login.adminLogin')}
+                  </Anchor>
+                )}
+                {sso && sso.providers.length > 0 && sso.passwordLogin === 'ALL' && (
+                  <Divider label={t('login.orPassword')} labelPosition="center" />
+                )}
+                {passwordForm && (
+                  <form onSubmit={form.onSubmit((values) => login.mutate(values))}>
+                    <Stack>
+                      {setupDone && <Alert color="green">{t('setup.done')}</Alert>}
+                      {login.isError && <Alert color="red">{login.error.message}</Alert>}
+                      {restartError && <Alert color="red">{restartError.message}</Alert>}
+                      <TextInput
+                        label={t('user.username')}
+                        required
+                        autoFocus={!sso || sso.providers.length === 0}
+                        autoComplete="username"
+                        {...form.getInputProps('username')}
+                      />
+                      <PasswordInput
+                        label={t('user.password')}
+                        required
+                        autoComplete="current-password"
+                        {...form.getInputProps('password')}
+                      />
+                      <Button type="submit" loading={login.isPending}>
+                        {t('login.submit')}
+                      </Button>
+                    </Stack>
+                  </form>
+                )}
+              </Stack>
             )}
-          </Stack>
+          </Paper>
+        </Box>
+      </Flex>
+      <Box maw={420} mx="auto">
+        <DemoNotice />
+        {donation.data && (
+          <SupportProject
+            status={donation.data.status}
+            requestLink={
+              <Anchor component={Link} to={`/login?next=${encodeURIComponent(DONATION_PAGE)}`} replace size="sm" ta="center">
+                {t('donate.request')}
+              </Anchor>
+            }
+            hint={next === DONATION_PAGE ? t('donate.loginAsAdmin') : undefined}
+            defaultOpen={next === DONATION_PAGE}
+          />
         )}
-      </Paper>
-      <DemoNotice />
-      {donation.data && (
-        <SupportProject
-          status={donation.data.status}
-          requestLink={
-            <Anchor component={Link} to={`/login?next=${encodeURIComponent(DONATION_PAGE)}`} replace size="sm" ta="center">
-              {t('donate.request')}
-            </Anchor>
-          }
-          hint={next === DONATION_PAGE ? t('donate.loginAsAdmin') : undefined}
-          defaultOpen={next === DONATION_PAGE}
-        />
-      )}
-      {version && (
-        <Text size="xs" c="dimmed" ta="center" mt="xl">
-          {version.commit
-            ? t('login.versionCommit', { version: version.version, commit: version.commit })
-            : t('login.version', { version: version.version })}
-        </Text>
-      )}
+        {version && (
+          <Text size="xs" c="dimmed" ta="center" mt="xl">
+            {version.commit
+              ? t('login.versionCommit', { version: version.version, commit: version.commit })
+              : t('login.version', { version: version.version })}
+          </Text>
+        )}
+      </Box>
     </Container>
   );
 }

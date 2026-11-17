@@ -109,3 +109,8 @@
     grid-column: 1 / -1;
   }
 }
+
+/* The dark brown name of the logo, made light in the dark colour scheme. */
+[data-mantine-color-scheme='dark'] .bw-logo-wordmark {
+  filter: invert(1) hue-rotate(180deg) brightness(1.1);
+}
