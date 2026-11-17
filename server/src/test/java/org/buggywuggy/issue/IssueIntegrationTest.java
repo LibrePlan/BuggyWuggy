@@ -328,7 +328,7 @@ class IssueIntegrationTest extends IntegrationTest {
     void lookupListsAreAvailable() {
         ApiClient admin = setupAndLoginAdmin();
         assertThat((List<String>) admin.get("/api/v1/issue-types").json("$[*].name"))
-                .containsExactly("Epic", "Story", "Task", "Bug", "Sub-task");
+                .containsExactly("Epic", "Story", "Feature", "Task", "Bug", "Sub-task");
         assertThat((List<String>) admin.get("/api/v1/priorities").json("$[*].name"))
                 .containsExactly("Highest", "High", "Medium", "Low", "Lowest");
         assertThat((List<String>) admin.get("/api/v1/statuses").json("$[*].category"))

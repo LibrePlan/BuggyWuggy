@@ -7,6 +7,7 @@ import {
   IconBolt,
   IconBookmark,
   IconBug,
+  IconBulbFilled,
   IconCheckbox,
   IconChevronDown,
   IconChevronUp,
@@ -24,6 +25,7 @@ type Icon = ComponentType<{ size?: number | string; color?: string; stroke?: num
 const TYPE_ICONS: Record<string, [Icon, string]> = {
   epic: [IconBolt, 'grape'],
   story: [IconBookmark, 'green'],
+  feature: [IconBulbFilled, 'yellow'],
   task: [IconCheckbox, 'blue'],
   bug: [IconBug, 'red'],
   subtask: [IconSubtask, 'cyan'],

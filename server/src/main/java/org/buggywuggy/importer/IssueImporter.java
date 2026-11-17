@@ -216,14 +216,17 @@ public class IssueImporter {
             return new LabelRule(LabelTarget.COMPONENT, null);
         }
         Map<String, String> typeAliases = Map.ofEntries(Map.entry("bug", "bug"), Map.entry("defect", "bug"),
-                Map.entry("feature", "story"), Map.entry("new feature", "story"), Map.entry("enhancement", "story"),
-                Map.entry("improvement", "story"), Map.entry("task", "task"), Map.entry("story", "story"),
-                Map.entry("epic", "epic"));
+                Map.entry("feature", "feature"), Map.entry("new feature", "feature"),
+                Map.entry("enhancement", "feature"), Map.entry("improvement", "feature"), Map.entry("task", "task"),
+                Map.entry("story", "story"), Map.entry("epic", "epic"));
         String type = typeAliases.get(last);
         if (type != null && (!name.contains("/") || name.startsWith("kind") || name.startsWith("type"))) {
-            for (Map.Entry<Long, String> t : types.entrySet()) {
-                if (t.getValue().equalsIgnoreCase(type)) {
-                    return new LabelRule(LabelTarget.ISSUE_TYPE, t.getKey());
+            // Story when an administrator removed or renamed Feature.
+            for (String wanted : type.equals("feature") ? List.of("feature", "story") : List.of(type)) {
+                for (Map.Entry<Long, String> t : types.entrySet()) {
+                    if (t.getValue().equalsIgnoreCase(wanted)) {
+                        return new LabelRule(LabelTarget.ISSUE_TYPE, t.getKey());
+                    }
                 }
             }
         }
