@@ -2,7 +2,7 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Alert, Anchor, Box, Collapse, Image, Paper, Stack, Text, Title } from '@mantine/core';
+import { Alert, Anchor, Box, Collapse, Flex, Image, Paper, Stack, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconHeart } from '@tabler/icons-react';
 import { useState, type ReactNode } from 'react';
@@ -12,6 +12,8 @@ import type { SupportStatus } from '../api/types';
 /**
  * Why supporting BuggyWuggy matters and whether this installation does, on the login page and
  * under Help → About. {@code collapsible}: the explanation is behind "more information".
+ * {@code wide}: for a wide column (the login page): the explanation left of the comic, on
+ * screens wide enough for that.
  */
 export function SupportProject({
   status,
@@ -19,23 +21,41 @@ export function SupportProject({
   hint,
   defaultOpen = false,
   collapsible = true,
+  wide = false,
 }: {
   status: SupportStatus;
   requestLink?: ReactNode;
   hint?: string;
   defaultOpen?: boolean;
   collapsible?: boolean;
+  wide?: boolean;
 }) {
   const { t } = useTranslation();
   const [moreInfo, { toggle: toggleMoreInfo }] = useDisclosure(defaultOpen);
+  const texts = (
+    <>
+      <Text size="sm">{t('donate.freedom')}</Text>
+      <Text size="sm">{t('donate.people')}</Text>
+      <Text size="sm">{t('donate.continuity')}</Text>
+    </>
+  );
   const explanation = (
     <Paper withBorder p="md" radius="md">
-      <Stack gap="sm">
-        <Text size="sm">{t('donate.freedom')}</Text>
-        <Text size="sm">{t('donate.people')}</Text>
-        <Text size="sm">{t('donate.continuity')}</Text>
-        <XkcdDependency />
-      </Stack>
+      {wide ? (
+        <Flex direction={{ base: 'column', sm: 'row' }} gap="lg" align="center">
+          <Stack gap="sm" flex={1}>
+            {texts}
+          </Stack>
+          <Box w={{ base: '100%', sm: 385 }} style={{ flexShrink: 0 }}>
+            <XkcdDependency />
+          </Box>
+        </Flex>
+      ) : (
+        <Stack gap="sm">
+          {texts}
+          <XkcdDependency />
+        </Stack>
+      )}
     </Paper>
   );
   return (
@@ -43,7 +63,7 @@ export function SupportProject({
       <Title order={2} ta="center">
         {t('donate.title')}
       </Title>
-      <Text size="sm" ta="center">
+      <Text size="sm" ta="center" maw={640} mx="auto">
         {t('donate.intro')}
       </Text>
       {requestLink}

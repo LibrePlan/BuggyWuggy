@@ -177,7 +177,8 @@ export function LoginPage() {
           </Paper>
         </Box>
       </Flex>
-      <Box maw={420} mx="auto">
+      {/* As wide as the logo and the login fields together. */}
+      <Box maw={716} mx="auto">
         <DemoNotice />
         {donation.data && (
           <SupportProject
@@ -189,6 +190,7 @@ export function LoginPage() {
             }
             hint={next === DONATION_PAGE ? t('donate.loginAsAdmin') : undefined}
             defaultOpen={next === DONATION_PAGE}
+            wide
           />
         )}
         {version && (
