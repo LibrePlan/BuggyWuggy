@@ -867,7 +867,18 @@
     "userGuide": "User guide",
     "adminGuide": "Administrator guide",
     "license": "License (AGPL)",
-    "about": "About BuggyWuggy"
+    "about": "About BuggyWuggy",
+    "search": {
+      "placeholder": "Search the help",
+      "counter": "{{current}} / {{total}}",
+      "previous": "Previous match",
+      "next": "Next match",
+      "clear": "Clear the search",
+      "nothing": "Nothing found for “{{query}}”.",
+      "sections_one": "{{count}} section",
+      "sections_other": "{{count}} sections",
+      "keys": "Enter: next match"
+    }
   },
   "about": {
     "tagline": "Open source, self-hosted issue tracker",

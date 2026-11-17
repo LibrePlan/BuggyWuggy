@@ -114,3 +114,24 @@
 [data-mantine-color-scheme='dark'] .bw-logo-wordmark {
   filter: invert(1) hue-rotate(180deg) brightness(1.1);
 }
+
+/* Help search: the occurrences in the text, and the result list. */
+::highlight(bw-help-match) {
+  background-color: var(--mantine-color-yellow-3);
+  color: var(--mantine-color-black);
+}
+
+::highlight(bw-help-current) {
+  background-color: var(--mantine-color-orange-5);
+  color: var(--mantine-color-black);
+}
+
+.bw-help-result {
+  display: block;
+  width: 100%;
+  border-radius: var(--mantine-radius-sm);
+}
+
+.bw-help-result:hover {
+  background-color: var(--mantine-color-default-hover);
+}

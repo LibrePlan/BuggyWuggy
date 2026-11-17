@@ -2,11 +2,14 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Anchor, AppShell, Box, Container, Group, NavLink, ScrollArea, Stack, Text, Title, Typography } from '@mantine/core';
-import { useEffect, type ReactNode } from 'react';
+import { Anchor, AppShell, Box, Container, Group, NavLink, ScrollArea, Stack, Text, Typography } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation, useParams } from 'react-router';
+import { Link, useLocation, useParams, useSearchParams } from 'react-router';
 import { useDonation, useHelpPage, useMyself, useVersion } from '../api/queries';
+import { HelpSearch } from '../components/HelpSearch';
+import { Logo, LogoMark } from '../components/Logo';
 import { ErrorAlert, PageLoader } from '../components/QueryState';
 import { SupportProject } from '../components/SupportProject';
 
@@ -21,7 +24,7 @@ function HelpLayout({ children }: { children: ReactNode }) {
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
           <Anchor component={Link} to="/" underline="never" c="inherit">
             <Group gap={8} wrap="nowrap">
-              <img src="/favicon.svg" alt="" width={26} height={26} />
+              <LogoMark height={36} />
               <Text fw={700} size="lg">
                 {t('help.title')}
               </Text>
@@ -58,6 +61,21 @@ export function HelpPage({ page }: { page?: string }) {
   const id = page ?? params.page ?? '';
   const help = useHelpPage(id);
   const { hash } = useLocation();
+  const content = useRef<HTMLDivElement>(null);
+  // The search is part of the address (?q=), so it survives a reload and can be shared.
+  const [search, setSearch] = useSearchParams();
+  const [query, setQuery] = useState(() => search.get('q') ?? '');
+  useEffect(() => {
+    setSearch(
+      (p) => {
+        if (query) p.set('q', query);
+        else p.delete('q');
+        return p;
+      },
+      { replace: true },
+    );
+  }, [query, setSearch]);
+  const wide = useMediaQuery('(min-width: 62em)');
 
   useEffect(() => {
     if (help.data) document.title = `${help.data.title} · BuggyWuggy`;
@@ -68,6 +86,19 @@ export function HelpPage({ page }: { page?: string }) {
   }, [help.data, hash]);
 
   const toc = help.data?.headings.filter((h) => h.level <= 2) ?? [];
+  // With a table of contents on a wide screen the search sits on top of it, and its results
+  // take its place; otherwise it sits above the text.
+  const inSidebar = !!wide && toc.length > 0;
+  const searchBox = help.data && (
+    <HelpSearch
+      content={content}
+      pageTitle={help.data.title}
+      html={help.data.html}
+      query={query}
+      onQueryChange={setQuery}
+      maxResultsHeight={inSidebar ? 'calc(100vh - 150px)' : '40vh'}
+    />
+  );
   return (
     <HelpLayout>
       {help.isPending ? (
@@ -76,27 +107,31 @@ export function HelpPage({ page }: { page?: string }) {
         <ErrorAlert error={help.error} />
       ) : (
         <Group align="flex-start" gap="xl" wrap="nowrap">
-          {toc.length > 0 && (
-            <Box w={280} miw={280} visibleFrom="md" pos="sticky" top={72}>
-              <ScrollArea.Autosize mah="calc(100vh - 90px)" type="hover">
-                {toc.map((h) => (
-                  <NavLink
-                    key={h.id}
-                    component="a"
-                    href={`#${h.id}`}
-                    label={h.text}
-                    pl={h.level === 1 ? 'xs' : 'lg'}
-                    py={4}
-                    fw={h.level === 1 ? 600 : undefined}
-                    active={hash === `#${h.id}`}
-                  />
-                ))}
-              </ScrollArea.Autosize>
-            </Box>
+          {inSidebar && (
+            <Stack w={280} miw={280} pos="sticky" top={72} gap="sm">
+              {searchBox}
+              {!query.trim() && (
+                <ScrollArea.Autosize mah="calc(100vh - 140px)" type="hover">
+                  {toc.map((h) => (
+                    <NavLink
+                      key={h.id}
+                      component="a"
+                      href={`#${h.id}`}
+                      label={h.text}
+                      pl={h.level === 1 ? 'xs' : 'lg'}
+                      py={4}
+                      fw={h.level === 1 ? 600 : undefined}
+                      active={hash === `#${h.id}`}
+                    />
+                  ))}
+                </ScrollArea.Autosize>
+              )}
+            </Stack>
           )}
-          <Box miw={0} maw={900} flex={1} mx={toc.length > 0 ? undefined : 'auto'}>
+          <Box miw={0} maw={900} flex={1} mx={inSidebar ? undefined : 'auto'}>
+            {!inSidebar && <Box mb="lg">{searchBox}</Box>}
             <Typography>
-              <div className="bw-help" dangerouslySetInnerHTML={{ __html: help.data.html }} />
+              <div ref={content} className="bw-help" dangerouslySetInnerHTML={{ __html: help.data.html }} />
             </Typography>
           </Box>
         </Group>
@@ -120,8 +155,7 @@ export function AboutPage() {
     <HelpLayout>
       <Container size={560} my={20}>
         <Stack align="center" gap="xs">
-          <img src="/favicon.svg" alt="" width={64} height={64} />
-          <Title order={1}>{t('app.name')}</Title>
+          <Logo width={200} />
           <Text c="dimmed">{t('about.tagline')}</Text>
           {version && (
             <Text size="sm">

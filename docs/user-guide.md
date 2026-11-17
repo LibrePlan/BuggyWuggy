@@ -89,7 +89,10 @@ The bar at the top of every page contains:
   [Installation Guide](installation.md#administration).
 - **Help**: this user guide, the administrator guide (for administrators), the license of
   BuggyWuggy (the GNU AGPL) and **About BuggyWuggy**: the version, where to get the source
-  code, and whether this installation supports the project. Each opens in a new tab.
+  code, and whether this installation supports the project. Each opens in a new tab. The
+  search field at the top (press **/** to jump to it) lists the sections that
+  contain all the words you type and marks every occurrence in the text; **Enter**
+  and **Shift+Enter** go to the next and previous one.
 - **Your name**: the menu with **Profile** and **Log out**.
 
 Every issue and every search has its own address (URL). You can bookmark it or send it to
