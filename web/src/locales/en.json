@@ -862,12 +862,58 @@
     "saved": "I have saved my recovery codes",
     "continue": "Continue"
   },
+  "feedback": {
+    "title": "Send feedback",
+    "intro": "Tell the BuggyWuggy developers what you like, what goes wrong or what you miss. Your message goes to {{to}}, with your name and e-mail address, so that we can answer you.",
+    "typeLabel": "What kind of feedback?",
+    "type": {
+      "COMPLIMENT": "Compliment",
+      "BUG": "Bug report",
+      "FEATURE": "Feature request"
+    },
+    "subject": "Subject",
+    "subjectPlaceholder": {
+      "COMPLIMENT": "What do you like?",
+      "BUG": "What goes wrong, in a few words",
+      "FEATURE": "What would you like BuggyWuggy to do?"
+    },
+    "message": "Message",
+    "messageHelp": {
+      "COMPLIMENT": "Tell us what works well for you: it helps us to keep it that way.",
+      "BUG": "What did you do, what did you expect, and what happened instead? Steps to reproduce it help most.",
+      "FEATURE": "What do you want to achieve, and why? A description of the problem helps more than a solution."
+    },
+    "privacy": "Sent with your message: your name, user name and e-mail address, the address and version of this BuggyWuggy, and the donation of your organisation.",
+    "send": "Send feedback",
+    "more": "Send more feedback",
+    "blocked": {
+      "title": "Feedback is for supporters",
+      "none": "Sending feedback directly to the developers is a thank-you to organisations that support BuggyWuggy with an annual donation. Your organisation does not donate yet, so the form is disabled. BuggyWuggy is free software, made by people who could also spend their time otherwise: donations make it possible to work on the wishes of those who support it.",
+      "expired": "Sending feedback directly to the developers is a thank-you to organisations that support BuggyWuggy with an annual donation. The donation of your organisation has expired, so the form is disabled until it is renewed.",
+      "codeMissing": "Your organisation supports BuggyWuggy, but its donation code was entered before BuggyWuggy kept it, and the code proves where the feedback comes from. An administrator only needs to enter the same code once more.",
+      "demo": "The shared demo account cannot send feedback.",
+      "askAdmin": "Ask your administrator about a donation.",
+      "donationPage": "Go to Administration → Donation.",
+      "public": "Bugs and wishes can always be reported in public, in the source code repository:"
+    },
+    "thanks": {
+      "title": "Thank you for your feedback",
+      "donation": "We value the donation of your organisation, and we thank you for taking the time to tell us this.",
+      "priority": "We cannot promise to act on your request within a day, but it goes to the top of our to-do stack, together with the requests of all other users who donate."
+    },
+    "manual": {
+      "title": "Not sent yet",
+      "text": "This BuggyWuggy cannot send e-mail yet: your feedback is queued and goes out once an administrator configures e-mail. To send it now, use your own mail program, to {{to}}:",
+      "mailto": "Open in your mail program"
+    }
+  },
   "help": {
     "title": "BuggyWuggy Help",
     "userGuide": "User guide",
     "adminGuide": "Administrator guide",
     "license": "License (AGPL)",
     "about": "About BuggyWuggy",
+    "feedback": "Feedback",
     "search": {
       "placeholder": "Search the help",
       "counter": "{{current}} / {{total}}",

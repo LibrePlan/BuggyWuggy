@@ -100,3 +100,7 @@ export type LicenseCountry = Schemas['Country'];
 export type LicenseQuote = Schemas['Quote'];
 export type QuotationRequest = Schemas['QuotationRequest'];
 export type QuotationResponse = Schemas['QuotationResponse'];
+export type FeedbackStatus = Schemas['FeedbackStatus'];
+export type FeedbackRequest = Schemas['FeedbackRequest'];
+export type FeedbackResponse = Schemas['FeedbackResponse'];
+export type FeedbackType = FeedbackRequest['type'];

@@ -29,6 +29,7 @@ import { ProjectSettingsPage } from './pages/ProjectSettingsPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { SearchPage } from './pages/SearchPage';
 import { SetupPage } from './pages/SetupPage';
+import { FeedbackPage } from './pages/FeedbackPage';
 import { AboutPage, HelpPage } from './pages/HelpPages';
 
 export const router = createBrowserRouter([
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
     element: <RequireAuth />,
     errorElement: <RouteError />,
     children: [
+      { path: '/help/feedback', element: <FeedbackPage /> },
       { path: '/help/:page', element: <HelpPage /> },
       {
         element: <AppLayout />,

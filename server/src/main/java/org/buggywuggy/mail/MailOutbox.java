@@ -11,7 +11,9 @@ import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.buggywuggy.common.ApiNullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,14 +57,42 @@ public class MailOutbox {
     /** Queues a mail; call inside the transaction that decides to send it. */
     @Transactional
     public void enqueue(Long recipientId, String toAddress, String subject, String html, String text) {
+        enqueue(recipientId, toAddress, null, Map.of(), subject, html, text);
+    }
+
+    /**
+     * Queues a mail with a Reply-To (null for none) and extra headers (see
+     * {@link MailTransport#send(String, String, Map, String, String, String)}).
+     */
+    @Transactional
+    public void enqueue(Long recipientId, String toAddress, String replyTo, Map<String, String> headers,
+            String subject, String html, String text) {
         if (transport.demo()) {
             return; // demo mode: no mail, not even queued
         }
         Timestamp now = Timestamp.from(clock.instant());
+        StringBuilder lines = new StringBuilder();
+        headers.forEach((name, value) -> lines.append(name).append(": ")
+                .append(value.replaceAll("[\\r\\n]+", " ")).append('\n'));
         jdbc.update("""
-                insert into mail_message (recipient_id, to_address, subject, html_body, text_body,
+                insert into mail_message (recipient_id, to_address, reply_to, headers, subject, html_body, text_body,
                                           next_attempt_at, created_at)
-                values (?, ?, ?, ?, ?, ?, ?)""", recipientId, toAddress, subject, html, text, now, now);
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?)""", recipientId, toAddress, replyTo,
+                headers.isEmpty() ? null : lines.toString(), subject, html, text, now, now);
+    }
+
+    /** The headers as stored by {@link #enqueue}: "Name: value" per line. */
+    static Map<String, String> headers(String lines) {
+        Map<String, String> headers = new LinkedHashMap<>();
+        if (lines != null) {
+            for (String line : lines.split("\n")) {
+                int colon = line.indexOf(':');
+                if (colon > 0) {
+                    headers.put(line.substring(0, colon).strip(), line.substring(colon + 1).strip());
+                }
+            }
+        }
+        return headers;
     }
 
     @Scheduled(fixedDelayString = "${buggywuggy.mail.poll-interval:10s}", initialDelayString = "15s")
@@ -79,17 +109,18 @@ public class MailOutbox {
     /** Sends one batch; returns whether there may be more. */
     boolean sendBatch() {
         Instant now = clock.instant();
-        record Row(long id, String to, String subject, String html, String text, int attempts) {
+        record Row(long id, String to, String replyTo, String headers, String subject, String html, String text,
+                int attempts) {
         }
         List<Row> rows = jdbc.query("""
-                select id, to_address, subject, html_body, text_body, attempts from mail_message
+                select id, to_address, reply_to, headers, subject, html_body, text_body, attempts from mail_message
                 where status = 'PENDING' and next_attempt_at <= ?
                 order by next_attempt_at, id limit ? for update skip locked""",
                 (rs, n) -> new Row(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4),
-                        rs.getString(5), rs.getInt(6)), Timestamp.from(now), BATCH);
+                        rs.getString(5), rs.getString(6), rs.getString(7), rs.getInt(8)), Timestamp.from(now), BATCH);
         for (Row row : rows) {
             try {
-                transport.send(row.to(), row.subject(), row.html(), row.text());
+                transport.send(row.to(), row.replyTo(), headers(row.headers()), row.subject(), row.html(), row.text());
                 jdbc.update("update mail_message set status = 'SENT', sent_at = ?, attempts = attempts + 1,"
                         + " last_error = null where id = ?", Timestamp.from(clock.instant()), row.id());
             } catch (RuntimeException e) {

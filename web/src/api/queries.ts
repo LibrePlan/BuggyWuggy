@@ -14,6 +14,7 @@ import type {
   LicenseCountry,
   LicenseQuote,
   DonationResponse,
+  FeedbackStatus,
   BuildVersionResponse,
   LicenseStatus,
   BoardResponse,
@@ -80,6 +81,7 @@ export const keys = {
   defaultBoard: ['admin', 'board'] as const,
   license: ['admin', 'license'] as const,
   donation: ['donation'] as const,
+  feedback: ['feedback'] as const,
   version: ['version'] as const,
   sso: ['sso'] as const,
   help: (page: string) => ['help', page] as const,
@@ -505,6 +507,11 @@ export function useDefaultBoardConfig() {
 /** Whether this installation supports the project with a donation (no login needed). */
 export function useDonation() {
   return useQuery({ queryKey: keys.donation, queryFn: () => get<DonationResponse>('/api/v1/donation') });
+}
+
+/** Whether the logged-in user may send feedback (Help → Send feedback). */
+export function useFeedbackStatus() {
+  return useQuery({ queryKey: keys.feedback, queryFn: () => get<FeedbackStatus>('/api/v1/feedback') });
 }
 
 /** Single sign-on providers and who may log in with a password (no login needed). */

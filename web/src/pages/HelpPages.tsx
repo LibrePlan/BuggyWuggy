@@ -14,7 +14,7 @@ import { ErrorAlert, PageLoader } from '../components/QueryState';
 import { SupportProject } from '../components/SupportProject';
 
 /** The Help menu's pages open in a tab of their own: a header of their own, no app navigation. */
-function HelpLayout({ children }: { children: ReactNode }) {
+export function HelpLayout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const myself = useMyself().data;
   const admin = myself?.globalPermissions.includes('ADMINISTER');
@@ -47,6 +47,11 @@ function HelpLayout({ children }: { children: ReactNode }) {
             <Anchor component={Link} to="/help/about" c="inherit" fw={500}>
               {t('help.about')}
             </Anchor>
+            {myself && (
+              <Anchor component={Link} to="/help/feedback" c="inherit" fw={500}>
+                {t('help.feedback')}
+              </Anchor>
+            )}
           </Group>
         </Group>
       </AppShell.Header>

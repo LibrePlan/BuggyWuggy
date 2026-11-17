@@ -7,7 +7,10 @@ package org.buggywuggy.mail;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeUtility;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Properties;
 import org.buggywuggy.demo.DemoMode;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -48,6 +51,16 @@ public class MailTransport {
 
     /** Sends a multipart mail with a plain-text and an HTML part. */
     public void send(String to, String subject, String html, String text) throws MailException {
+        send(to, null, Map.of(), subject, html, text);
+    }
+
+    /**
+     * Sends a multipart mail with a plain-text and an HTML part, with a Reply-To (when not null)
+     * and extra headers. A mail is marked as automatically generated unless {@code headers}
+     * says otherwise ({@code Auto-Submitted: no} for a mail that a person wrote).
+     */
+    public void send(String to, String replyTo, Map<String, String> headers, String subject, String html,
+            String text) throws MailException {
         if (sender == null) {
             throw new MailPreparationException(demo ? "Mail is switched off in demo mode"
                     : "Mail is not configured (buggywuggy.mail.host)");
@@ -59,8 +72,17 @@ public class MailTransport {
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(text, html);
+            if (replyTo != null) {
+                helper.setReplyTo(replyTo);
+            }
             message.setHeader("Auto-Submitted", "auto-generated");
-        } catch (MessagingException e) {
+            for (Map.Entry<String, String> header : headers.entrySet()) {
+                // No line breaks: a value must not add headers of its own.
+                String value = header.getValue().replaceAll("[\\r\\n]+", " ");
+                message.setHeader(header.getKey(), MimeUtility.fold(header.getKey().length() + 2,
+                        MimeUtility.encodeText(value, StandardCharsets.UTF_8.name(), "Q")));
+            }
+        } catch (MessagingException | UnsupportedEncodingException e) {
             throw new MailPreparationException(e.getMessage(), e);
         }
         sender.send(message);

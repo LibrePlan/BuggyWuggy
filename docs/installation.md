@@ -712,7 +712,7 @@ Trac itself has no other interface that gives the original texts and the full ch
 3. **Mapping.** The wizard lists Trac's **ticket types** as `type:defect`, **priorities** as
    `priority/major`, **components** as `component/core` and **severities** as
    `severity/blocker`; **keywords** are labels. `defect` is suggested as *Bug*, `enhancement`
-   as *Story*.
+   as *Feature*.
 4. **Start** works as for Forgejo.
 
 What is imported:
@@ -801,7 +801,18 @@ no valid donation code):
 - **Enter the donation code**: the code you receive with the invoice answers the challenge of
   your request. Once it is entered, the login page shows this installation as an active
   supporter until the code expires, normally after a year. A month before that, BuggyWuggy
-  mails sales@buggywuggy.org once, to discuss a renewal.
+  mails sales@buggywuggy.org once, to discuss a renewal. BuggyWuggy keeps the code: it proves
+  in feedback mails that they come from a supporting installation. A code entered before
+  BuggyWuggy had the feedback form was not kept; **enter the same code again** to make
+  **Help → Send feedback** work.
+
+While a donation code is valid, every user can send feedback to feedback@buggywuggy.org with
+**Help → Send feedback** (see the user guide). The mail goes through BuggyWuggy's own mail
+server, with Reply-To set to the user's e-mail address. It contains the user's name, user name
+and e-mail address, the company of the donation, the address and version of this installation,
+and the challenge and donation code, in the text and in the headers `X-BuggyWuggy-Donor-Challenge`
+and `X-BuggyWuggy-Donor-Code`. Header `X-BuggyWuggy-Feedback` is `compliment`, `bug` or
+`feature`. The shared account of a demo build cannot send feedback.
 
 The request mail contains the details you entered, the price, and the address of this
 installation (`buggywuggy.base-url`).

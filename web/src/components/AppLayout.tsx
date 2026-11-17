@@ -10,6 +10,7 @@ import {
   IconInfoCircle,
   IconLicense,
   IconLogout,
+  IconMessageHeart,
   IconSearch,
   IconSettings,
   IconTool,
@@ -143,7 +144,7 @@ function QuickSearch() {
   );
 }
 
-/** Help: the guides, the license and About, each in a tab of its own. */
+/** Help: the guides, the license, About and Send feedback, each in a tab of its own. */
 function HelpMenu({ admin }: { admin: boolean }) {
   const { t } = useTranslation();
   const item = (href: string, icon: ReactNode, label: string) => (
@@ -166,6 +167,8 @@ function HelpMenu({ admin }: { admin: boolean }) {
         {admin && item('/help/admin-guide', <IconTool size={16} />, t('help.adminGuide'))}
         {item('/help/license', <IconLicense size={16} />, t('help.license'))}
         {item('/help/about', <IconInfoCircle size={16} />, t('help.about'))}
+        <Menu.Divider />
+        {item('/help/feedback', <IconMessageHeart size={16} />, t('feedback.title'))}
       </Menu.Dropdown>
     </Menu>
   );

@@ -372,6 +372,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["feedbackStatus"];
+        put?: never;
+        post: operations["sendFeedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/two-factor": {
         parameters: {
             query?: never;
@@ -1997,6 +2013,18 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        FeedbackRequest: {
+            /** @enum {string} */
+            type: "COMPLIMENT" | "BUG" | "FEATURE";
+            subject: string;
+            message: string;
+        };
+        FeedbackResponse: {
+            mailConfigured: boolean;
+            to: string;
+            subject: string;
+            text: string;
+        };
         TwoFactorCodeRequest: {
             code: string;
         };
@@ -2525,6 +2553,15 @@ export interface components {
             title: string;
             html: string;
             headings: components["schemas"]["HelpHeading"][];
+        };
+        FeedbackStatus: {
+            allowed: boolean;
+            /** @enum {string} */
+            donation: "NONE" | "ACTIVE" | "EXPIRED";
+            codeMissing: boolean;
+            demoAccount: boolean;
+            mailConfigured: boolean;
+            to: string;
         };
         DonationResponse: {
             show: boolean;
@@ -3613,6 +3650,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["FilterResponse"];
+                };
+            };
+        };
+    };
+    feedbackStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FeedbackStatus"];
+                };
+            };
+        };
+    };
+    sendFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FeedbackResponse"];
                 };
             };
         };

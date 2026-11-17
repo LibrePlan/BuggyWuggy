@@ -39,6 +39,7 @@ export interface MarkdownEditorProps {
   maxRows?: number;
   maxLength?: number;
   autoFocus?: boolean;
+  disabled?: boolean;
   'aria-label'?: string;
   onKeyDown?: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
   onFocus?: (e: FocusEvent<HTMLTextAreaElement>) => void;
@@ -66,6 +67,7 @@ export function MarkdownEditor({
   maxRows = 20,
   maxLength,
   autoFocus,
+  disabled,
   'aria-label': ariaLabel,
   onKeyDown,
   onFocus,
@@ -173,7 +175,7 @@ export function MarkdownEditor({
   const images = attachments?.filter((a) => a.mediaType.startsWith('image/')) ?? [];
   const tool = (labelKey: string, icon: ReactNode, action: () => void) => (
     <Tooltip label={t(labelKey)} openDelay={400} key={labelKey}>
-      <ActionIcon variant="subtle" color="gray" size="sm" aria-label={t(labelKey)} disabled={!writing} onClick={action}>
+      <ActionIcon variant="subtle" color="gray" size="sm" aria-label={t(labelKey)} disabled={disabled || !writing} onClick={action}>
         {icon}
       </ActionIcon>
     </Tooltip>
@@ -195,6 +197,7 @@ export function MarkdownEditor({
       maxRows={maxRows}
       maxLength={maxLength}
       autoFocus={autoFocus}
+      disabled={disabled}
       data-autofocus={autoFocus || undefined}
       error={!!error}
     />
@@ -238,7 +241,7 @@ export function MarkdownEditor({
               <Menu position="bottom-start" withinPortal>
                 <Menu.Target>
                   <Tooltip label={t('markdown.image')} openDelay={400}>
-                    <ActionIcon variant="subtle" color="gray" size="sm" aria-label={t('markdown.image')} disabled={!writing}>
+                    <ActionIcon variant="subtle" color="gray" size="sm" aria-label={t('markdown.image')} disabled={disabled || !writing}>
                       <IconPhoto size={16} />
                     </ActionIcon>
                   </Tooltip>

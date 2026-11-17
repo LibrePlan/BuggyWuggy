@@ -28,7 +28,8 @@ tasks and other work. If you have used Jira, most of it will feel familiar.
 18. [E-mail notifications](#e-mail-notifications)
 19. [Project settings](#project-settings)
 20. [Permissions: why can't I…?](#permissions-why-cant-i)
-21. [Not available yet](#not-available-yet)
+21. [Sending feedback to the developers](#sending-feedback-to-the-developers)
+22. [Not available yet](#not-available-yet)
 
 ## Concepts
 
@@ -36,7 +37,7 @@ tasks and other work. If you have used Jira, most of it will feel familiar.
 |---|---|
 | **Project** | A collection of issues, for example one product or team. Every project has a short **key**, such as `BUG`. |
 | **Issue** | One piece of work: a bug, a task, a story… Each issue has a **key** made of the project key and a number, for example `BUG-12`. |
-| **Issue type** | The kind of issue: **Epic**, **Story**, **Task**, **Bug** or **Sub-task**. |
+| **Issue type** | The kind of issue: **Epic**, **Story**, **Feature** (a new capability or an improvement), **Task**, **Bug** or **Sub-task**. |
 | **Status** | Where the issue is in its life: **Open**, **In Progress**, **Reopened**, **Resolved** or **Closed**. |
 | **Resolution** | *Why* an issue is done: **Fixed**, **Won't Fix**, **Duplicate**, **Cannot Reproduce** or **Done**. An issue without a resolution is *unresolved*. |
 | **Priority** | How important the issue is: **Highest**, **High**, **Medium** (the default), **Low**, **Lowest**. |
@@ -90,7 +91,8 @@ The bar at the top of every page contains:
   [Installation Guide](installation.md#administration).
 - **Help**: this user guide, the administrator guide (for administrators), the license of
   BuggyWuggy (the GNU AGPL) and **About BuggyWuggy**: the version, where to get the source
-  code, and whether this installation supports the project. Each opens in a new tab. The
+  code, and whether this installation supports the project, and
+  [**Send feedback**](#sending-feedback-to-the-developers). Each opens in a new tab. The
   search field at the top (press **/** to jump to it) lists the sections that
   contain all the words you type and marks every occurrence in the text; **Enter**
   and **Shift+Enter** go to the next and previous one.
@@ -229,12 +231,12 @@ Issues can be organised in three levels:
 
 ```
 Epic                  – a large piece of work
- └── Story, Task, Bug – a standard issue
+ └── Story, Feature, Task, Bug – a standard issue
       └── Sub-task    – a small step of a standard issue
 ```
 
 - On a **standard issue**, choose **Create sub-task** to split the work into steps.
-- On an **epic**, choose **Add issue to epic** to create a story, task or bug in it.
+- On an **epic**, choose **Add issue to epic** to create a story, feature, task or bug in it.
 
 The children are listed on the parent's page with their status, and the parent is shown in
 the breadcrumbs of each child.
@@ -521,6 +523,24 @@ project's *Developers* role.
 
 A project or issue you have no access to looks exactly like one that does not exist
 (*Not found*). This is deliberate: it does not reveal what exists.
+
+## Sending feedback to the developers
+
+**Help → Send feedback** sends a compliment, a bug report or a feature request straight to the
+BuggyWuggy developers (feedback@buggywuggy.org). This is a thank-you to organisations that
+support BuggyWuggy with an annual donation: while your installation has a valid donation code,
+every user can send feedback. Without one, the form is shown but disabled, with the reason.
+Bugs and wishes can always be reported in public in the source code repository (see
+**Help → About BuggyWuggy**).
+
+Choose the kind of feedback, write a subject and a message (with
+[Markdown](#formatting-text-with-markdown)), and choose **Send feedback**. The mail contains
+your name, user name and e-mail address, so that the developers can answer you directly, the
+address and version of this BuggyWuggy, and the donation of your organisation.
+
+The developers cannot promise to act within a day, but feedback of donors goes to the top of
+their to-do list. When this BuggyWuggy cannot send e-mail yet, the page shows the mail, to send
+it with your own mail program.
 
 ## Not available yet
 

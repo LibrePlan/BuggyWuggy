@@ -98,6 +98,13 @@ public class LicenseService {
     public record ActivateRequest(@NotBlank @Size(max = 200) String code) {
     }
 
+    /**
+     * The donation that is valid today, as proof in a feedback mail: the challenge and the
+     * signed donation code (verifiable with the public key), and who donated.
+     */
+    public record Donor(String challenge, String code, LocalDate validUntil, String companyName) {
+    }
+
     private final NamedParameterJdbcTemplate jdbc;
     private final LicensePricing pricing;
     private final LicenseCode codes;
@@ -127,6 +134,22 @@ public class LicenseService {
         return Optional.ofNullable(jdbc.queryForObject(
                 "select max(valid_until) from license where valid_until >= :today",
                 Map.of("today", today()), LocalDate.class));
+    }
+
+    /**
+     * The donation that is valid today, with its code; empty without one, or when its code was
+     * entered before codes were kept (entering it again fixes that).
+     */
+    @Transactional(readOnly = true)
+    public Optional<Donor> donor() {
+        return jdbc.query("""
+                select l.challenge, l.code, l.valid_until, r.company_name
+                from license l join license_request r on r.challenge = l.challenge
+                where l.valid_until >= :today and l.code is not null
+                order by l.valid_until desc, l.id desc
+                limit 1""", Map.of("today", today()), (rs, n) -> new Donor(rs.getString("challenge"),
+                rs.getString("code"), rs.getObject("valid_until", LocalDate.class), rs.getString("company_name")))
+                .stream().findFirst();
     }
 
     @Transactional(readOnly = true)
@@ -230,11 +253,14 @@ public class LicenseService {
         return text.toString();
     }
 
-    /** Enters a donation code; it must answer one of the challenges of earlier requests. */
+    /**
+     * Enters a donation code; it must answer one of the challenges of earlier requests. A code
+     * entered before codes were kept may be entered again, to keep it.
+     */
     public LicenseStatus activate(BuggyWuggyPrincipal user, ActivateRequest request) {
         List<String> challenges = jdbc.queryForList("""
                 select challenge from license_request r
-                where not exists (select 1 from license l where l.challenge = r.challenge)
+                where not exists (select 1 from license l where l.challenge = r.challenge and l.code is not null)
                 order by created_at desc""", Map.of(), String.class);
         for (String challenge : challenges) {
             Optional<LocalDate> until = codes.verify(challenge, request.code());
@@ -243,10 +269,12 @@ public class LicenseService {
                     throw badRequest("license.code-expired", until.get());
                 }
                 jdbc.update("""
-                        insert into license (challenge, valid_until, activated_at, activated_by)
-                        values (:challenge, :until, :at, :by)""",
+                        insert into license (challenge, valid_until, activated_at, activated_by, code)
+                        values (:challenge, :until, :at, :by, :code)
+                        on conflict (challenge) do update set code = excluded.code""",
                         new MapSqlParameterSource().addValue("challenge", challenge).addValue("until", until.get())
-                                .addValue("at", Timestamp.from(clock.instant())).addValue("by", user.id()));
+                                .addValue("at", Timestamp.from(clock.instant())).addValue("by", user.id())
+                                .addValue("code", request.code().replaceAll("\\s", "")));
                 log.info("Donation code for {} entered by {}, valid until {}", challenge, user.getUsername(),
                         until.get());
                 return status();
