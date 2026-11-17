@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.buggywuggy</groupId>
         <artifactId>buggywuggy-parent</artifactId>
-        <version>0.3.0</version>
+        <version>0.3.1</version>
     </parent>
 
     <artifactId>buggywuggy-server</artifactId>
@@ -81,6 +81,22 @@
             <version>${jsoup.version}</version>
         </dependency>
         <dependency>
+            <!-- Turns the documentation (docs/*.md) into HTML for the Help menu. -->
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark</artifactId>
+            <version>${commonmark.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-gfm-tables</artifactId>
+            <version>${commonmark.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-heading-anchor</artifactId>
+            <version>${commonmark.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-flyway</artifactId>
         </dependency>
@@ -134,6 +150,26 @@
 
     <build>
         <finalName>buggywuggy</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <!-- The documentation and the license, shown under Help in the web interface. -->
+                <directory>${project.basedir}/../docs</directory>
+                <targetPath>help</targetPath>
+                <includes>
+                    <include>*.md</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>${project.basedir}/..</directory>
+                <targetPath>help</targetPath>
+                <includes>
+                    <include>LICENSE</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

@@ -70,3 +70,17 @@
 .bw-board-card[data-fixed] {
   cursor: pointer;
 }
+
+/* Help pages: anchors land below the header; the license keeps its line breaks. */
+.bw-help [id] {
+  scroll-margin-top: 72px;
+}
+
+.bw-help table {
+  display: block;
+  overflow-x: auto;
+}
+
+.bw-help .help-license {
+  white-space: pre-wrap;
+}

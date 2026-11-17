@@ -41,6 +41,9 @@ buggywuggy:
   data-dir: ${BUGGYWUGGY_DATA_DIR:data}
   # The address users open BuggyWuggy at; used for links in e-mails.
   base-url: ${BUGGYWUGGY_BASE_URL:http://localhost:8080}
+  # Where users get the source code (AGPL section 13); shown under Help → About. Point it at
+  # your own repository when you run a modified BuggyWuggy.
+  source-url: ${BUGGYWUGGY_SOURCE_URL:https://github.com/libreplan/buggywuggy}
   # E-mail notifications. Without a host, no mail is sent.
   mail:
     host: ${BUGGYWUGGY_MAIL_HOST:}

@@ -4,8 +4,18 @@
 
 import { Anchor, AppShell, Avatar, Group, Menu, Text, TextInput, UnstyledButton } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconChevronDown, IconLogout, IconSearch, IconSettings, IconUser } from '@tabler/icons-react';
-import { useState } from 'react';
+import {
+  IconBook,
+  IconChevronDown,
+  IconInfoCircle,
+  IconLicense,
+  IconLogout,
+  IconSearch,
+  IconSettings,
+  IconTool,
+  IconUser,
+} from '@tabler/icons-react';
+import { useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router';
@@ -59,6 +69,7 @@ export function AppLayout() {
                 {t('nav.admin')}
               </Anchor>
             )}
+            <HelpMenu admin={!!myself?.globalPermissions.includes('ADMINISTER')} />
           </Group>
           <Group gap="sm" wrap="nowrap">
             <QuickSearch />
@@ -126,5 +137,33 @@ function QuickSearch() {
         e.currentTarget.blur();
       }}
     />
+  );
+}
+
+/** Help: the guides, the license and About, each in a tab of its own. */
+function HelpMenu({ admin }: { admin: boolean }) {
+  const { t } = useTranslation();
+  const item = (href: string, icon: ReactNode, label: string) => (
+    <Menu.Item component="a" href={href} target="_blank" rel="noopener" leftSection={icon}>
+      {label}
+    </Menu.Item>
+  );
+  return (
+    <Menu position="bottom-start" withinPortal>
+      <Menu.Target>
+        <UnstyledButton fw={500}>
+          <Group gap={4} wrap="nowrap">
+            {t('nav.help')}
+            <IconChevronDown size={14} />
+          </Group>
+        </UnstyledButton>
+      </Menu.Target>
+      <Menu.Dropdown>
+        {item('/help/user-guide', <IconBook size={16} />, t('help.userGuide'))}
+        {admin && item('/help/admin-guide', <IconTool size={16} />, t('help.adminGuide'))}
+        {item('/help/license', <IconLicense size={16} />, t('help.license'))}
+        {item('/help/about', <IconInfoCircle size={16} />, t('help.about'))}
+      </Menu.Dropdown>
+    </Menu>
   );
 }

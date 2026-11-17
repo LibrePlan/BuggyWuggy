@@ -52,6 +52,9 @@
 #  data-dir: data
 ##  The address users open BuggyWuggy at; links in e-mails point here [BUGGYWUGGY_BASE_URL]
 #  base-url: http://localhost:8080
+##  Where users get the source code (AGPL section 13), shown under Help → About. Point it at
+##  your own repository when you run a modified BuggyWuggy [BUGGYWUGGY_SOURCE_URL]
+#  source-url: https://github.com/libreplan/buggywuggy
 #
 #  setup:
 ##   Fixed token for first-time setup; empty means a random token, written to the log

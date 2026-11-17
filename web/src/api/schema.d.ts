@@ -1124,6 +1124,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/help/{page}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["page"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/groups/picker": {
         parameters: {
             query?: never;
@@ -2331,6 +2347,7 @@ export interface components {
         BuildVersionResponse: {
             version: string;
             commit: string | null;
+            sourceUrl: string;
         };
         StatusResponse: {
             /** Format: int64 */
@@ -2474,6 +2491,18 @@ export interface components {
             icon: string | null;
             /** Format: int32 */
             hierarchyLevel: number;
+        };
+        HelpHeading: {
+            /** Format: int32 */
+            level: number;
+            id: string;
+            text: string;
+        };
+        HelpPage: {
+            id: string;
+            title: string;
+            html: string;
+            headings: components["schemas"]["HelpHeading"][];
         };
         DonationResponse: {
             show: boolean;
@@ -5064,6 +5093,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["LinkTypeResponse"][];
+                };
+            };
+        };
+    };
+    page: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                page: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["HelpPage"];
                 };
             };
         };

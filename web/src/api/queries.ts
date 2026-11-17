@@ -7,6 +7,7 @@ import { ApiError } from '../lib/apiError';
 import { get, post, seg } from './client';
 import type { IssueQuery } from '../lib/issueQuery';
 import type {
+  HelpPage,
   SsoResponse,
   SsoIdentityResponse,
   BoardConfigResponse,
@@ -81,6 +82,7 @@ export const keys = {
   donation: ['donation'] as const,
   version: ['version'] as const,
   sso: ['sso'] as const,
+  help: (page: string) => ['help', page] as const,
   adminUserSso: (id: number) => ['admin', 'user', id, 'sso'] as const,
   projectRoles: (key: string) => ['project', key, 'roles'] as const,
   admin: ['admin'] as const,
@@ -498,6 +500,15 @@ export function useDonation() {
 /** Single sign-on providers and who may log in with a password (no login needed). */
 export function useSso() {
   return useQuery({ queryKey: keys.sso, queryFn: () => get<SsoResponse>('/api/v1/auth/sso'), staleTime: Infinity });
+}
+
+/** A page of the Help menu: a guide or the license, as HTML. */
+export function useHelpPage(page: string) {
+  return useQuery({
+    queryKey: keys.help(page),
+    queryFn: () => get<HelpPage>(`/api/v1/help/${seg(page)}`),
+    staleTime: Infinity,
+  });
 }
 
 /** A user's identities at single sign-on providers (administration). */

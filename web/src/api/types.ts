@@ -12,6 +12,7 @@ export type TwoFactorLoginResponse = Schemas['TwoFactorLoginResponse'];
 export type EnrollmentResponse = Schemas['EnrollmentResponse'];
 export type EnrollmentResult = Schemas['EnrollmentResult'];
 export type SsoResponse = Schemas['SsoResponse'];
+export type HelpPage = Schemas['HelpPage'];
 export type SsoIdentityResponse = Schemas['SsoIdentityResponse'];
 export type SetupRequest = Schemas['SetupRequest'];
 export type UserRef = Schemas['UserRef'];

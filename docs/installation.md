@@ -116,6 +116,7 @@ BuggyWuggy is configured with environment variables or a [configuration file](#c
 | `BUGGYWUGGY_DATA_DIR` | `data` (relative to the working directory) | Directory for attachment files. It is created if needed and must be writable by BuggyWuggy. Use an absolute path in production, e.g. `/var/lib/buggywuggy`. |
 | `BUGGYWUGGY_MAX_ATTACHMENT_SIZE` | `50MB` | Largest file that can be attached, e.g. `10MB`, `1GB`. |
 | `BUGGYWUGGY_MAX_UPLOAD_SIZE` | `200MB` | Largest total size of the files in one upload. |
+| `BUGGYWUGGY_SOURCE_URL` | `https://github.com/libreplan/buggywuggy` | Where users get the source code, shown under Help → About. The AGPL requires offering the source of the version you run: point it at your own repository if you changed BuggyWuggy. |
 | `BUGGYWUGGY_SSO_PASSWORD_LOGIN` | `all` | With single sign-on: who may log in with a password (`all`, `system-admins`, `none`); see [Single sign-on](#single-sign-on). |
 | `BUGGYWUGGY_TWO_FACTOR` | `false` | `true`: every user logs in with a code from an authenticator app besides the password; see [Two-factor login](#two-factor-login). |
 | `BUGGYWUGGY_TWO_FACTOR_ISSUER` | `BuggyWuggy` | The name authenticator apps show with the code, e.g. `BuggyWuggy ACME` when users have several installations. |

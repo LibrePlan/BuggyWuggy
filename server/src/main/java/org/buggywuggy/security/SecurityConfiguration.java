@@ -60,7 +60,9 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/login", "/api/v1/auth/sso",
                                 "/api/v1/auth/two-factor", "/api/v1/auth/two-factor/enrollment").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/donation", "/api/v1/donation/comic.png",
-                                "/api/v1/donation/comic-2x.png", "/api/v1/version").permitAll()
+                                "/api/v1/donation/comic-2x.png", "/api/v1/version", "/api/v1/help/license").permitAll()
+                        .requestMatchers("/api/v1/help/admin-guide")
+                        .hasAnyAuthority(Authorities.SYSTEM_ADMIN, Authorities.ADMINISTER)
                         .requestMatchers("/api/v1/admin/**")
                         .hasAnyAuthority(Authorities.SYSTEM_ADMIN, Authorities.ADMINISTER)
                         .requestMatchers("/error").permitAll()

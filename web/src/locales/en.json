@@ -9,7 +9,8 @@
     "issues": "Issues",
     "quickSearch": "Search or jump to BUG-12",
     "admin": "Administration",
-    "profile": "Profile"
+    "profile": "Profile",
+    "help": "Help"
   },
   "common": {
     "cancel": "Cancel",
@@ -856,5 +857,19 @@
     "download": "Download",
     "saved": "I have saved my recovery codes",
     "continue": "Continue"
+  },
+  "help": {
+    "title": "BuggyWuggy Help",
+    "userGuide": "User guide",
+    "adminGuide": "Administrator guide",
+    "license": "License (AGPL)",
+    "about": "About BuggyWuggy"
+  },
+  "about": {
+    "tagline": "Open source, self-hosted issue tracker",
+    "license": "BuggyWuggy is free software under the GNU Affero General Public License, version 3 or later:",
+    "licenseLink": "read the license",
+    "source": "Source code:",
+    "askAdmin": "Your administrator can request a donation quotation under Administration → Donation."
   }
 }

@@ -7,12 +7,13 @@ package org.buggywuggy.common;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.info.BuildProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.info.GitProperties;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The version of BuggyWuggy and the commit it was built from, for the login page, without
+ * The version of BuggyWuggy and the commit it was built from, for the login and About pages, without
  * logging in. Both come from the build (META-INF/build-info.properties and git.properties).
  */
 @RestController
@@ -20,18 +21,20 @@ public class BuildVersionController {
 
     /**
      * {@code version}: as in the pom, {@code "development"} when not built with Maven;
-     * {@code commit}: the abbreviated git commit id, null when built without git.
+     * {@code commit}: the abbreviated git commit id, null when built without git;
+     * {@code sourceUrl}: where to get the source code (AGPL section 13).
      */
-    public record BuildVersionResponse(String version, @ApiNullable String commit) {
+    public record BuildVersionResponse(String version, @ApiNullable String commit, String sourceUrl) {
     }
 
     private final BuildVersionResponse response;
 
-    public BuildVersionController(ObjectProvider<BuildProperties> build, ObjectProvider<GitProperties> git) {
+    public BuildVersionController(ObjectProvider<BuildProperties> build, ObjectProvider<GitProperties> git,
+            @Value("${buggywuggy.source-url}") String sourceUrl) {
         BuildProperties b = build.getIfAvailable();
         GitProperties g = git.getIfAvailable();
         this.response = new BuildVersionResponse(b == null ? "development" : b.getVersion(),
-                g == null ? null : g.getShortCommitId());
+                g == null ? null : g.getShortCommitId(), sourceUrl);
     }
 
     @GetMapping("/api/v1/version")

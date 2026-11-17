@@ -87,6 +87,9 @@ The bar at the top of every page contains:
   straight away. Type anything else to search for it.
 - **Administration**: only for BuggyWuggy administrators; see the
   [Installation Guide](installation.md#administration).
+- **Help**: this user guide, the administrator guide (for administrators), the license of
+  BuggyWuggy (the GNU AGPL) and **About BuggyWuggy**: the version, where to get the source
+  code, and whether this installation supports the project. Each opens in a new tab.
 - **Your name**: the menu with **Profile** and **Log out**.
 
 Every issue and every search has its own address (URL). You can bookmark it or send it to

@@ -29,14 +29,19 @@ import { ProjectSettingsPage } from './pages/ProjectSettingsPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { SearchPage } from './pages/SearchPage';
 import { SetupPage } from './pages/SetupPage';
+import { AboutPage, HelpPage } from './pages/HelpPages';
 
 export const router = createBrowserRouter([
   { path: '/setup', element: <SetupPage />, errorElement: <RouteError /> },
   { path: '/login', element: <LoginPage />, errorElement: <RouteError /> },
+  // Help pages that need no login: the license (AGPL) and About.
+  { path: '/help/about', element: <AboutPage />, errorElement: <RouteError /> },
+  { path: '/help/license', element: <HelpPage page="license" />, errorElement: <RouteError /> },
   {
     element: <RequireAuth />,
     errorElement: <RouteError />,
     children: [
+      { path: '/help/:page', element: <HelpPage /> },
       {
         element: <AppLayout />,
         children: [
