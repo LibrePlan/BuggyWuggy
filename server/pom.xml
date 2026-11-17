@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.buggywuggy</groupId>
         <artifactId>buggywuggy-parent</artifactId>
-        <version>0.3.2</version>
+        <version>0.3.3</version>
     </parent>
 
     <artifactId>buggywuggy-server</artifactId>
@@ -175,11 +175,17 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <executions>
-                    <!-- META-INF/build-info.properties: the version, shown on the login page. -->
+                    <!-- META-INF/build-info.properties: the version, shown on the login page, and
+                         whether this is a demo build (build.demo). -->
                     <execution>
                         <goals>
                             <goal>build-info</goal>
                         </goals>
+                        <configuration>
+                            <additionalProperties>
+                                <demo>${buggywuggy.demo}</demo>
+                            </additionalProperties>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -197,4 +203,23 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Demo mode (org.buggywuggy.demo.DemoMode): ./mvnw -Ddemo package builds
+             server/target/buggywuggy-demo.jar, with a shared "demo" account and no e-mail. -->
+        <profile>
+            <id>demo</id>
+            <activation>
+                <property>
+                    <name>demo</name>
+                </property>
+            </activation>
+            <properties>
+                <buggywuggy.demo>true</buggywuggy.demo>
+            </properties>
+            <build>
+                <finalName>buggywuggy-demo</finalName>
+            </build>
+        </profile>
+    </profiles>
 </project>

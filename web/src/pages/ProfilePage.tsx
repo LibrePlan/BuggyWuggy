@@ -8,7 +8,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { patch, put } from '../api/client';
-import { keys, useLanguages, useMyself } from '../api/queries';
+import { keys, useLanguages, useMyself, useVersion } from '../api/queries';
+import { useIsDemoAccount } from '../components/DemoNotice';
 import type { MyselfResponse, UpdateMyselfRequest } from '../api/types';
 import { PageLoader } from '../components/QueryState';
 import { ApiError, fieldErrorMap } from '../lib/apiError';
@@ -18,6 +19,7 @@ import { notifyError, notifySaved, PASSWORD_MIN } from '../lib/notify';
 export function ProfilePage() {
   const { t } = useTranslation();
   const myself = useMyself().data;
+  const demoAccount = useIsDemoAccount(myself?.username);
   if (!myself) return <PageLoader />;
   return (
     <Stack>
@@ -25,12 +27,16 @@ export function ProfilePage() {
       <Grid gap="xl">
         <Grid.Col span={{ base: 12, md: 6 }}>
           <Stack gap="xl">
-            <ProfileForm myself={myself} />
+            <ProfileForm myself={myself} fixedName={demoAccount} />
             <NotificationSettings myself={myself} />
           </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 6 }}>
-          {myself.hasPassword ? (
+          {demoAccount ? (
+            <Text size="sm" c="dimmed">
+              {t('profile.demoAccount')}
+            </Text>
+          ) : myself.hasPassword ? (
             <PasswordForm />
           ) : (
             <Text size="sm" c="dimmed">
@@ -51,7 +57,8 @@ function timeZones(): string[] {
   }
 }
 
-function ProfileForm({ myself }: { myself: MyselfResponse }) {
+/** {@code fixedName}: the demo account, whose name and e-mail address cannot be changed. */
+function ProfileForm({ myself, fixedName }: { myself: MyselfResponse; fixedName: boolean }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const zones = useMemo(timeZones, []);
@@ -104,8 +111,19 @@ function ProfileForm({ myself }: { myself: MyselfResponse }) {
       <Stack>
         <Title order={4}>{t('profile.details')}</Title>
         <TextInput label={t('admin.user.username')} value={myself.username} disabled readOnly />
-        <TextInput label={t('admin.user.displayName')} required {...form.getInputProps('displayName')} />
-        <TextInput label={t('admin.user.email')} type="email" required {...form.getInputProps('email')} />
+        <TextInput
+          label={t('admin.user.displayName')}
+          required
+          disabled={fixedName}
+          {...form.getInputProps('displayName')}
+        />
+        <TextInput
+          label={t('admin.user.email')}
+          type="email"
+          required
+          disabled={fixedName}
+          {...form.getInputProps('email')}
+        />
         <Select
           label={t('profile.language')}
           description={t('profile.languageHelp')}
@@ -206,6 +224,7 @@ function PasswordForm() {
 /** Switches that are saved right away. */
 function NotificationSettings({ myself }: { myself: MyselfResponse }) {
   const { t } = useTranslation();
+  const demo = !!useVersion().data?.demo;
   const queryClient = useQueryClient();
   const save = useMutation({
     mutationFn: (request: UpdateMyselfRequest) => patch<MyselfResponse>('/api/v1/myself', request),
@@ -215,6 +234,11 @@ function NotificationSettings({ myself }: { myself: MyselfResponse }) {
   return (
     <Stack>
       <Title order={4}>{t('profile.notifications')}</Title>
+      {demo && (
+        <Text size="sm" c="dimmed">
+          {t('demo.noMail')}
+        </Text>
+      )}
       <Switch
         label={t('profile.emailNotifications')}
         description={t('profile.emailNotificationsHelp')}

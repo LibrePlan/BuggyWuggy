@@ -1,0 +1,62 @@
+# BuggyWuggy — open source, self-hosted issue tracker
+# Copyright (C) 2026 The BuggyWuggy contributors
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Builds the demo version of BuggyWuggy (./mvnw -Ddemo, see org.buggywuggy.demo.DemoMode):
+# server/target/buggywuggy-demo.jar, kept as the artifact "buggywuggy-demo". The tests run in
+# ci.yml; demo mode itself is tested there too (DemoModeIntegrationTest).
+
+name: Demo build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  demo:
+    runs-on: docker
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: https://data.forgejo.org/actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: https://data.forgejo.org/actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Cache Node.js and npm packages
+        uses: https://data.forgejo.org/actions/cache@v4
+        with:
+          path: |
+            web/node
+            ~/.npm
+          key: web-${{ hashFiles('web/pom.xml', 'web/package-lock.json') }}
+          restore-keys: web-
+
+      - name: Build the demo version
+        run: ./mvnw -B -ntp -Ddemo -DskipTests package
+
+      - name: Check that it is a demo build
+        shell: bash
+        run: |
+          jar=server/target/buggywuggy-demo.jar
+          if [ ! -f "$jar" ]; then
+            echo "::error::$jar was not built" >&2
+            exit 1
+          fi
+          if ! unzip -p "$jar" META-INF/build-info.properties | grep -qx 'build.demo=true'; then
+            echo "::error::$jar is not a demo build (build.demo=true missing)" >&2
+            exit 1
+          fi
+          unzip -p "$jar" META-INF/build-info.properties
+
+      - name: Keep the demo jar
+        uses: https://data.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          name: buggywuggy-demo
+          path: server/target/buggywuggy-demo.jar
+          retention-days: 14

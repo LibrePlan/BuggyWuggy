@@ -69,7 +69,12 @@ function MailStatusSection() {
           {t('admin.mail.sendTest')}
         </Button>
       </Group>
-      {!s.configured && (
+      {s.demo && (
+        <Alert color="grape" title={t('admin.mail.demoTitle')}>
+          {t('demo.noMail')}
+        </Alert>
+      )}
+      {!s.configured && !s.demo && (
         <Alert color="yellow" title={t('admin.mail.notConfigured')}>
           {s.configFiles.length
             ? t('admin.mail.notConfiguredHelp', { file: s.configFiles[0] })

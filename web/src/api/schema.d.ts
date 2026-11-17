@@ -2348,6 +2348,12 @@ export interface components {
             version: string;
             commit: string | null;
             sourceUrl: string;
+            demo: components["schemas"]["DemoInfo"] | null;
+        };
+        DemoInfo: {
+            username: string;
+            password: string;
+            projectKey: string;
         };
         StatusResponse: {
             /** Format: int64 */
@@ -2578,6 +2584,7 @@ export interface components {
             baseUrl: string;
             outbox: components["schemas"]["OutboxStatus"];
             configFiles: string[];
+            demo: boolean;
         };
         OutboxStatus: {
             /** Format: int64 */

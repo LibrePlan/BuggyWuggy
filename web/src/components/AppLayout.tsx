@@ -22,6 +22,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import { post } from '../api/client';
 import { keys, useMyself } from '../api/queries';
 import { normalizeIssueKey } from '../lib/links';
+import { DemoNotice } from './DemoNotice';
 import { initials } from './UserLabel';
 
 export function AppLayout() {
@@ -109,6 +110,7 @@ export function AppLayout() {
         </Group>
       </AppShell.Header>
       <AppShell.Main>
+        <DemoNotice compact />
         <Outlet />
       </AppShell.Main>
     </AppShell>

@@ -13,7 +13,7 @@
 
     <groupId>org.buggywuggy</groupId>
     <artifactId>buggywuggy-parent</artifactId>
-    <version>0.3.2</version>
+    <version>0.3.3</version>
     <packaging>pom</packaging>
 
     <name>BuggyWuggy</name>
@@ -39,6 +39,8 @@
         <zxing.version>3.5.3</zxing.version>
         <jsoup.version>1.23.2</jsoup.version>
         <commonmark.version>0.32.0</commonmark.version>
+        <!-- Demo mode, chosen at build time: ./mvnw -Ddemo package (see server/pom.xml). -->
+        <buggywuggy.demo>false</buggywuggy.demo>
         <greenmail.version>2.1.15</greenmail.version>
         <!-- Only the server module is an application; see server/pom.xml. -->
         <spring-boot.run.skip>true</spring-boot.run.skip>

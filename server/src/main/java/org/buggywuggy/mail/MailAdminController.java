@@ -50,7 +50,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class MailAdminController {
 
     public record MailStatus(boolean configured, @ApiNullable String host, int port, String security, String from,
-            String baseUrl, OutboxStatus outbox, List<String> configFiles) {
+            String baseUrl, OutboxStatus outbox, List<String> configFiles, boolean demo) {
     }
 
     private final MailTransport transport;
@@ -79,7 +79,7 @@ public class MailAdminController {
     public MailStatus status() {
         MailProperties p = transport.properties();
         return new MailStatus(transport.configured(), p.host(), p.port(), p.security().name().toLowerCase(Locale.ROOT),
-                p.from(), baseUrl, outbox.status(), configFiles.inUse());
+                p.from(), baseUrl, outbox.status(), configFiles.inUse(), transport.demo());
     }
 
     /** Sends the test mail to the administrator, right away, so a configuration error shows immediately. */

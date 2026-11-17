@@ -55,6 +55,9 @@ public class MailOutbox {
     /** Queues a mail; call inside the transaction that decides to send it. */
     @Transactional
     public void enqueue(Long recipientId, String toAddress, String subject, String html, String text) {
+        if (transport.demo()) {
+            return; // demo mode: no mail, not even queued
+        }
         Timestamp now = Timestamp.from(clock.instant());
         jdbc.update("""
                 insert into mail_message (recipient_id, to_address, subject, html_body, text_body,

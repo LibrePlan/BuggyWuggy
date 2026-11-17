@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.buggywuggy.common.ApiException;
 import org.buggywuggy.common.ApiNullable;
+import org.buggywuggy.demo.DemoMode;
 import org.buggywuggy.security.sso.SsoProperties;
 import org.buggywuggy.security.sso.SsoProperties.PasswordLogin;
 import org.buggywuggy.security.twofactor.TwoFactorService;
@@ -118,14 +119,16 @@ public class AuthController {
     private final TwoFactorService twoFactor;
     private final Clock clock;
     private final SsoProperties sso;
+    private final DemoMode demo;
     private final SecurityContextHolderStrategy contextHolder = SecurityContextHolder.getContextHolderStrategy();
 
     public AuthController(AuthenticationManager authenticationManager,
             SessionAuthenticationStrategy sessionAuthenticationStrategy,
             SecurityContextRepository securityContextRepository, LoginThrottle throttle, UserService userService,
             BuggyWuggyUserDetailsService userDetailsService, TwoFactorSettings twoFactorSettings,
-            TwoFactorService twoFactor, Clock clock, SsoProperties sso) {
+            TwoFactorService twoFactor, Clock clock, SsoProperties sso, DemoMode demo) {
         this.sso = sso;
+        this.demo = demo;
         this.authenticationManager = authenticationManager;
         this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
         this.securityContextRepository = securityContextRepository;
@@ -146,7 +149,9 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
-        if (sso.passwordLogin() == PasswordLogin.NONE) {
+        // In demo mode the shared demo account always logs in with its (well-known) password.
+        boolean demoAccount = demo.isDemoUser(request.username().trim());
+        if (sso.passwordLogin() == PasswordLogin.NONE && !demoAccount) {
             throw ApiException.forbidden("auth.password-login-disabled");
         }
         // With password login for system administrators only, a wrong password and a correct
@@ -170,7 +175,7 @@ public class AuthController {
             throw new ApiException(HttpStatus.UNAUTHORIZED, badCredentials);
         }
         BuggyWuggyPrincipal principal = (BuggyWuggyPrincipal) authentication.getPrincipal();
-        if (sso.passwordLogin() == PasswordLogin.SYSTEM_ADMINS && !principal.isSystemAdmin()) {
+        if (sso.passwordLogin() == PasswordLogin.SYSTEM_ADMINS && !principal.isSystemAdmin() && !demoAccount) {
             throttle.recordFailure(throttleKey);
             throw new ApiException(HttpStatus.UNAUTHORIZED, badCredentials);
         }

@@ -5,7 +5,7 @@
 import { Alert, Anchor, Button, Container, Divider, Paper, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { IconLogin2 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +13,7 @@ import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react
 import { post } from '../api/client';
 import { keys, useDonation, useMyself, useSetupStatus, useSso, useVersion } from '../api/queries';
 import type { LoginResponse, MyselfResponse } from '../api/types';
+import { DemoNotice } from '../components/DemoNotice';
 import { PageLoader } from '../components/QueryState';
 import { SupportProject } from '../components/SupportProject';
 import { TwoFactorCode, TwoFactorEnrollment } from './TwoFactorSteps';
@@ -38,7 +39,9 @@ export function LoginPage() {
   const ssoError = params.get('sso-error');
   // With password login for system administrators only, the form is behind a link.
   const [adminLogin, { toggle: toggleAdminLogin }] = useDisclosure(false);
-  const passwordForm = !sso || sso.passwordLogin === 'ALL' || (sso.passwordLogin === 'SYSTEM_ADMINS' && adminLogin);
+  // In demo mode the form is always there: the demo account logs in with its password.
+  const passwordForm =
+    !!version?.demo || !sso || sso.passwordLogin === 'ALL' || (sso.passwordLogin === 'SYSTEM_ADMINS' && adminLogin);
   const next = safeNext(params.get('next'));
   const setupDone = (location.state as { setupDone?: boolean } | null)?.setupDone;
 
@@ -49,6 +52,13 @@ export function LoginPage() {
       password: (v) => (v ? null : t('validation.required')),
     },
   });
+
+  // In demo mode the demo account is filled in.
+  const demo = version?.demo;
+  const { setValues: setLoginValues } = form;
+  useEffect(() => {
+    if (demo) setLoginValues((v) => (v.username || v.password ? v : { username: demo.username, password: demo.password }));
+  }, [demo, setLoginValues]);
 
   // With two-factor login, a correct password leads to a second step.
   const [step, setStep] = useState<LoginResponse['step']>('DONE');
@@ -144,6 +154,7 @@ export function LoginPage() {
           </Stack>
         )}
       </Paper>
+      <DemoNotice />
       {donation.data && (
         <SupportProject
           status={donation.data.status}

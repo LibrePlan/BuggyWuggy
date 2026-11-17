@@ -8,6 +8,7 @@ package org.buggywuggy.project;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
+import org.buggywuggy.demo.DemoMode;
 import org.buggywuggy.security.Authorities;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -50,9 +51,11 @@ public class ProjectPermissionService {
                       and """ + GRANT_APPLIES_TO_USER + ")";
 
     private final NamedParameterJdbcTemplate jdbc;
+    private final DemoMode demo;
 
-    public ProjectPermissionService(NamedParameterJdbcTemplate jdbc) {
+    public ProjectPermissionService(NamedParameterJdbcTemplate jdbc, DemoMode demo) {
         this.jdbc = jdbc;
+        this.demo = demo;
     }
 
     public Set<ProjectPermission> permissionsOf(BuggyWuggyPrincipal user, long projectId) {
@@ -68,7 +71,15 @@ public class ProjectPermissionService {
         if (user.hasAuthority(Authorities.ADMINISTER)) {
             result.add(ProjectPermission.ADMINISTER_PROJECT);
         }
+        if (demo.isDemoUser(user)) {
+            return demo.demoPermissions(projectKey(projectId), result);
+        }
         return result;
+    }
+
+    private String projectKey(long projectId) {
+        return jdbc.queryForObject("select key from project where id = :id", Map.of("id", projectId),
+                String.class);
     }
 
     /**
@@ -76,6 +87,16 @@ public class ProjectPermissionService {
      * permission scheme. Used for checks about other users, e.g. whether someone is assignable.
      */
     public boolean userHas(long userId, long projectId, ProjectPermission permission) {
+        if (demo.enabled() && demo.isDemoUser(jdbc.queryForObject(
+                "select username from user_account where id = :id", Map.of("id", userId), String.class))) {
+            Set<ProjectPermission> granted = schemeGrants(userId, projectId, ProjectPermission.BROWSE_PROJECT)
+                    ? Set.of(ProjectPermission.BROWSE_PROJECT) : Set.of();
+            return demo.demoPermissions(projectKey(projectId), granted).contains(permission);
+        }
+        return schemeGrants(userId, projectId, permission);
+    }
+
+    private boolean schemeGrants(long userId, long projectId, ProjectPermission permission) {
         return Boolean.TRUE.equals(jdbc.queryForObject("""
                 select exists (
                     select 1 from project p

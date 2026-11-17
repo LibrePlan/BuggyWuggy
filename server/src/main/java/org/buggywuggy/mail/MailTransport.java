@@ -9,6 +9,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
+import org.buggywuggy.demo.DemoMode;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.mail.MailException;
 import org.springframework.mail.MailPreparationException;
@@ -23,10 +24,18 @@ public class MailTransport {
 
     private final MailProperties properties;
     private final JavaMailSenderImpl sender;
+    private final boolean demo;
 
-    public MailTransport(MailProperties properties) {
+    public MailTransport(MailProperties properties, DemoMode demo) {
         this.properties = properties;
-        this.sender = properties.configured() ? createSender(properties) : null;
+        this.demo = demo.enabled();
+        // In demo mode BuggyWuggy sends no mail at all, whatever the configuration says.
+        this.sender = !this.demo && properties.configured() ? createSender(properties) : null;
+    }
+
+    /** Demo mode: mail is switched off. */
+    public boolean demo() {
+        return demo;
     }
 
     public boolean configured() {
@@ -40,7 +49,8 @@ public class MailTransport {
     /** Sends a multipart mail with a plain-text and an HTML part. */
     public void send(String to, String subject, String html, String text) throws MailException {
         if (sender == null) {
-            throw new MailPreparationException("Mail is not configured (buggywuggy.mail.host)");
+            throw new MailPreparationException(demo ? "Mail is switched off in demo mode"
+                    : "Mail is not configured (buggywuggy.mail.host)");
         }
         MimeMessage message = sender.createMimeMessage();
         try {

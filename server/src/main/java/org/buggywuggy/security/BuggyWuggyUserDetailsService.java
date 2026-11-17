@@ -7,6 +7,7 @@ package org.buggywuggy.security;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.buggywuggy.demo.DemoMode;
 import org.buggywuggy.user.UserAccount;
 import org.buggywuggy.user.UserAccountRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -20,10 +21,12 @@ public class BuggyWuggyUserDetailsService implements UserDetailsService {
 
     private final UserAccountRepository users;
     private final JdbcTemplate jdbc;
+    private final DemoMode demo;
 
-    public BuggyWuggyUserDetailsService(UserAccountRepository users, JdbcTemplate jdbc) {
+    public BuggyWuggyUserDetailsService(UserAccountRepository users, JdbcTemplate jdbc, DemoMode demo) {
         this.users = users;
         this.jdbc = jdbc;
+        this.demo = demo;
     }
 
     @Override
@@ -57,6 +60,10 @@ public class BuggyWuggyUserDetailsService implements UserDetailsService {
                     from global_permission_grant g
                     join group_membership m on m.group_id = g.group_id
                     where m.user_id = ?""", String.class, user.getId()));
+        }
+        if (demo.isDemoUser(user.getUsername())) {
+            // The shared demo account never administers anything; at most it sees other users.
+            authorities.retainAll(Set.of(Authorities.BROWSE_USERS));
         }
         return authorities;
     }

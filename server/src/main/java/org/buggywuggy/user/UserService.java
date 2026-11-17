@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.buggywuggy.common.PageResponse;
 import org.buggywuggy.common.SqlLike;
+import org.buggywuggy.demo.DemoMode;
 import org.buggywuggy.notification.NotificationPreferences;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
 import org.buggywuggy.security.SessionInvalidator;
@@ -53,11 +54,13 @@ public class UserService {
     private final TwoFactorService twoFactor;
     private final SsoProperties sso;
     private final JdbcTemplate jdbc;
+    private final DemoMode demo;
 
     public UserService(UserAccountRepository users, UserGroupRepository groups, PasswordEncoder passwordEncoder,
             SessionInvalidator sessions, Clock clock, NotificationPreferences notifications,
-            TwoFactorService twoFactor, SsoProperties sso, JdbcTemplate jdbc) {
+            TwoFactorService twoFactor, SsoProperties sso, JdbcTemplate jdbc, DemoMode demo) {
         this.jdbc = jdbc;
+        this.demo = demo;
         this.twoFactor = twoFactor;
         this.sso = sso;
         this.notifications = notifications;
@@ -225,6 +228,9 @@ public class UserService {
     }
 
     public MyselfResponse updateMyself(BuggyWuggyPrincipal principal, UpdateMyselfRequest request) {
+        if (demo.isDemoUser(principal) && (request.displayName() != null || request.email() != null)) {
+            throw forbidden("demo.account-fixed");
+        }
         UserAccount user = find(principal.id());
         if (request.displayName() != null) {
             user.setDisplayName(request.displayName().trim());
@@ -245,6 +251,9 @@ public class UserService {
     /** Changes the user's own password and ends all their other sessions. */
     public void changeOwnPassword(BuggyWuggyPrincipal principal, String currentPassword, String newPassword,
             String currentSessionId) {
+        if (demo.isDemoUser(principal)) {
+            throw forbidden("demo.account-fixed");
+        }
         UserAccount user = find(principal.id());
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
             throw badRequest("auth.wrong-current-password");

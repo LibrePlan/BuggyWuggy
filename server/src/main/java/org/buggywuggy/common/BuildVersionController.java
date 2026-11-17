@@ -5,6 +5,7 @@
  */
 package org.buggywuggy.common;
 
+import org.buggywuggy.demo.DemoMode;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,17 +25,24 @@ public class BuildVersionController {
      * {@code commit}: the abbreviated git commit id, null when built without git;
      * {@code sourceUrl}: where to get the source code (AGPL section 13).
      */
-    public record BuildVersionResponse(String version, @ApiNullable String commit, String sourceUrl) {
+    public record BuildVersionResponse(String version, @ApiNullable String commit, String sourceUrl,
+            @ApiNullable DemoInfo demo) {
+    }
+
+    /** Set in demo mode: the shared account, filled in on the login page, and its project. */
+    public record DemoInfo(String username, String password, String projectKey) {
     }
 
     private final BuildVersionResponse response;
 
     public BuildVersionController(ObjectProvider<BuildProperties> build, ObjectProvider<GitProperties> git,
-            @Value("${buggywuggy.source-url}") String sourceUrl) {
+            @Value("${buggywuggy.source-url}") String sourceUrl, DemoMode demo) {
         BuildProperties b = build.getIfAvailable();
         GitProperties g = git.getIfAvailable();
         this.response = new BuildVersionResponse(b == null ? "development" : b.getVersion(),
-                g == null ? null : g.getShortCommitId(), sourceUrl);
+                g == null ? null : g.getShortCommitId(), sourceUrl, demo.enabled()
+                        ? new DemoInfo(DemoMode.USERNAME, DemoMode.PASSWORD, DemoMode.PROJECT_KEY)
+                        : null);
     }
 
     @GetMapping("/api/v1/version")

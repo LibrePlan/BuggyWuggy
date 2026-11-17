@@ -434,7 +434,8 @@
       "resetDone": "The built-in template is used again.",
       "problems": "The template contains errors",
       "sampleData": "Shown with sample data.",
-      "plainText": "Plain text"
+      "plainText": "Plain text",
+      "demoTitle": "E-mail is switched off"
     },
     "import": "Import",
     "importer": {
@@ -706,7 +707,8 @@
     "emailNotificationsHelp": "About issues you watch, reported or are assigned to. Several changes by one person are combined into one mail.",
     "notifyOwnChanges": "Also about my own changes",
     "notifyOwnChangesHelp": "Normally you do not get mails about changes you made yourself.",
-    "ssoOnly": "You log in with single sign-on, so you have no BuggyWuggy password."
+    "ssoOnly": "You log in with single sign-on, so you have no BuggyWuggy password.",
+    "demoAccount": "This is the shared demo account: its name, e-mail address and password cannot be changed."
   },
   "board": {
     "title": "Board",
@@ -873,5 +875,11 @@
     "licenseLink": "read the license",
     "source": "Source code:",
     "askAdmin": "Your administrator can request a donation quotation under Administration → Donation."
+  },
+  "demo": {
+    "title": "Demo mode",
+    "rules": "This is a demonstration of BuggyWuggy. Log in as <b>{{username}}</b> with password <b>{{password}}</b> (already filled in) to try it: in the project <b>{{project}}</b> you may create, change and delete issues as you like; all other projects can only be read. Everything you enter can be seen by every visitor. BuggyWuggy sends no e-mail in demo mode.",
+    "short": "Demo mode: the account <b>{{username}}</b> (password <b>{{password}}</b>) may change anything in project <project>{{project}}</project> and only read the other projects. No e-mail is sent.",
+    "noMail": "BuggyWuggy sends no e-mail in demo mode."
   }
 }
