@@ -168,9 +168,7 @@
     "empty": "No changes yet.",
     "system": "System",
     "madeChanges": "made changes",
-    "fieldHeader": "Field",
-    "from": "Original value",
-    "to": "New value",
+    "to": "changed to",
     "field": {
       "summary": "Summary",
       "description": "Description",
@@ -191,7 +189,11 @@
       "import": "Imported from",
       "remotelink": "External link",
       "rank": "Rank"
-    }
+    },
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "added": "Added",
+    "removed": "Removed"
   },
   "comment": {
     "title": "Comments",

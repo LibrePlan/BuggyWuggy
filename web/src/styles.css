@@ -84,3 +84,28 @@
 .bw-help .help-license {
   white-space: pre-wrap;
 }
+
+/* Issue history: field, old value, arrow, new value; on narrow screens the field above. */
+.bw-history-row {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: start;
+  padding: 6px 0;
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.bw-history-values {
+  grid-column: 2 / -1;
+}
+
+@media (max-width: 36em) {
+  .bw-history-row {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .bw-history-field,
+  .bw-history-values {
+    grid-column: 1 / -1;
+  }
+}

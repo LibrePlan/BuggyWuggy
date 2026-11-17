@@ -162,7 +162,11 @@ An issue page shows:
   it came from, such as `forgejo/website#12`, with a link to the original.
 
 The **History** tab lists every change ever made to the issue: who changed which field, when,
-from what and to what. This includes status changes, links and attachments. History cannot be edited.
+from what and to what (old value → new value). This includes status changes, links and attachments.
+For labels, components and versions it shows the values added (**+**, green) and removed
+(**−**, red). Linked issues, the parent and links to other trackers can be clicked; long texts
+such as descriptions are cut off after a few lines, with **Show more** to read all of it.
+History cannot be edited.
 
 Issue keys keep working when a project's key changes: `OLD-12` then takes you to `NEW-12`.
 
