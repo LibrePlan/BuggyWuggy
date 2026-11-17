@@ -404,15 +404,15 @@ export function BoardPage() {
       >
         <div className="bw-board" style={{ gridTemplateColumns: `repeat(${b.columns.length}, minmax(240px, 1fr))` }}>
           {b.columns.map((column) => (
-            <Group key={column.id} justify="space-between" wrap="nowrap" px={6}>
+            <Group key={column.id} justify="center" gap={6} wrap="nowrap" px={6}>
               <Tooltip label={column.statuses.map((s) => s.name).join(', ') || t('board.config.noStatuses')}>
                 <Text fw={600} size="sm" tt="uppercase" c="dimmed" truncate>
                   {column.name}
                 </Text>
               </Tooltip>
-              <Badge variant="light" color="gray" size="sm">
-                {columnCount(column)}
-              </Badge>
+              <Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
+                ({columnCount(column)})
+              </Text>
             </Group>
           ))}
           {lanes.map((lane) => (
