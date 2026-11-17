@@ -18,13 +18,26 @@ import {
   IconSourceCode,
   IconStrikethrough,
 } from '@tabler/icons-react';
-import { useDeferredValue, useEffect, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react';
+import {
+  useContext,
+  useDeferredValue,
+  useEffect,
+  useRef,
+  useState,
+  type FocusEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type { MarkdownAttachment } from '../lib/markdown';
 import { Markdown } from './Markdown';
+import { PreviewSlotContext } from './PreviewSlot';
 
 /** Below this width the preview is a tab instead of a column next to the text. */
 const SIDE_BY_SIDE = 640;
+/** Space between a preview in a {@link PreviewSlotContext} and what is above it there. */
+const SLOT_GAP = 16;
 
 export interface MarkdownEditorProps {
   /** Optional only for the spread of Mantine's form.getInputProps(), which always sets it. */
@@ -59,7 +72,9 @@ export interface MarkdownEditorProps {
  * A text field for Markdown with a toolbar and a live preview: to the right of the text when
  * there is room, otherwise behind a "Preview" tab. Ctrl+B, Ctrl+I and Ctrl+K make text bold,
  * italic or a link. Toolbar changes go through the browser's editing, so Ctrl+Z undoes them.
- * The preview is always as high as the text field, also when the user resizes it.
+ * The preview is always as high as the text field, also when the user resizes it. Below a
+ * {@link PreviewSlotContext} the text field takes the full width and the preview is shown in
+ * that slot, at the same height, while the field has the focus or text.
  */
 export function MarkdownEditor({
   value = '',
@@ -84,13 +99,45 @@ export function MarkdownEditor({
 }: MarkdownEditorProps) {
   const { t } = useTranslation();
   const { ref: box, width } = useElementSize();
-  const sideBySide = width >= SIDE_BY_SIDE;
+  const slot = useContext(PreviewSlotContext);
+  const sideBySide = !slot && width >= SIDE_BY_SIDE;
   const [tab, setTab] = useState<'write' | 'preview'>('write');
-  const writing = sideBySide || tab === 'write';
+  const writing = !!slot || sideBySide || tab === 'write';
   const area = useRef<HTMLTextAreaElement>(null);
   const preview = useRef<HTMLDivElement>(null);
   const [areaHeight, setAreaHeight] = useState<number>();
   const shown = useDeferredValue(value);
+  const [focused, setFocused] = useState(false);
+  // In a slot only while in use: an empty, unused editor would cover the slot for nothing.
+  const inSlot = !!slot && (focused || value.trim() !== '');
+  const [slotTop, setSlotTop] = useState(0);
+
+  // In the slot: at the height of the text field, but below what the slot shows itself.
+  useEffect(() => {
+    const el = area.current;
+    if (!slot || !inSlot || !el) return;
+    const place = () => {
+      const base = slot.getBoundingClientRect().top;
+      let top = el.getBoundingClientRect().top - base;
+      for (const child of Array.from(slot.children)) {
+        if (child instanceof HTMLElement && !child.hasAttribute('data-bw-slot-preview')) {
+          top = Math.max(top, child.getBoundingClientRect().bottom - base + SLOT_GAP);
+        }
+      }
+      setSlotTop(top);
+    };
+    place();
+    // The text field moves when the page above it changes (comments load, a section grows).
+    const observer = new ResizeObserver(place);
+    observer.observe(el);
+    observer.observe(slot);
+    observer.observe(document.body);
+    window.addEventListener('resize', place);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', place);
+    };
+  }, [slot, inSlot]);
 
   // The preview is as high as the text field, and scrolls along with it.
   useEffect(() => {
@@ -100,11 +147,11 @@ export function MarkdownEditor({
     observer.observe(el);
     return () => observer.disconnect();
     // A new textarea element when switching between side by side and tabs.
-  }, [writing, sideBySide]);
+  }, [writing, sideBySide, inSlot]);
   const syncScroll = () => {
     const a = area.current;
     const p = preview.current;
-    if (!a || !p || !sideBySide) return;
+    if (!a || !p || !(sideBySide || inSlot)) return;
     const ratio = a.scrollTop / Math.max(1, a.scrollHeight - a.clientHeight);
     p.scrollTop = ratio * (p.scrollHeight - p.clientHeight);
   };
@@ -219,7 +266,14 @@ export function MarkdownEditor({
       py={6}
       className="bw-md-preview"
       aria-label={t('markdown.preview')}
-      style={sideBySide ? { height: areaHeight } : { minHeight: areaHeight }}
+      data-bw-slot-preview={slot ? '' : undefined}
+      style={
+        slot
+          ? { position: 'absolute', top: slotTop, left: 0, right: 0, height: areaHeight }
+          : sideBySide
+            ? { height: areaHeight }
+            : { minHeight: areaHeight }
+      }
     >
       {shown.trim() ? (
         <Markdown text={shown} attachments={attachments} size={previewSize} />
@@ -233,7 +287,14 @@ export function MarkdownEditor({
 
   return (
     <Input.Wrapper label={label} description={description} error={error} required={required}>
-      <div ref={box}>
+      <div
+        ref={box}
+        onFocus={() => setFocused(true)}
+        onBlur={(e) => {
+          // Not when the focus goes to the toolbar.
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocused(false);
+        }}
+      >
         <Group justify="space-between" gap="xs" wrap="nowrap" my={4}>
           <Group gap={2} wrap="wrap">
             {tool('markdown.bold', <IconBold size={16} />, () => wrap('**'))}
@@ -266,7 +327,7 @@ export function MarkdownEditor({
             )}
           </Group>
           <Group gap="xs" wrap="nowrap">
-            {!sideBySide && (
+            {!sideBySide && !slot && (
               <SegmentedControl
                 size="xs"
                 value={tab}
@@ -290,7 +351,12 @@ export function MarkdownEditor({
             </Tooltip>
           </Group>
         </Group>
-        {sideBySide ? (
+        {slot ? (
+          <>
+            {textarea}
+            {inSlot && createPortal(previewPane, slot)}
+          </>
+        ) : sideBySide ? (
           <div className="bw-md-split">
             {textarea}
             {previewPane}

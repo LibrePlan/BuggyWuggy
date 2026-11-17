@@ -19,7 +19,7 @@ import {
   Text,
   Title,
 } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { IconDots, IconExternalLink, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -35,6 +35,7 @@ import { EditIssueModal } from '../components/EditIssueModal';
 import { IssueAttachments } from '../components/IssueAttachments';
 import { Markdown } from '../components/Markdown';
 import { IssueComments } from '../components/IssueComments';
+import { PreviewSlotContext } from '../components/PreviewSlot';
 import { IssueHistory } from '../components/IssueHistory';
 import { IssueLinks } from '../components/IssueLinks';
 import { IssueTypeIcon, PriorityLabel, StatusBadge } from '../components/IssueIcons';
@@ -86,6 +87,9 @@ function IssueView({ issue }: { issue: IssueResponse }) {
   const [creatingChild, childModal] = useDisclosure(false);
   const [deleting, deleteModal] = useDisclosure(false);
   const [askResolution, setAskResolution] = useState<TransitionResponse | null>(null);
+  // The preview of a comment being written goes in the right column, when it is next to the left.
+  const [previewSlot, setPreviewSlot] = useState<HTMLDivElement | null>(null);
+  const twoColumns = useMediaQuery('(min-width: 62em)');
 
   const remove = useMutation({
     mutationFn: () => del(`/api/v1/issues/${seg(issue.key)}`),
@@ -238,7 +242,9 @@ function IssueView({ issue }: { issue: IssueResponse }) {
                 <Tabs.Tab value="history">{t('history.title')}</Tabs.Tab>
               </Tabs.List>
               <Tabs.Panel value="comments" pt="md">
-                <IssueComments issueKey={issue.key} canAdd={permissions.has('ADD_COMMENT')} />
+                <PreviewSlotContext.Provider value={twoColumns ? previewSlot : null}>
+                  <IssueComments issueKey={issue.key} canAdd={permissions.has('ADD_COMMENT')} />
+                </PreviewSlotContext.Provider>
               </Tabs.Panel>
               <Tabs.Panel value="history" pt="md">
                 <IssueHistory issueKey={issue.key} />
@@ -248,103 +254,105 @@ function IssueView({ issue }: { issue: IssueResponse }) {
         </Grid.Col>
 
         <Grid.Col span={{ base: 12, md: 4 }}>
-          <Card withBorder padding="md">
-            <Stack gap="sm">
-              <Field label={t('issue.status')}>
-                <Group gap={6}>
-                  <StatusBadge status={issue.status} size="md" />
-                  {issue.resolution && <Text size="sm">({issue.resolution.name})</Text>}
-                </Group>
-              </Field>
-              <Field label={t('issue.type')}>
-                <Group gap={6} wrap="nowrap">
-                  <IssueTypeIcon type={issue.issueType} size={16} />
-                  <Text size="sm">{issue.issueType.name}</Text>
-                </Group>
-              </Field>
-              <Field label={t('issue.priority')}>
-                <PriorityLabel priority={issue.priority} />
-              </Field>
-              <Field label={t('issue.assignee')}>
-                {permissions.has('ASSIGN_ISSUE') ? (
-                  <UserPicker
-                    projectKey={issue.project.key}
-                    value={issue.assignee}
-                    disabled={update.isPending}
-                    size="xs"
-                    aria-label={t('issue.assignee')}
-                    onChange={(user) =>
-                      update.mutate(user ? { assigneeId: user.id } : { unassign: true })
-                    }
-                  />
-                ) : (
-                  <UserLabel user={issue.assignee} />
-                )}
-              </Field>
-              <Field label={t('issue.reporter')}>
-                <UserLabel user={issue.reporter} emptyLabel="—" />
-              </Field>
-              {issue.labels.length > 0 && (
-                <Field label={t('issue.labels')}>
-                  <Group gap={4}>
-                    {issue.labels.map((l) => (
-                      <Badge key={l} variant="outline" color="gray" radius="sm" tt="none">
-                        {l}
-                      </Badge>
-                    ))}
+          <div ref={setPreviewSlot} style={{ position: 'relative' }}>
+            <Card withBorder padding="md">
+              <Stack gap="sm">
+                <Field label={t('issue.status')}>
+                  <Group gap={6}>
+                    <StatusBadge status={issue.status} size="md" />
+                    {issue.resolution && <Text size="sm">({issue.resolution.name})</Text>}
                   </Group>
                 </Field>
-              )}
-              {issue.components.length > 0 && (
-                <Field label={t('issue.components')}>
-                  <Text size="sm">{issue.components.map((c) => c.name).join(', ')}</Text>
+                <Field label={t('issue.type')}>
+                  <Group gap={6} wrap="nowrap">
+                    <IssueTypeIcon type={issue.issueType} size={16} />
+                    <Text size="sm">{issue.issueType.name}</Text>
+                  </Group>
                 </Field>
-              )}
-              {issue.affectsVersions.length > 0 && (
-                <Field label={t('issue.affectsVersions')}>
-                  <Text size="sm">{issue.affectsVersions.map((v) => v.name).join(', ')}</Text>
+                <Field label={t('issue.priority')}>
+                  <PriorityLabel priority={issue.priority} />
                 </Field>
-              )}
-              {issue.fixVersions.length > 0 && (
-                <Field label={t('issue.fixVersions')}>
-                  <Text size="sm">{issue.fixVersions.map((v) => v.name).join(', ')}</Text>
-                </Field>
-              )}
-              {issue.dueDate && (
-                <Field label={t('issue.dueDate')}>
-                  <Text size="sm">{formatDate(issue.dueDate, i18n.language)}</Text>
-                </Field>
-              )}
-              <Field label={t('taskwarrior.urgency')}>
-                <IssueUrgency issueKey={issue.key} version={`${issue.updatedAt}:${links.data?.length ?? 0}`} />
-              </Field>
-              <Field label={t('issue.created')}>
-                <Text size="sm">{formatDateTime(issue.createdAt, i18n.language)}</Text>
-              </Field>
-              <Field label={t('issue.updated')}>
-                <Text size="sm">{formatDateTime(issue.updatedAt, i18n.language)}</Text>
-              </Field>
-              {issue.resolvedAt && (
-                <Field label={t('issue.resolved')}>
-                  <Text size="sm">{formatDateTime(issue.resolvedAt, i18n.language)}</Text>
-                </Field>
-              )}
-              {issue.origin && (
-                <Field label={t('issue.origin')}>
-                  {issue.origin.url ? (
-                    <Anchor href={issue.origin.url} target="_blank" rel="noopener noreferrer" size="sm">
-                      {t('issue.originValue', {
-                        source: t(`issue.originKind.${issue.origin.kind}`, { defaultValue: issue.origin.kind }),
-                        key: issue.origin.key,
-                      })}
-                    </Anchor>
+                <Field label={t('issue.assignee')}>
+                  {permissions.has('ASSIGN_ISSUE') ? (
+                    <UserPicker
+                      projectKey={issue.project.key}
+                      value={issue.assignee}
+                      disabled={update.isPending}
+                      size="xs"
+                      aria-label={t('issue.assignee')}
+                      onChange={(user) =>
+                        update.mutate(user ? { assigneeId: user.id } : { unassign: true })
+                      }
+                    />
                   ) : (
-                    <Text size="sm">{issue.origin.key}</Text>
+                    <UserLabel user={issue.assignee} />
                   )}
                 </Field>
-              )}
-            </Stack>
-          </Card>
+                <Field label={t('issue.reporter')}>
+                  <UserLabel user={issue.reporter} emptyLabel="—" />
+                </Field>
+                {issue.labels.length > 0 && (
+                  <Field label={t('issue.labels')}>
+                    <Group gap={4}>
+                      {issue.labels.map((l) => (
+                        <Badge key={l} variant="outline" color="gray" radius="sm" tt="none">
+                          {l}
+                        </Badge>
+                      ))}
+                    </Group>
+                  </Field>
+                )}
+                {issue.components.length > 0 && (
+                  <Field label={t('issue.components')}>
+                    <Text size="sm">{issue.components.map((c) => c.name).join(', ')}</Text>
+                  </Field>
+                )}
+                {issue.affectsVersions.length > 0 && (
+                  <Field label={t('issue.affectsVersions')}>
+                    <Text size="sm">{issue.affectsVersions.map((v) => v.name).join(', ')}</Text>
+                  </Field>
+                )}
+                {issue.fixVersions.length > 0 && (
+                  <Field label={t('issue.fixVersions')}>
+                    <Text size="sm">{issue.fixVersions.map((v) => v.name).join(', ')}</Text>
+                  </Field>
+                )}
+                {issue.dueDate && (
+                  <Field label={t('issue.dueDate')}>
+                    <Text size="sm">{formatDate(issue.dueDate, i18n.language)}</Text>
+                  </Field>
+                )}
+                <Field label={t('taskwarrior.urgency')}>
+                  <IssueUrgency issueKey={issue.key} version={`${issue.updatedAt}:${links.data?.length ?? 0}`} />
+                </Field>
+                <Field label={t('issue.created')}>
+                  <Text size="sm">{formatDateTime(issue.createdAt, i18n.language)}</Text>
+                </Field>
+                <Field label={t('issue.updated')}>
+                  <Text size="sm">{formatDateTime(issue.updatedAt, i18n.language)}</Text>
+                </Field>
+                {issue.resolvedAt && (
+                  <Field label={t('issue.resolved')}>
+                    <Text size="sm">{formatDateTime(issue.resolvedAt, i18n.language)}</Text>
+                  </Field>
+                )}
+                {issue.origin && (
+                  <Field label={t('issue.origin')}>
+                    {issue.origin.url ? (
+                      <Anchor href={issue.origin.url} target="_blank" rel="noopener noreferrer" size="sm">
+                        {t('issue.originValue', {
+                          source: t(`issue.originKind.${issue.origin.kind}`, { defaultValue: issue.origin.kind }),
+                          key: issue.origin.key,
+                        })}
+                      </Anchor>
+                    ) : (
+                      <Text size="sm">{issue.origin.key}</Text>
+                    )}
+                  </Field>
+                )}
+              </Stack>
+            </Card>
+          </div>
         </Grid.Col>
       </Grid>
 
