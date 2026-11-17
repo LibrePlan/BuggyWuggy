@@ -44,6 +44,10 @@ jobs:
           restore-keys: web-
 
       - name: Build and test
+        env:
+          # The single sign-on tests use a small built-in OpenID Connect provider here instead
+          # of Keycloak in a container (the default on developer machines).
+          BUGGYWUGGY_TEST_OIDC: mock
         run: ./mvnw -B -ntp verify
 
       - name: Check that the API types are up to date

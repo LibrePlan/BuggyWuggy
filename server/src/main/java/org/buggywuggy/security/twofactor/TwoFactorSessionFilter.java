@@ -21,7 +21,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 /**
  * With two-factor login enabled, ends every session that was logged in without the second
  * factor, e.g. sessions from before two-factor login was switched on. The request then
- * continues as not logged in.
+ * continues as not logged in. Single sign-on logins are accepted: the identity provider takes
+ * care of further factors.
  */
 public class TwoFactorSessionFilter extends OncePerRequestFilter {
 
@@ -50,6 +51,7 @@ public class TwoFactorSessionFilter extends OncePerRequestFilter {
                 && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken)
                 && authentication.getAuthorities().stream()
-                        .noneMatch(a -> Authorities.TWO_FACTOR_VERIFIED.equals(a.getAuthority()));
+                        .noneMatch(a -> Authorities.TWO_FACTOR_VERIFIED.equals(a.getAuthority())
+                                || Authorities.SSO_LOGIN.equals(a.getAuthority()));
     }
 }

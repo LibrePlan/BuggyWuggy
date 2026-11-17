@@ -75,6 +75,11 @@ buggywuggy:
       enabled: ${BUGGYWUGGY_TWO_FACTOR:false}
       # The name authenticator apps show with the code.
       issuer: ${BUGGYWUGGY_TWO_FACTOR_ISSUER:BuggyWuggy}
+    # Single sign-on with OpenID Connect; see docs/single-sign-on.md. Without providers only
+    # password login exists.
+    sso:
+      # Who may still log in with a password: all, system-admins or none.
+      password-login: ${BUGGYWUGGY_SSO_PASSWORD_LOGIN:all}
 
 # The API documentation is intentionally public: it describes an open source API.
 springdoc:

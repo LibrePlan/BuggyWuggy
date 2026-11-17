@@ -79,6 +79,42 @@
 #      enabled: false
 ##     The name authenticator apps show with the code [BUGGYWUGGY_TWO_FACTOR_ISSUER]
 #      issuer: BuggyWuggy
+#    sso:
+##     Single sign-on with OpenID Connect (Keycloak, Microsoft Entra ID, Authentik, Google, ...).
+##     Full description and examples per provider: docs/single-sign-on.md.
+##     Who may still log in with a password: all, system-admins (emergency access when the
+##     identity provider is down) or none [BUGGYWUGGY_SSO_PASSWORD_LOGIN]
+#      password-login: all
+##     The identity providers; each gets a "Log in with ..." button. The id ("keycloak" here)
+##     is part of the redirect URI to register at the provider:
+##     <base-url>/login/oauth2/code/keycloak. Every setting can also be an environment
+##     variable, e.g. BUGGYWUGGY_SECURITY_SSO_PROVIDERS_KEYCLOAK_CLIENT_SECRET
+#      providers:
+#        keycloak:
+##         Text of the login button: "Log in with ..."
+#          display-name: Keycloak
+##         The issuer; BuggyWuggy reads <issuer-uri>/.well-known/openid-configuration
+#          issuer-uri: https://sso.example.org/realms/example
+#          client-id: buggywuggy
+##         Empty for a public client
+#          client-secret: ""
+#          scopes: [openid, profile, email]
+##         The claim that becomes the username of a new account
+#          username-claim: preferred_username
+##         Create an account at the first login of someone without one; false: an
+##         administrator creates every account first (high-security installations)
+#          create-users: false
+##         How a first login finds an existing account: email (only when the provider says
+##         the address is verified), username or none
+#          link-users-by: email
+##         The claim with the user's groups; empty: groups are not synchronised
+#          groups-claim: ""
+##         At every login, membership of these BuggyWuggy groups follows the provider's groups
+#          group-mapping:
+#            - idp-group: buggywuggy-admins
+#              group: administrators
+##         Logging out of BuggyWuggy also logs out at the provider
+#          logout-at-provider: true
 #
 ## --- E-mail -----------------------------------------------------------------------------
 #  mail:

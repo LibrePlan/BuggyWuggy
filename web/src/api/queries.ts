@@ -7,6 +7,8 @@ import { ApiError } from '../lib/apiError';
 import { get, post, seg } from './client';
 import type { IssueQuery } from '../lib/issueQuery';
 import type {
+  SsoResponse,
+  SsoIdentityResponse,
   BoardConfigResponse,
   LicenseCountry,
   LicenseQuote,
@@ -78,6 +80,8 @@ export const keys = {
   license: ['admin', 'license'] as const,
   donation: ['donation'] as const,
   version: ['version'] as const,
+  sso: ['sso'] as const,
+  adminUserSso: (id: number) => ['admin', 'user', id, 'sso'] as const,
   projectRoles: (key: string) => ['project', key, 'roles'] as const,
   admin: ['admin'] as const,
   adminUsers: (query: string, page: number) => ['admin', 'users', query, page] as const,
@@ -489,6 +493,19 @@ export function useDefaultBoardConfig() {
 /** Whether this installation supports the project with a donation (no login needed). */
 export function useDonation() {
   return useQuery({ queryKey: keys.donation, queryFn: () => get<DonationResponse>('/api/v1/donation') });
+}
+
+/** Single sign-on providers and who may log in with a password (no login needed). */
+export function useSso() {
+  return useQuery({ queryKey: keys.sso, queryFn: () => get<SsoResponse>('/api/v1/auth/sso'), staleTime: Infinity });
+}
+
+/** A user's identities at single sign-on providers (administration). */
+export function useAdminUserSso(id: number) {
+  return useQuery({
+    queryKey: keys.adminUserSso(id),
+    queryFn: () => get<SsoIdentityResponse[]>(`/api/v1/admin/users/${id}/sso-identities`),
+  });
 }
 
 /** The version of BuggyWuggy and the commit it was built from (no login needed). */

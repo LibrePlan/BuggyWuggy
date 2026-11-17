@@ -30,7 +30,13 @@ export function ProfilePage() {
           </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 6 }}>
-          <PasswordForm />
+          {myself.hasPassword ? (
+            <PasswordForm />
+          ) : (
+            <Text size="sm" c="dimmed">
+              {t('profile.ssoOnly')}
+            </Text>
+          )}
         </Grid.Col>
       </Grid>
     </Stack>

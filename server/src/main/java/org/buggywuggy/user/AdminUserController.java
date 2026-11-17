@@ -9,10 +9,12 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.net.URI;
+import java.util.List;
 import org.buggywuggy.common.PageResponse;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
 import org.buggywuggy.user.UserDtos.CreateUserRequest;
 import org.buggywuggy.user.UserDtos.SetPasswordRequest;
+import org.buggywuggy.user.UserDtos.SsoIdentityResponse;
 import org.buggywuggy.user.UserDtos.UpdateUserRequest;
 import org.buggywuggy.user.UserDtos.UserResponse;
 import org.springframework.http.HttpStatus;
@@ -72,6 +74,19 @@ public class AdminUserController {
     public void setPassword(@PathVariable long id, @Valid @RequestBody SetPasswordRequest request,
             @AuthenticationPrincipal BuggyWuggyPrincipal actor) {
         userService.setPassword(id, request.password(), actor);
+    }
+
+    @GetMapping("/{id}/sso-identities")
+    public List<SsoIdentityResponse> ssoIdentities(@PathVariable long id) {
+        return userService.ssoIdentities(id);
+    }
+
+    /** Unlinks the user's identity at a single sign-on provider. */
+    @DeleteMapping("/{id}/sso-identities/{provider}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void unlinkSso(@PathVariable long id, @PathVariable String provider,
+            @AuthenticationPrincipal BuggyWuggyPrincipal actor) {
+        userService.unlinkSso(id, provider, actor);
     }
 
     /** Forgets the user's second factor: the next login sets up two-factor login again. */

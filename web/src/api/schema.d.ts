@@ -1172,6 +1172,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/sso": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["sso"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf": {
         parameters: {
             query?: never;
@@ -1212,6 +1228,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{id}/sso-identities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ssoIdentities"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1444,6 +1476,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/users/{id}/sso-identities/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["unlinkSso"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/mail/failed/{id}": {
         parameters: {
             query?: never;
@@ -1584,6 +1632,7 @@ export interface components {
             lastLoginAt: string | null;
             groups: components["schemas"]["GroupRef"][];
             twoFactorEnrolled: boolean;
+            hasPassword: boolean;
         };
         CreateProjectRequest: {
             key: string;
@@ -1931,6 +1980,7 @@ export interface components {
             globalPermissions: string[];
             emailNotifications: boolean;
             notifyOwnChanges: boolean;
+            hasPassword: boolean;
         };
         TwoFactorLoginResponse: {
             user: components["schemas"]["MyselfResponse"];
@@ -1956,7 +2006,7 @@ export interface components {
             displayName: string;
             /** Format: email */
             email: string;
-            password: string;
+            password?: string;
             systemAdmin?: boolean;
         };
         PreviewResponse: {
@@ -2435,6 +2485,15 @@ export interface components {
             uri: string;
             qrCodeSvg: string;
         };
+        SsoProviderResponse: {
+            id: string;
+            name: string;
+        };
+        SsoResponse: {
+            /** @enum {string} */
+            passwordLogin: "ALL" | "SYSTEM_ADMINS" | "NONE";
+            providers: components["schemas"]["SsoProviderResponse"][];
+        };
         CsrfToken: {
             parameterName: string;
             token: string;
@@ -2458,6 +2517,15 @@ export interface components {
             size: number;
             /** Format: int64 */
             total: number;
+        };
+        SsoIdentityResponse: {
+            provider: string;
+            providerName: string;
+            email: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastLoginAt: string | null;
         };
         TemplateLanguageState: {
             language: string;
@@ -5065,6 +5133,26 @@ export interface operations {
             };
         };
     };
+    sso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SsoResponse"];
+                };
+            };
+        };
+    };
     csrf: {
         parameters: {
             query: {
@@ -5125,6 +5213,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["AttachmentSettingsResponse"];
+                };
+            };
+        };
+    };
+    ssoIdentities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SsoIdentityResponse"][];
                 };
             };
         };
@@ -5413,6 +5523,27 @@ export interface operations {
             header?: never;
             path: {
                 id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    unlinkSso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                provider: string;
             };
             cookie?: never;
         };

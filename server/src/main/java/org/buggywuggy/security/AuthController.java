@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.buggywuggy.common.ApiException;
 import org.buggywuggy.common.ApiNullable;
+import org.buggywuggy.security.sso.SsoProperties;
+import org.buggywuggy.security.sso.SsoProperties.PasswordLogin;
 import org.buggywuggy.security.twofactor.TwoFactorService;
 import org.buggywuggy.security.twofactor.TwoFactorService.Verification;
 import org.buggywuggy.security.twofactor.TwoFactorSettings;
@@ -115,13 +117,15 @@ public class AuthController {
     private final TwoFactorSettings twoFactorSettings;
     private final TwoFactorService twoFactor;
     private final Clock clock;
+    private final SsoProperties sso;
     private final SecurityContextHolderStrategy contextHolder = SecurityContextHolder.getContextHolderStrategy();
 
     public AuthController(AuthenticationManager authenticationManager,
             SessionAuthenticationStrategy sessionAuthenticationStrategy,
             SecurityContextRepository securityContextRepository, LoginThrottle throttle, UserService userService,
             BuggyWuggyUserDetailsService userDetailsService, TwoFactorSettings twoFactorSettings,
-            TwoFactorService twoFactor, Clock clock) {
+            TwoFactorService twoFactor, Clock clock, SsoProperties sso) {
+        this.sso = sso;
         this.authenticationManager = authenticationManager;
         this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
         this.securityContextRepository = securityContextRepository;
@@ -142,6 +146,14 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
+        if (sso.passwordLogin() == PasswordLogin.NONE) {
+            throw ApiException.forbidden("auth.password-login-disabled");
+        }
+        // With password login for system administrators only, a wrong password and a correct
+        // one of another user get the same answer, so it does not tell which passwords are right.
+        String badCredentials = sso.passwordLogin() == PasswordLogin.SYSTEM_ADMINS
+                ? "auth.bad-credentials-admins-only"
+                : "auth.bad-credentials";
         String throttleKey = LoginThrottle.key(request.username(), httpRequest.getRemoteAddr());
         if (throttle.isBlocked(throttleKey)) {
             throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "auth.throttled");
@@ -155,9 +167,13 @@ public class AuthController {
             // Unknown user, wrong password and deactivated account all get the same answer,
             // so the response does not reveal which accounts exist.
             throttle.recordFailure(throttleKey);
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "auth.bad-credentials");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, badCredentials);
         }
         BuggyWuggyPrincipal principal = (BuggyWuggyPrincipal) authentication.getPrincipal();
+        if (sso.passwordLogin() == PasswordLogin.SYSTEM_ADMINS && !principal.isSystemAdmin()) {
+            throttle.recordFailure(throttleKey);
+            throw new ApiException(HttpStatus.UNAUTHORIZED, badCredentials);
+        }
 
         if (!twoFactorSettings.enabled()) {
             throttle.recordSuccess(throttleKey);

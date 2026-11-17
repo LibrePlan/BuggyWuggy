@@ -58,7 +58,26 @@
     "verify": "Verify",
     "restart": "Log in as someone else",
     "recoveryCodeUsed": "You logged in with a recovery code; {{count}} unused codes left.",
-    "recoveryCodesLow": "Ask an administrator to reset your two-factor login to get new recovery codes."
+    "recoveryCodesLow": "Ask an administrator to reset your two-factor login to get new recovery codes.",
+    "withProvider": "Log in with {{name}}",
+    "orPassword": "or with your password",
+    "adminLogin": "Administrator login with password",
+    "ssoError": {
+      "sso": {
+        "failed": "Logging in with single sign-on did not work. Try again, or ask your administrator.",
+        "cancelled": "The login at the identity provider was cancelled.",
+        "unknown-provider": "This single sign-on provider is not configured.",
+        "unavailable": "The identity provider cannot be reached at the moment. Try again in a minute.",
+        "no-account": "You have no BuggyWuggy account yet. Ask your administrator to create one.",
+        "inactive": "Your BuggyWuggy account has been deactivated.",
+        "email-not-verified": "Your e-mail address is not verified at the identity provider, so it cannot be linked to your BuggyWuggy account.",
+        "already-linked": "This BuggyWuggy account is already linked to another identity at this provider. Ask your administrator.",
+        "username-taken": "An account with your username already exists. Ask your administrator to link it.",
+        "email-taken": "An account with your e-mail address already exists. Ask your administrator to link it.",
+        "invalid-username": "Your username at the identity provider cannot be used in BuggyWuggy. Ask your administrator.",
+        "no-email": "The identity provider gave no e-mail address. Ask your administrator."
+      }
+    }
   },
   "user": {
     "username": "Username",
@@ -333,7 +352,17 @@
       "resetTwoFactorFor": "Reset two-factor login of {{name}}",
       "resetTwoFactorText": "Use this when {{name}} lost the phone with the authenticator app, or the recovery codes. The secret and the recovery codes are removed, {{name}} is logged out everywhere, and sets up two-factor login again at the next login.",
       "resetTwoFactorConfirm": "Reset",
-      "twoFactorReset": "The two-factor login of {{name}} has been reset."
+      "twoFactorReset": "The two-factor login of {{name}} has been reset.",
+      "ssoOnly": "Single sign-on only",
+      "ssoOnlyHelp": "No password: the user logs in through the identity provider. The account is linked at the first login.",
+      "ssoOnlyBadge": "SSO only",
+      "sso": "Single sign-on",
+      "ssoNone": "Not linked to an identity provider yet.",
+      "ssoLinked": "Linked {{date}}",
+      "ssoLastLogin": "last login {{date}}",
+      "ssoUnlink": "Unlink",
+      "ssoUnlinked": "{{name}} is no longer linked to {{provider}}.",
+      "ssoHelp": "After unlinking, the next login through the provider is a first login again: it is linked or refused as the provider's settings say."
     },
     "group": {
       "search": "Search groups",
@@ -673,7 +702,8 @@
     "emailNotifications": "Mail me about issues",
     "emailNotificationsHelp": "About issues you watch, reported or are assigned to. Several changes by one person are combined into one mail.",
     "notifyOwnChanges": "Also about my own changes",
-    "notifyOwnChangesHelp": "Normally you do not get mails about changes you made yourself."
+    "notifyOwnChangesHelp": "Normally you do not get mails about changes you made yourself.",
+    "ssoOnly": "You log in with single sign-on, so you have no BuggyWuggy password."
   },
   "board": {
     "title": "Board",

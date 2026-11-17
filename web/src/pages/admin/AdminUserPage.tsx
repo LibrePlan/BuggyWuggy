@@ -27,7 +27,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { del, patch, put } from '../../api/client';
-import { keys, useAdminUser, useMyself } from '../../api/queries';
+import { keys, useAdminUser, useAdminUserSso, useMyself, useSso } from '../../api/queries';
 import type { GroupRef, UpdateUserRequest, UserResponse } from '../../api/types';
 import { GroupPicker } from '../../components/EntityPickers';
 import { ErrorAlert, isNotFound, PageLoader } from '../../components/QueryState';
@@ -133,6 +133,7 @@ export function AdminUserPage() {
                 {t('admin.user.resetTwoFactor')}
               </Button>
             </Group>
+            <SsoIdentities user={u} mayManage={mayManage} />
           </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 6 }}>
@@ -323,5 +324,59 @@ function ResetTwoFactorModal({ user, opened, onClose }: { user: UserResponse; op
         </Group>
       </Stack>
     </Modal>
+  );
+}
+
+/** The user's identities at single sign-on providers, with Unlink. Hidden without single sign-on. */
+function SsoIdentities({ user, mayManage }: { user: UserResponse; mayManage: boolean }) {
+  const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
+  const ssoEnabled = (useSso().data?.providers.length ?? 0) > 0;
+  const identities = useAdminUserSso(user.id);
+  const unlink = useMutation({
+    mutationFn: (provider: string) =>
+      del(`/api/v1/admin/users/${user.id}/sso-identities/${encodeURIComponent(provider)}`),
+    onSuccess: (_, provider) => {
+      const name = identities.data?.find((i) => i.provider === provider)?.providerName ?? provider;
+      notifySaved(t('admin.user.ssoUnlinked', { name: user.displayName, provider: name }));
+      void queryClient.invalidateQueries({ queryKey: keys.admin });
+    },
+    onError: notifyError,
+  });
+  if (!ssoEnabled && !identities.data?.length) return null;
+  return (
+    <>
+      <Title order={4}>{t('admin.user.sso')}</Title>
+      {identities.data?.length === 0 && <Text size="sm">{t('admin.user.ssoNone')}</Text>}
+      {identities.data?.map((identity) => (
+        <Group key={identity.provider} justify="space-between" wrap="nowrap">
+          <div>
+            <Text size="sm" fw={500}>
+              {identity.providerName}
+              {identity.email && ` · ${identity.email}`}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {t('admin.user.ssoLinked', { date: formatDateTime(identity.createdAt, i18n.language) })}
+              {identity.lastLoginAt &&
+                ` · ${t('admin.user.ssoLastLogin', { date: formatDateTime(identity.lastLoginAt, i18n.language) })}`}
+            </Text>
+          </div>
+          <Button
+            variant="default"
+            size="xs"
+            disabled={!mayManage}
+            loading={unlink.isPending && unlink.variables === identity.provider}
+            onClick={() => unlink.mutate(identity.provider)}
+          >
+            {t('admin.user.ssoUnlink')}
+          </Button>
+        </Group>
+      ))}
+      {!!identities.data?.length && (
+        <Text size="xs" c="dimmed">
+          {t('admin.user.ssoHelp')}
+        </Text>
+      )}
+    </>
   );
 }

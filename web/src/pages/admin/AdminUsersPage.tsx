@@ -25,7 +25,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { post } from '../../api/client';
-import { keys, useAdminUsers, useMyself } from '../../api/queries';
+import { keys, useAdminUsers, useMyself, useSso } from '../../api/queries';
 import type { CreateUserRequest, UserResponse } from '../../api/types';
 import { ErrorAlert, PageLoader } from '../../components/QueryState';
 import { fieldErrorMap } from '../../lib/apiError';
@@ -142,6 +142,11 @@ export function UserBadges({ user }: { user: UserResponse }) {
           {t('admin.user.systemAdmin')}
         </Badge>
       )}
+      {!user.hasPassword && (
+        <Badge size="xs" color="blue" variant="light">
+          {t('admin.user.ssoOnlyBadge')}
+        </Badge>
+      )}
     </>
   );
 }
@@ -151,13 +156,15 @@ function CreateUserModal({ opened, onClose }: { opened: boolean; onClose: () => 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const myself = useMyself().data;
+  const ssoEnabled = (useSso().data?.providers.length ?? 0) > 0;
   const form = useForm({
-    initialValues: { username: '', displayName: '', email: '', password: '', systemAdmin: false },
+    initialValues: { username: '', displayName: '', email: '', password: '', systemAdmin: false, ssoOnly: false },
     validate: {
       username: (v) => (v.trim() ? null : t('validation.required')),
       displayName: (v) => (v.trim() ? null : t('validation.required')),
       email: (v) => (/^\S+@\S+$/.test(v.trim()) ? null : t('validation.email')),
-      password: (v) => (v.length >= PASSWORD_MIN ? null : t('validation.passwordLength', { min: PASSWORD_MIN })),
+      password: (v, values) =>
+        values.ssoOnly || v.length >= PASSWORD_MIN ? null : t('validation.passwordLength', { min: PASSWORD_MIN }),
     },
   });
 
@@ -185,7 +192,7 @@ function CreateUserModal({ opened, onClose }: { opened: boolean; onClose: () => 
             username: v.username.trim(),
             displayName: v.displayName.trim(),
             email: v.email.trim(),
-            password: v.password,
+            password: v.ssoOnly ? undefined : v.password,
             systemAdmin: v.systemAdmin,
           }),
         )}
@@ -197,13 +204,22 @@ function CreateUserModal({ opened, onClose }: { opened: boolean; onClose: () => 
           <TextInput label={t('admin.user.username')} required data-autofocus {...form.getInputProps('username')} />
           <TextInput label={t('admin.user.displayName')} required {...form.getInputProps('displayName')} />
           <TextInput label={t('admin.user.email')} type="email" required {...form.getInputProps('email')} />
-          <PasswordInput
-            label={t('admin.user.password')}
-            description={t('admin.user.passwordHelp', { min: PASSWORD_MIN })}
-            required
-            autoComplete="new-password"
-            {...form.getInputProps('password')}
-          />
+          {ssoEnabled && (
+            <Checkbox
+              label={t('admin.user.ssoOnly')}
+              description={t('admin.user.ssoOnlyHelp')}
+              {...form.getInputProps('ssoOnly', { type: 'checkbox' })}
+            />
+          )}
+          {!form.values.ssoOnly && (
+            <PasswordInput
+              label={t('admin.user.password')}
+              description={t('admin.user.passwordHelp', { min: PASSWORD_MIN })}
+              required
+              autoComplete="new-password"
+              {...form.getInputProps('password')}
+            />
+          )}
           {myself?.systemAdmin && (
             <Checkbox
               label={t('admin.user.systemAdmin')}

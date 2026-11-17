@@ -22,13 +22,16 @@ import org.buggywuggy.common.SqlLike;
 import org.buggywuggy.notification.NotificationPreferences;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
 import org.buggywuggy.security.SessionInvalidator;
+import org.buggywuggy.security.sso.SsoProperties;
 import org.buggywuggy.security.twofactor.TwoFactorService;
 import org.buggywuggy.user.UserDtos.CreateUserRequest;
 import org.buggywuggy.user.UserDtos.MyselfResponse;
+import org.buggywuggy.user.UserDtos.SsoIdentityResponse;
 import org.buggywuggy.user.UserDtos.UpdateMyselfRequest;
 import org.buggywuggy.user.UserDtos.UpdateUserRequest;
 import org.buggywuggy.user.UserDtos.UserResponse;
 import org.springframework.data.domain.Page;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -48,11 +51,15 @@ public class UserService {
     private final SessionInvalidator sessions;
     private final Clock clock;
     private final TwoFactorService twoFactor;
+    private final SsoProperties sso;
+    private final JdbcTemplate jdbc;
 
     public UserService(UserAccountRepository users, UserGroupRepository groups, PasswordEncoder passwordEncoder,
             SessionInvalidator sessions, Clock clock, NotificationPreferences notifications,
-            TwoFactorService twoFactor) {
+            TwoFactorService twoFactor, SsoProperties sso, JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
         this.twoFactor = twoFactor;
+        this.sso = sso;
         this.notifications = notifications;
         this.users = users;
         this.groups = groups;
@@ -82,6 +89,9 @@ public class UserService {
         if (systemAdmin && !actor.isSystemAdmin()) {
             throw forbidden("user.system-admin-required");
         }
+        if (request.password() == null && !sso.enabled()) {
+            throw badRequest("user.password-required");
+        }
         UserAccount user = createUser(request.username(), request.displayName(), request.email(),
                 request.password(), systemAdmin, List.of(UserGroup.USERS));
         return UserResponse.of(user);
@@ -99,7 +109,8 @@ public class UserService {
             throw conflict("user.email-taken", mail);
         }
         UserAccount user = new UserAccount(name, displayName.trim(), mail, clock.instant());
-        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        // Without a password, the user logs in with single sign-on only.
+        user.setPasswordHash(rawPassword == null ? null : passwordEncoder.encode(rawPassword));
         user.setSystemAdmin(systemAdmin);
         groupNames.forEach(g -> groups.findByName(g).ifPresent(user.getGroups()::add));
         return users.save(user);
@@ -172,6 +183,37 @@ public class UserService {
         if (twoFactor.reset(user.getId())) {
             log.info("Two-factor login of user {} reset by {}", user.getUsername(), actor.getUsername());
         }
+        sessions.invalidateAll(user.getUsername());
+    }
+
+    /** The user's identities at single sign-on providers. */
+    @Transactional(readOnly = true)
+    public List<SsoIdentityResponse> ssoIdentities(long id) {
+        find(id);
+        return jdbc.query("""
+                select provider, email, created_at, last_login_at from user_identity
+                where user_id = ? order by provider""", (rs, n) -> {
+            String provider = rs.getString(1);
+            var configured = sso.providers().get(provider);
+            return new SsoIdentityResponse(provider, configured == null ? provider : configured.name(provider),
+                    rs.getString(2), rs.getTimestamp(3).toInstant(),
+                    rs.getTimestamp(4) == null ? null : rs.getTimestamp(4).toInstant());
+        }, id);
+    }
+
+    /**
+     * Removes the link with an identity at a provider and ends the user's sessions. The next
+     * single sign-on login of that identity is a first login again (linked or refused as the
+     * provider's settings say).
+     */
+    public void unlinkSso(long id, String provider, BuggyWuggyPrincipal actor) {
+        UserAccount user = find(id);
+        requireMayManage(user, actor);
+        if (jdbc.update("delete from user_identity where user_id = ? and provider = ?", id, provider) == 0) {
+            throw notFound("user.sso-identity-not-found", provider);
+        }
+        log.info("Single sign-on identity at {} of user {} unlinked by {}", provider, user.getUsername(),
+                actor.getUsername());
         sessions.invalidateAll(user.getUsername());
     }
 
@@ -269,6 +311,6 @@ public class UserService {
         var prefs = notifications.of(u.getId());
         return new MyselfResponse(u.getId(), u.getUsername(), u.getDisplayName(), u.getEmail(), u.isSystemAdmin(),
                 u.getLocale(), u.getTimeZone(), principal.globalPermissions(), prefs.notifications(),
-                prefs.ownChanges());
+                prefs.ownChanges(), u.getPasswordHash() != null);
     }
 }

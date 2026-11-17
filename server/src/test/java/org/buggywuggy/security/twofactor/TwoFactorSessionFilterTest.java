@@ -58,6 +58,13 @@ class TwoFactorSessionFilterTest {
     }
 
     @Test
+    void keepsASingleSignOnSession() throws Exception {
+        var authentication = UsernamePasswordAuthenticationToken.authenticated(ALICE, null,
+                List.of(new SimpleGrantedAuthority(Authorities.SSO_LOGIN)));
+        assertThat(run(true, authentication).isInvalid()).isFalse();
+    }
+
+    @Test
     void doesNothingWhenTwoFactorLoginIsOff() throws Exception {
         MockHttpSession session = run(false, UsernamePasswordAuthenticationToken.authenticated(ALICE, null, List.of()));
         assertThat(session.isInvalid()).isFalse();

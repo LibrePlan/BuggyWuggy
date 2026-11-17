@@ -110,6 +110,31 @@ public class ApiClient {
         }
     }
 
+    /** A response that is not followed, e.g. a redirect: its status and Location header. */
+    public record Redirect(int status, String location) {
+    }
+
+    /**
+     * GETs a path (or a full URL) without following a redirect. A Location on this server is
+     * returned as path, e.g. {@code /login?sso-error=sso.no-account}.
+     */
+    public Redirect redirect(String pathOrUrl) {
+        URI target = pathOrUrl.startsWith("http") ? URI.create(pathOrUrl) : uri(pathOrUrl);
+        try {
+            var response = http.send(HttpRequest.newBuilder(target).GET().build(), HttpResponse.BodyHandlers.discarding());
+            String location = response.headers().firstValue("Location").orElse(null);
+            if (location != null && location.startsWith(baseUrl)) {
+                location = location.substring(baseUrl.length());
+            }
+            return new Redirect(response.statusCode(), location);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
+    }
+
     public Response login(String username, String password) {
         return post("/api/v1/auth/login", """
                 {"username": "%s", "password": "%s"}""".formatted(username, password));

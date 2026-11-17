@@ -31,7 +31,8 @@ public final class UserDtos {
             @NotBlank @Pattern(regexp = USERNAME_PATTERN, message = "{validation.username.pattern}") String username,
             @NotBlank @Size(max = 255) String displayName,
             @NotBlank @Email @Size(max = 255) String email,
-            @NotNull @Size(min = PASSWORD_MIN, max = PASSWORD_MAX, message = "{validation.password.size}") String password,
+            /** Without a password the user logs in with single sign-on only (when it is configured). */
+            @Size(min = PASSWORD_MIN, max = PASSWORD_MAX, message = "{validation.password.size}") String password,
             Boolean systemAdmin) {
     }
 
@@ -78,7 +79,7 @@ public final class UserDtos {
     public record UserResponse(
             long id, String username, String displayName, @ApiNullable String email, boolean active,
             boolean systemAdmin, @ApiNullable String locale, @ApiNullable String timeZone, Instant createdAt,
-            @ApiNullable Instant lastLoginAt, List<GroupRef> groups, boolean twoFactorEnrolled) {
+            @ApiNullable Instant lastLoginAt, List<GroupRef> groups, boolean twoFactorEnrolled, boolean hasPassword) {
 
         public static UserResponse of(UserAccount u) {
             List<GroupRef> groups = u.getGroups().stream()
@@ -87,14 +88,19 @@ public final class UserDtos {
                     .toList();
             return new UserResponse(u.getId(), u.getUsername(), u.getDisplayName(), u.getEmail(), u.isActive(),
                     u.isSystemAdmin(), u.getLocale(), u.getTimeZone(), u.getCreatedAt(), u.getLastLoginAt(), groups,
-                    u.isTwoFactorEnrolled());
+                    u.isTwoFactorEnrolled(), u.getPasswordHash() != null);
         }
+    }
+
+    /** A user's identity at a single sign-on provider. */
+    public record SsoIdentityResponse(String provider, String providerName, @ApiNullable String email,
+            Instant createdAt, @ApiNullable Instant lastLoginAt) {
     }
 
     /** The logged-in user, including the global permissions of the current session. */
     public record MyselfResponse(
             long id, String username, String displayName, @ApiNullable String email, boolean systemAdmin,
             @ApiNullable String locale, @ApiNullable String timeZone, Set<String> globalPermissions,
-            boolean emailNotifications, boolean notifyOwnChanges) {
+            boolean emailNotifications, boolean notifyOwnChanges, boolean hasPassword) {
     }
 }

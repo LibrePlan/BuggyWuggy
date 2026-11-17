@@ -7,13 +7,18 @@ package org.buggywuggy.security;
 
 import java.util.List;
 import java.util.Map;
+import org.buggywuggy.security.sso.SsoAccountService;
+import org.buggywuggy.security.sso.SsoClientRegistrations;
+import org.buggywuggy.security.sso.SsoConfiguration;
+import org.buggywuggy.security.sso.SsoLoginHandlers;
+import org.buggywuggy.security.sso.SsoProperties;
+import org.buggywuggy.security.sso.SsoUserService;
 import org.buggywuggy.security.twofactor.TwoFactorSessionFilter;
 import org.buggywuggy.security.twofactor.TwoFactorSettings;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -24,7 +29,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
@@ -44,13 +49,15 @@ public class SecurityConfiguration {
             CsrfTokenRepository csrfTokenRepository,
             SecurityContextRepository securityContextRepository,
             TwoFactorSettings twoFactorSettings,
+            SsoProperties sso, SsoClientRegistrations ssoRegistrations, SsoLoginHandlers ssoHandlers,
+            SsoAccountService ssoAccounts,
             @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/api/openapi/**", "/api/docs", "/api/swagger-ui/**").permitAll()
                         .requestMatchers("/api/v1/setup/**").permitAll()
-                        .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/login",
+                        .requestMatchers("/api/v1/auth/csrf", "/api/v1/auth/login", "/api/v1/auth/sso",
                                 "/api/v1/auth/two-factor", "/api/v1/auth/two-factor/enrollment").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/donation", "/api/v1/donation/comic.png",
                                 "/api/v1/donation/comic-2x.png", "/api/v1/version").permitAll()
@@ -70,11 +77,24 @@ public class SecurityConfiguration {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(logout -> logout
                         .logoutUrl("/api/v1/auth/logout")
-                        .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)))
+                        .addLogoutHandler(ssoHandlers.logoutHandler())
+                        .logoutSuccessHandler(SsoLoginHandlers.logoutSuccessHandler()))
                 // Errors are rendered as problem details by ApiExceptionHandler.
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((req, res, e) -> exceptionResolver.resolveException(req, res, null, e))
                         .accessDeniedHandler((req, res, e) -> exceptionResolver.resolveException(req, res, null, e)));
+        if (sso.enabled()) {
+            // Single sign-on: /oauth2/authorization/<id> starts it, /login/oauth2/code/<id> ends it.
+            http
+                    .oauth2Login(oauth -> oauth
+                            .loginPage("/login")
+                            .clientRegistrationRepository(ssoRegistrations)
+                            .authorizedClientRepository(SsoConfiguration.NO_AUTHORIZED_CLIENTS)
+                            .userInfoEndpoint(userInfo -> userInfo.oidcUserService(new SsoUserService(ssoAccounts)))
+                            .successHandler(ssoHandlers.successHandler())
+                            .failureHandler(ssoHandlers.failureHandler()))
+                    .addFilterBefore(ssoHandlers.startFilter(), OAuth2AuthorizationRequestRedirectFilter.class);
+        }
         return http.build();
     }
 

@@ -15,6 +15,7 @@ This guide explains how to install, configure, run, back up and upgrade a BuggyW
 5. [Configuration](#configuration)
    - [E-mail](#e-mail)
    - [Two-factor login](#two-factor-login)
+   - [Single sign-on](#single-sign-on)
 6. [Running BuggyWuggy](#running-buggywuggy)
 7. [First-time setup](#first-time-setup)
 8. [Running as a service (systemd)](#running-as-a-service-systemd)
@@ -115,6 +116,7 @@ BuggyWuggy is configured with environment variables or a [configuration file](#c
 | `BUGGYWUGGY_DATA_DIR` | `data` (relative to the working directory) | Directory for attachment files. It is created if needed and must be writable by BuggyWuggy. Use an absolute path in production, e.g. `/var/lib/buggywuggy`. |
 | `BUGGYWUGGY_MAX_ATTACHMENT_SIZE` | `50MB` | Largest file that can be attached, e.g. `10MB`, `1GB`. |
 | `BUGGYWUGGY_MAX_UPLOAD_SIZE` | `200MB` | Largest total size of the files in one upload. |
+| `BUGGYWUGGY_SSO_PASSWORD_LOGIN` | `all` | With single sign-on: who may log in with a password (`all`, `system-admins`, `none`); see [Single sign-on](#single-sign-on). |
 | `BUGGYWUGGY_TWO_FACTOR` | `false` | `true`: every user logs in with a code from an authenticator app besides the password; see [Two-factor login](#two-factor-login). |
 | `BUGGYWUGGY_TWO_FACTOR_ISSUER` | `BuggyWuggy` | The name authenticator apps show with the code, e.g. `BuggyWuggy ACME` when users have several installations. |
 | `BUGGYWUGGY_DONATION_COMIC_DOWNLOAD` | `true` | Download the xkcd comic of the donation text on the login page once from imgs.xkcd.com (see [Donation](#donation)). `false`: BuggyWuggy never contacts xkcd.com, and the login page shows only the comic's attribution. |
@@ -256,6 +258,16 @@ Authenticator or Microsoft Authenticator. It applies to all users, administrator
 - **Scripts and the REST API** log in like the web interface (`POST /api/v1/auth/login`, then
   `POST /api/v1/auth/two-factor` with `{"code": "123456"}`), so with two-factor login on,
   unattended scripts cannot log in.
+- **Single sign-on** logins do not ask for this second factor; enforce MFA at the identity
+  provider instead.
+
+### Single sign-on
+
+BuggyWuggy can let users log in through an OpenID Connect identity provider, such as
+Keycloak, Microsoft Entra ID, Authentik, Google Workspace, GitLab or Forgejo, optionally
+creating accounts and synchronising groups. It is configured in the configuration file; see
+[docs/single-sign-on.md](single-sign-on.md) for all settings, examples per provider and
+troubleshooting.
 
 ## Running BuggyWuggy
 

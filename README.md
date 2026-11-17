@@ -9,6 +9,7 @@ coming from a self-hosted Jira installation.
 
 - Installation guide: [docs/installation.md](docs/installation.md)
 - User guide: [docs/user-guide.md](docs/user-guide.md)
+- Single sign-on (OpenID Connect): [docs/single-sign-on.md](docs/single-sign-on.md)
 - TaskWarrior urgency: [docs/taskwarrior.md](docs/taskwarrior.md)
 - Scope and decisions: [docs/scope.md](docs/scope.md)
 - Domain model: [docs/domain-model.md](docs/domain-model.md)

@@ -36,6 +36,16 @@ public class BuggyWuggyUserDetailsService implements UserDetailsService {
                 user.getPasswordHash(), user.isActive(), authoritiesOf(user));
     }
 
+    /** The user of a single sign-on login: without password, but only when active. */
+    @Transactional(readOnly = true)
+    public BuggyWuggyPrincipal loadForSso(long id) {
+        UserAccount user = users.findById(id)
+                .filter(u -> !u.isPlaceholder() && u.isActive())
+                .orElseThrow(() -> new UsernameNotFoundException("Unknown or inactive user"));
+        return new BuggyWuggyPrincipal(user.getId(), user.getUsername(), user.getDisplayName(), null, true,
+                authoritiesOf(user));
+    }
+
     private Set<String> authoritiesOf(UserAccount user) {
         Set<String> authorities = new HashSet<>();
         if (user.isSystemAdmin()) {

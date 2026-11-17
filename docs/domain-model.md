@@ -57,7 +57,7 @@ erDiagram
 | username | text, unique (case-insensitive) | Login name; immutable after creation in v1 |
 | display_name | text | |
 | email | text, unique (case-insensitive), nullable | Nullable for placeholder users |
-| password_hash | text, nullable | Argon2id, stored with an `{id}` prefix (e.g. `{argon2}…`), so hashes in other formats — such as Jira's `{PKCS5S2}…` after an import — can be verified and upgraded on login. Null for placeholder users and (later) SSO-only users |
+| password_hash | text, nullable | Argon2id, stored with an `{id}` prefix (e.g. `{argon2}…`), so hashes in other formats — such as Jira's `{PKCS5S2}…` after an import — can be verified and upgraded on login. Null for placeholder users and SSO-only users |
 | active | boolean | Inactive users cannot log in but remain visible in history |
 | placeholder | boolean | Created by an importer for authors without an account (§8) |
 | system_admin | boolean | Global administrator |
@@ -79,6 +79,17 @@ Two-factor login (TOTP), used when `buggywuggy.security.two-factor.enabled` is o
 A login that passed the second factor carries the authority `TWO_FACTOR_VERIFIED` in its
 session; with two-factor login on, sessions without it are ended.
 
+### `user_identity`
+Links to accounts at OpenID Connect providers ([single sign-on](single-sign-on.md)).
+- `user_identity(id, user_id fk, provider, subject, email, created_at, last_login_at)` —
+  `provider` is the provider's id from the configuration, `subject` the IdP's `sub` claim;
+  unique `(provider, subject)` and `(user_id, provider)`: one identity per provider per
+  account. `email` is the address the IdP gave at the last login (informational). Deleted
+  with the account, or by an administrator (*Unlink*).
+
+A single sign-on login carries the authority `SSO_LOGIN` in its session; with two-factor
+login on, such sessions are kept without `TWO_FACTOR_VERIFIED`.
+
 ### `user_group`, `group_membership`
 - `user_group(id, name unique, description)`
 - `group_membership(group_id, user_id)` — composite PK.
@@ -87,7 +98,6 @@ session; with two-factor login on, sessions without it are ended.
 ### Authentication support tables
 - `password_reset_token(id, user_id, token_hash, expires_at, used_at)`
 - Sessions: Spring Session JDBC tables `spring_session` and `spring_session_attributes` (Flyway V10). Sessions survive restarts and can be ended per user (deactivation, password reset, change of global permissions).
-- *(later)* `external_identity(user_id, provider, subject)` for LDAP / OIDC / SAML.
 
 ## 4. Projects
 

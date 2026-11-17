@@ -21,15 +21,18 @@ export function AppLayout() {
   const navigate = useNavigate();
 
   async function logout() {
+    let response: { redirectUrl?: string } | undefined;
     try {
-      await post('/api/v1/auth/logout');
+      response = await post<{ redirectUrl?: string } | undefined>('/api/v1/auth/logout');
     } catch (e) {
       notifications.show({ color: 'red', message: e instanceof Error ? e.message : String(e) });
       return;
     }
     queryClient.clear();
     queryClient.setQueryData(keys.myself, null);
-    navigate('/login', { replace: true });
+    // After single sign-on, log out at the identity provider too; it sends the browser back.
+    if (response?.redirectUrl) window.location.assign(response.redirectUrl);
+    else navigate('/login', { replace: true });
   }
 
   return (

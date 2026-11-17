@@ -27,5 +27,11 @@ public final class Authorities {
      */
     public static final String TWO_FACTOR_VERIFIED = "TWO_FACTOR_VERIFIED";
 
+    /**
+     * Marks a login through single sign-on. The identity provider is responsible for further
+     * factors, so with two-factor login enabled such a session is accepted too.
+     */
+    public static final String SSO_LOGIN = "SSO_LOGIN";
+
     public static final Set<String> GLOBAL_PERMISSIONS = Set.of(ADMINISTER, CREATE_PROJECT, BROWSE_USERS);
 }
