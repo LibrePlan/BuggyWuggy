@@ -18,6 +18,9 @@
 - **Issue links**, also across projects: blocks, relates to, duplicates, clones.
 - **Watchers**, so people can follow the issues they care about.
 - **E-mail notifications** for watchers, reporters and assignees. Changes made in quick succession are bundled into one mail, and users only get mail about what they are allowed to see.
+- **E-mail to issue:** mailboxes (IMAP) per project turn incoming mail into issues, with attachments. Spam, auto-replies and mail loops are filtered out.
+- **Replies by e-mail:** comments can be internal or sent to the external reporter by mail; their answer comes back as a threaded comment and reopens a resolved issue.
+- **Split an answer** into a new issue (copy or move), linked to where it came from.
 - **Editable mail templates** with a preview and test mail. Templates are included in English and Dutch, and each user receives mail in their own language.
 
 ## Search and planning
@@ -30,7 +33,7 @@
 
 ## Migration from other trackers
 
-- **Importers for Jira (Cloud and Server/Data Center), GitHub, GitLab, Forgejo/Codeberg, Redmine and Trac.**
+- **Importers for Jira (Cloud and Server/Data Center), GitHub, GitLab, Forgejo/Codeberg, Redmine, Trac and Bugzilla.**
 - Original authors, dates, comments and history are kept, and each imported issue links back to where it came from.
 - Imports are **strictly read-only** towards the source system, and access tokens are never stored.
 - You can import into new or existing projects. Running an import again only adds new issues and comments.
@@ -57,4 +60,5 @@
 ## Open source
 
 - **Fully open source** under the AGPL-3.0-or-later license.
-- **Optional annual donation**, with a direct feedback channel to the developers for organisations that support the project.
+- **Optional annual donation**, priced per country (Big Mac index) and number of users. BuggyWuggy works fully without it.
+- **Feedback form for supporters:** organisations that donate send compliments, bug reports and feature requests straight to the developers, with priority. Everyone else can report issues publicly in the source code repository.
