@@ -14,6 +14,7 @@ coming from a self-hosted Jira installation.
 - TaskWarrior urgency: [docs/taskwarrior.md](docs/taskwarrior.md)
 - Scope and decisions: [docs/scope.md](docs/scope.md)
 - Domain model: [docs/domain-model.md](docs/domain-model.md)
+- AI integration (optional AI server): [docs/ai-integration.md](docs/ai-integration.md)
 
 ## Requirements
 
