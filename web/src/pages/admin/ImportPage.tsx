@@ -12,6 +12,7 @@ import { formatDateTime } from '../../lib/format';
 
 /** The trackers BuggyWuggy can import from, now or later. */
 const SOURCES = [
+  { kind: 'bugzilla', available: true, url: '' },
   { kind: 'forgejo', available: true, url: 'https://codeberg.org' },
   { kind: 'github', available: true, url: 'https://github.com' },
   { kind: 'gitlab', available: true, url: 'https://gitlab.com' },

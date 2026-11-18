@@ -458,9 +458,10 @@ that is your only source of it; system administrators always keep every permissi
 ### Importing from other trackers
 
 **Administration → Import** copies issues from another tracker into a BuggyWuggy project, with
-their comments, attachments and history. Forgejo (it also covers Gitea and codeberg.org),
-GitHub (github.com and GitHub Enterprise Server), GitLab (gitlab.com and self-managed), Jira
-(Cloud, or Server / Data Center at your own address), Redmine and Trac are available.
+their comments, attachments and history. Bugzilla (5.0 and newer), Forgejo (it also covers Gitea
+and codeberg.org), GitHub (github.com and GitHub Enterprise Server), GitLab (gitlab.com and
+self-managed), Jira (Cloud, or Server / Data Center at your own address), Redmine and Trac are
+available.
 
 **An import only reads.** It never changes anything in the source: the importer can only send
 read (GET) requests, so it cannot write, close, comment or label anything there. A token with
@@ -741,6 +742,63 @@ description's history, and the wiki and repository browser.
 
 **Rate limits.** Trac has none. An import makes three requests per ticket (the ticket, its
 attachments and its change log), plus one per attachment.
+
+#### Bugzilla
+
+The Bugzilla import reads the bugs of one Bugzilla **product** through Bugzilla's REST API
+(Bugzilla 5.0 and newer), with the same four-step wizard.
+
+1. **Connection.** The address of your Bugzilla, including its path (e.g.
+   `https://bugzilla.example.org`); a link to a bug (`…/show_bug.cgi?id=12`) works too. The API is
+   found under `/rest` or, where the web server does not rewrite that, `/rest.cgi`.
+   - Your **API key** (*Preferences → API Keys*), with the login field left empty.
+   - Or your login and password.
+   - Public products can be read without logging in.
+   Bugzilla takes these in headers of its own (`X-BUGZILLA-API-KEY`, or `X-BUGZILLA-LOGIN` and
+   `X-BUGZILLA-PASSWORD`), which BuggyWuggy only sends to the Bugzilla itself. The account only
+   needs to see the product's bugs; the importer never changes anything in Bugzilla.
+2. **Project.** Search for part of the product name. For a new BuggyWuggy project the name is
+   suggested, and a key made from it.
+3. **Mapping.** The wizard lists the bug **type** as `type:defect` (before Bugzilla 5.2, which has
+   no types: `type:enhancement` for bugs with severity *enhancement*), the **priority** as
+   `priority/P1`, the **severity** as `severity/critical` and the **component** as
+   `component/Backend`; **keywords** are labels. `defect` is suggested as *Bug*, `enhancement` as
+   *Feature*, P1 to P5 as *Highest* to *Lowest*.
+4. **Start** works as for Forgejo.
+
+What is imported:
+
+| Bugzilla | BuggyWuggy |
+|---|---|
+| Summary, reporter, assignee, deadline, opened, changed | The same fields |
+| Comment 0 | The description |
+| Status, resolution | Open or closed (the statuses Bugzilla marks as open or not); *WONTFIX*, *INVALID*, *WORKSFORME* and the like set *Won't Fix*, a duplicate *Duplicate*. The time it was closed comes from the activity. |
+| Type, priority, severity, component, keywords | As mapped in the wizard |
+| Target milestone | The version; inactive milestones are released |
+| Other comments | Comments. **Private comments are not imported**: they would become visible to everyone who can browse the project. |
+| Activity (summary, type, priority, severity, component, keywords, assignee, target milestone, deadline, status) | History with the original author and date |
+| Depends on / blocks | Dependencies. Bugs of other products are found when that product was imported before. |
+| Duplicate of | A *Duplicate* link |
+| See also (bugs of the same Bugzilla) | A *Relates* link |
+| Attachments | Attachments, except obsolete and private ones; "attachment 12" in a text points to the copy |
+| Bugs in groups | Issues with the label `restricted`. BuggyWuggy has no private issues: restrict who can browse the project if needed. |
+| `bug 12` and links to `…/show_bug.cgi?id=12` | The key of the imported issue |
+
+**Text.** Bugzilla comments are plain text (Bugzilla 5.2 can also use Markdown, which is kept).
+The import escapes what Markdown would read as formatting, so `*`, `_`, `#` and `<b>` stay as
+they were typed; quoted lines (`> …`) stay quotes, and indented lines (stack traces) are shown as
+code.
+
+**People.** Bugzilla knows people by login, usually their e-mail address. The part before the @
+becomes the login of a placeholder, the address its e-mail address, so the wizard matches people
+to existing accounts by e-mail address.
+
+Not imported: CC, URL, whiteboard, version, platform, OS, flags, votes, time tracking, custom
+fields and comment tags.
+
+**Rate limits.** Bugzilla has none of its own. An import makes three requests per bug (its
+comments, activity and attachments), one per person and one per attachment, plus a page of 100
+bugs at a time.
 
 #### Progress, status line and log
 

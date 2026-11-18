@@ -203,8 +203,12 @@ public class IssueImporter {
         boolean priorityScope = name.startsWith("priority") || name.startsWith("prio");
         if (priorityScope || name.endsWith(" priority")) {
             String level = priorityScope ? last : last.replace(" priority", "").strip();
-            Map<String, String> aliases = Map.of("critical", "highest", "urgent", "highest", "blocker", "highest",
-                    "major", "high", "normal", "medium", "minor", "low", "trivial", "lowest");
+            Map<String, String> aliases = Map.ofEntries(Map.entry("critical", "highest"),
+                    Map.entry("urgent", "highest"), Map.entry("blocker", "highest"), Map.entry("major", "high"),
+                    Map.entry("normal", "medium"), Map.entry("minor", "low"), Map.entry("trivial", "lowest"),
+                    // Bugzilla
+                    Map.entry("p1", "highest"), Map.entry("p2", "high"), Map.entry("p3", "medium"),
+                    Map.entry("p4", "low"), Map.entry("p5", "lowest"));
             String wanted = aliases.getOrDefault(level, level);
             for (Map.Entry<Long, String> p : priorities.entrySet()) {
                 if (p.getValue().equalsIgnoreCase(wanted)) {
@@ -487,6 +491,7 @@ public class IssueImporter {
             return addNewComments(run, issue, existing.get(), counts);
         }
         SourceDetails details = run.source.details(issue);
+        issue = run.source.complete(issue, details);
         ImportHistory.Result history = ImportHistory.of(issue, details.events(), run.mapping);
 
         Set<String> labels = new LinkedHashSet<>(issue.labels());

@@ -98,6 +98,15 @@ public interface Source {
     /** What the engine needs beyond the list: comments, events, dependencies, sub-issues. */
     SourceDetails details(SourceIssue issue);
 
+    /**
+     * The issue as it is imported, after {@link #details}: for sources whose list leaves out
+     * what only the details tell (e.g. Bugzilla: the description is the first comment, and the
+     * files and closing time are read per bug).
+     */
+    default SourceIssue complete(SourceIssue issue, SourceDetails details) {
+        return issue;
+    }
+
     /** Only the comments, for an issue an earlier run imported. */
     default List<SourceComment> comments(SourceIssue issue) {
         return details(issue).comments();

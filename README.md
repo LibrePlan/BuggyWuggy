@@ -4,7 +4,7 @@ BuggyWuggy is an open source, self-hosted issue tracker — a familiar home for 
 coming from a self-hosted Jira installation.
 
 > **Status:** early development. Projects, issues, comments, attachments, links, watchers,
-> search, saved filters, kanban boards, TaskWarrior urgency, administration screens, e-mail notifications and importing from Forgejo, GitHub, GitLab, Jira, Redmine and Trac work; much of
+> search, saved filters, kanban boards, TaskWarrior urgency, administration screens, e-mail notifications and importing from Bugzilla, Forgejo, GitHub, GitLab, Jira, Redmine and Trac work; much of
 > Jira's feature set is still to come.
 
 - Features: [docs/features.md](docs/features.md)

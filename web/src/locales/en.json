@@ -150,6 +150,7 @@
     "origin": "Imported from",
     "originValue": "{{source}} {{key}}",
     "originKind": {
+      "BUGZILLA": "Bugzilla",
       "FORGEJO": "Forgejo",
       "JIRA": "Jira",
       "GITLAB": "GitLab",
@@ -484,6 +485,19 @@
           "tokenHelp": "Required: without a token GitHub allows only 60 requests an hour. Create a fine-grained personal access token under Settings → Developer settings, with read-only access to the repository's issues and metadata (or a classic token with the repo scope for private repositories). It only needs to read; the importer never changes anything on GitHub. The token is only kept in memory while BuggyWuggy runs, never stored.",
           "connectedAs": "{{version}}, logged in as {{login}}.",
           "searchHelp": "Part of the name, or owner/repository. Empty: your own repositories."
+        },
+        "bugzilla": {
+          "name": "Bugzilla",
+          "description": "Bugs of a product in a Bugzilla installation (version 5.0 or newer).",
+          "title": "Import from Bugzilla",
+          "urlHelp": "The address of your Bugzilla, with its path if it has one (e.g. https://bugzilla.example.org).",
+          "user": "Login",
+          "userHelp": "Only to log in with your login and password; leave it empty when you use an API key.",
+          "tokenHelp": "Your API key (Preferences → API Keys), or your password. Leave both empty for public products. It only needs to read; the importer never changes anything in Bugzilla. The key is only kept in memory while BuggyWuggy runs, never stored.",
+          "connectedAs": "{{version}}, logged in as {{login}}.",
+          "connectedAnonymous": "{{version}}, without logging in: only public products and bugs.",
+          "searchHelp": "Part of the product name. Empty: all products you can see.",
+          "repository": "Product"
         },
         "redmine": {
           "name": "Redmine",

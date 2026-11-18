@@ -46,6 +46,8 @@ import { PROJECT_KEY_PATTERN, suggestProjectKey } from '../../lib/projectKey';
 
 /** The sources with a repository wizard, and what differs between them. */
 export const REPOSITORY_SOURCES = {
+  // Bugzilla: a product, and an API key or login and password.
+  bugzilla: { name: 'Bugzilla', url: '', tokenRequired: false, userField: true },
   forgejo: { name: 'Forgejo', url: 'https://codeberg.org', tokenRequired: false, userField: false },
   github: { name: 'GitHub', url: 'https://github.com', tokenRequired: true, userField: false },
   gitlab: { name: 'GitLab', url: 'https://gitlab.com', tokenRequired: false, userField: false },
@@ -69,7 +71,7 @@ function ruleOf(value: string): LabelRule {
   return { target: target as LabelRule['target'], id: id ? Number(id) : null };
 }
 
-/** The import wizard for trackers with repositories (Forgejo, GitHub, GitLab) or projects (Jira, Redmine, Trac). */
+/** The import wizard for trackers with repositories (Forgejo, GitHub, GitLab) or projects (Bugzilla, Jira, Redmine, Trac). */
 export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
   const { t } = useTranslation();
   const source = REPOSITORY_SOURCES[kind];
@@ -163,8 +165,8 @@ export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
 
   function chooseRepository(r: ImportRepository) {
     setRepository(r.fullName);
-    // Jira, Redmine and Trac: the key, identifier or name, with the project name as description.
-    const project = kind === 'jira' || kind === 'redmine' || kind === 'trac';
+    // Bugzilla, Jira, Redmine and Trac: the product, key, identifier or name, with a description.
+    const project = kind === 'bugzilla' || kind === 'jira' || kind === 'redmine' || kind === 'trac';
     const name = project ? (r.description ?? r.fullName) : (r.fullName.split('/').at(-1) ?? r.fullName);
     setNewName(name);
     setNewKey(project && PROJECT_KEY_PATTERN.test(r.fullName) ? r.fullName : suggestProjectKey(name));

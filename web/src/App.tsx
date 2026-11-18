@@ -69,6 +69,7 @@ export const router = createBrowserRouter([
               { path: 'email', element: <MailSettingsPage /> },
               { path: 'email/templates/:templateKey/:language', element: <MailTemplatePage /> },
               { path: 'import', element: <ImportPage /> },
+              { path: 'import/bugzilla', element: <RepositoryImportPage key="bugzilla" kind="bugzilla" /> },
               { path: 'import/forgejo', element: <RepositoryImportPage key="forgejo" kind="forgejo" /> },
               { path: 'import/github', element: <RepositoryImportPage key="github" kind="github" /> },
               { path: 'import/gitlab', element: <RepositoryImportPage key="gitlab" kind="gitlab" /> },

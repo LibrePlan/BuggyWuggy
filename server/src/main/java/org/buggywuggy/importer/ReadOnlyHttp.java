@@ -97,7 +97,8 @@ public final class ReadOnlyHttp {
 
     private final String host;
     private final Set<String> tokenHosts;
-    private final String authorization;
+    /** The headers with the access token (usually only Authorization); empty without one. */
+    private final Map<String, String> credentials;
     private final Map<String, String> headers;
     private final RateLimits limits;
     private final Clock clock;
@@ -116,18 +117,34 @@ public final class ReadOnlyHttp {
 
     /**
      * @param host          the server name for messages
-     * @param tokenHosts    the hosts that may receive {@code authorization}
+     * @param tokenHosts    the hosts that may receive {@code authorization} (also after a redirect)
      * @param authorization the Authorization header, or null
      * @param headers       extra headers for every request (e.g. Accept, User-Agent)
      */
     public ReadOnlyHttp(String host, Set<String> tokenHosts, String authorization, Map<String, String> headers,
             RateLimits limits, Clock clock) {
+        this(host, tokenHosts, authorization == null ? Map.of() : Map.of("Authorization", authorization), headers,
+                limits, clock);
+    }
+
+    private ReadOnlyHttp(String host, Set<String> tokenHosts, Map<String, String> credentials,
+            Map<String, String> headers, RateLimits limits, Clock clock) {
         this.host = host;
         this.tokenHosts = tokenHosts;
-        this.authorization = authorization;
+        this.credentials = Map.copyOf(credentials);
         this.headers = headers;
         this.limits = limits;
         this.clock = clock;
+    }
+
+    /**
+     * For sources that take the access token in headers of their own instead of Authorization
+     * (e.g. Bugzilla's X-BUGZILLA-API-KEY): {@code credentials} are those headers, sent only to
+     * {@code tokenHosts}, as Authorization otherwise; empty without a token.
+     */
+    public static ReadOnlyHttp withCredentialHeaders(String host, Set<String> tokenHosts,
+            Map<String, String> credentials, Map<String, String> headers, RateLimits limits, Clock clock) {
+        return new ReadOnlyHttp(host, tokenHosts, credentials, headers, limits, clock);
     }
 
     /**
@@ -164,7 +181,7 @@ public final class ReadOnlyHttp {
     }
 
     public boolean hasToken() {
-        return authorization != null;
+        return !credentials.isEmpty();
     }
 
     /** GETs an API resource; anything but 200 becomes an {@link ApiException} with a readable message. */
@@ -326,8 +343,8 @@ public final class ReadOnlyHttp {
             }
         });
         builder.header("Content-Type", "text/xml; charset=utf-8").header("Accept", "text/xml");
-        if (authorization != null && sameSource(uri)) {
-            builder.header("Authorization", authorization);
+        if (sameSource(uri)) {
+            credentials.forEach(builder::header);
         }
         return builder.build();
     }
@@ -340,9 +357,8 @@ public final class ReadOnlyHttp {
                 builder.header(name, value);
             }
         });
-        if (authorization != null && uri.getHost() != null
-                && tokenHosts.contains(uri.getHost().toLowerCase(Locale.ROOT))) {
-            builder.header("Authorization", authorization);
+        if (sameSource(uri)) {
+            credentials.forEach(builder::header);
         }
         return builder.build();
     }
