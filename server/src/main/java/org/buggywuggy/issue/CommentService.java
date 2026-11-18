@@ -45,11 +45,14 @@ public class CommentService {
 
     private static final String SELECT = """
             select c.id, c.author_id, c.body, c.created_at, c.updated_at, c.update_author_id, c.version, c.external,
+                   c.received, c.reply_to_comment_id, c.quoted, sp.key || '-' || si.number as split_key,
                    a.username as a_username, a.display_name as a_display_name,
                    u.username as u_username, u.display_name as u_display_name
             from comment c
             left join user_account a on a.id = c.author_id
             left join user_account u on u.id = c.update_author_id
+            left join issue si on si.id = c.split_issue_id
+            left join project sp on sp.id = si.project_id
             """;
 
     private final IssueService issues;
@@ -99,7 +102,7 @@ public class CommentService {
                         .addValue("external", external),
                 Long.class);
         if (target != null) {
-            replies.send(target, access.key(), user.displayName(), body);
+            replies.send(target, id, access.key(), user.displayName(), body);
         }
         fields.addWatcher(issueId, user.id(), now);
         fields.touch(issueId, now);
@@ -161,7 +164,8 @@ public class CommentService {
         return new CommentResponse(rs.getLong("id"), author, rs.getString("body"),
                 rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant(),
                 user(rs, "update_author_id", "u_"), rs.getLong("version"), canEdit, canDelete,
-                rs.getBoolean("external"));
+                rs.getBoolean("external"), rs.getBoolean("received"), rs.getObject("reply_to_comment_id", Long.class),
+                rs.getString("quoted"), rs.getString("split_key"));
     }
 
     private static UserRef user(ResultSet rs, String idColumn, String prefix) throws SQLException {

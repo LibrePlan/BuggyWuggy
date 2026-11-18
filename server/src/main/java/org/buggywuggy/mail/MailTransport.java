@@ -65,7 +65,16 @@ public class MailTransport {
             throw new MailPreparationException(demo ? "Mail is switched off in demo mode"
                     : "Mail is not configured (buggywuggy.mail.host)");
         }
-        MimeMessage message = sender.createMimeMessage();
+        // A Message-ID of our own (external comments: answers are recognised by it) is kept;
+        // otherwise the mail library makes one when the mail is sent.
+        String messageId = headers.get("Message-ID");
+        MimeMessage message = messageId == null ? sender.createMimeMessage()
+                : new MimeMessage(sender.getSession()) {
+                    @Override
+                    protected void updateMessageID() throws MessagingException {
+                        setHeader("Message-ID", messageId.replaceAll("[\\r\\n]+", ""));
+                    }
+                };
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
             helper.setFrom(properties.from());
@@ -77,6 +86,9 @@ public class MailTransport {
             }
             message.setHeader("Auto-Submitted", "auto-generated");
             for (Map.Entry<String, String> header : headers.entrySet()) {
+                if (header.getKey().equalsIgnoreCase("Message-ID")) {
+                    continue;
+                }
                 // No line breaks: a value must not add headers of its own.
                 String value = header.getValue().replaceAll("[\\r\\n]+", " ");
                 message.setHeader(header.getKey(), MimeUtility.fold(header.getKey().length() + 2,

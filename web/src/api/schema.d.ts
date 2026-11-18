@@ -324,6 +324,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/issues/{idOrKey}/comments/{commentId}/split": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["split"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/issues/{idOrKey}/attachments": {
         parameters: {
             query?: never;
@@ -1957,6 +1973,19 @@ export interface components {
             canEdit: boolean;
             canDelete: boolean;
             external: boolean;
+            received: boolean;
+            /** Format: int64 */
+            replyToCommentId: number | null;
+            quoted: string | null;
+            splitIssueKey: string | null;
+        };
+        SplitRequest: {
+            summary: string;
+            project?: string | null;
+            /** Format: int64 */
+            issueTypeId?: number | null;
+            description?: string;
+            move?: boolean;
         };
         AttachmentResponse: {
             /** Format: int64 */
@@ -3612,6 +3641,33 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CommentResponse"];
+                };
+            };
+        };
+    };
+    split: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+                commentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SplitRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["IssueResponse"];
                 };
             };
         };

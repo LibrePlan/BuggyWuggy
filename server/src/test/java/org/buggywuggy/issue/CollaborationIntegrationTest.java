@@ -108,7 +108,7 @@ class CollaborationIntegrationTest extends IssueTestSupport {
         String b = createIssue(admin, "OPS", "Task", "Deploy release");
 
         assertThat((List<String>) admin.get("/api/v1/issue-link-types").json("$[*].name"))
-                .containsExactly("Blocks", "Cloners", "Duplicate", "Relates");
+                .containsExactly("Blocks", "Cloners", "Duplicate", "Relates", "Split");
 
         var created = admin.post("/api/v1/issues/" + a + "/links", """
                 {"linkTypeId": %d, "issue": "%s"}""".formatted(linkTypeId("Blocks"), b));

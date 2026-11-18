@@ -212,7 +212,31 @@
     "mailNotConfigured": "E-mail cannot be sent: BuggyWuggy has no mail server configured.",
     "send": "Send reply",
     "external": "Sent by e-mail",
-    "externalHelp": "This comment was also sent by e-mail to the person this issue came from. Editing it later does not send it again."
+    "externalHelp": "This comment was also sent by e-mail to the person this issue came from. Editing it later does not send it again.",
+    "received": "Reply by e-mail",
+    "receivedHelp": "This answer came in by e-mail from the person this issue came from. An answer to a closed issue reopens it.",
+    "answerTo": "Answer to the comment above",
+    "showQuoted": "Show quoted text",
+    "hideQuoted": "Hide quoted text",
+    "split": {
+      "action": "New issue from this answer",
+      "title": "New issue from this answer",
+      "intro": "Make an issue of its own of what this answer raises. The new issue is reported by the sender, gets the answer's files, and is linked to this issue (split to / split from). External comments on it are mailed to the sender too.",
+      "summary": "Summary",
+      "project": "Project",
+      "type": "Issue type",
+      "description": "Description",
+      "mode": "The answer",
+      "copy": "Copy: keep the answer here too",
+      "copyHelp": "This issue keeps the answer, marked as split off into the new issue.",
+      "move": "Move: remove the answer from this issue",
+      "moveHelp": "The answer and its files move to the new issue.",
+      "moveNotAllowed": "Not available: it takes the permission to delete all comments in this project.",
+      "submit": "Create issue",
+      "done": "{{key}} created",
+      "open": "Open {{key}}",
+      "splitInto": "Split off into"
+    }
   },
   "attachment": {
     "title": "Attachments",
@@ -441,6 +465,7 @@
         "result": "Result",
         "action": {
           "CREATED": "Issue",
+          "COMMENTED": "Answer",
           "SPAM": "Spam",
           "IGNORED": "Ignored"
         }

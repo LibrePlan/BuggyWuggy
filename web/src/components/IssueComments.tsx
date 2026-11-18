@@ -2,12 +2,39 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { ActionIcon, Alert, Avatar, Badge, Box, Button, Group, Menu, Paper, SegmentedControl, Stack, Text, Tooltip } from '@mantine/core';
+import {
+  ActionIcon,
+  Alert,
+  Anchor,
+  Avatar,
+  Badge,
+  Box,
+  Button,
+  Collapse,
+  Group,
+  Menu,
+  Paper,
+  SegmentedControl,
+  Stack,
+  Text,
+  Tooltip,
+} from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconDots, IconMail, IconPencil, IconTrash } from '@tabler/icons-react';
+import {
+  IconArrowsSplit2,
+  IconChevronDown,
+  IconChevronRight,
+  IconCornerDownRight,
+  IconDots,
+  IconMail,
+  IconMailForward,
+  IconPencil,
+  IconTrash,
+} from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 import { del, patch, post, seg } from '../api/client';
 import { keys, useAttachments, useComments, useMailSender } from '../api/queries';
 import type { CommentResponse } from '../api/types';
@@ -16,6 +43,7 @@ import { formatDateTime } from '../lib/format';
 import { Markdown } from './Markdown';
 import { MarkdownEditor } from './MarkdownEditor';
 import { ErrorAlert, PageLoader } from './QueryState';
+import { SplitAnswerModal } from './SplitAnswerModal';
 import { initials } from './UserLabel';
 
 const MAX_LENGTH = 100_000;
@@ -46,6 +74,14 @@ export function IssueComments({ issueKey, canAdd }: { issueKey: string; canAdd: 
   if (comments.isPending) return <PageLoader />;
   if (comments.isError) return <ErrorAlert error={comments.error} />;
 
+  // Answers by e-mail go right below the external comment they answer; the rest in order.
+  const ids = new Set(comments.data.map((c) => c.id));
+  const threaded = (c: CommentResponse) => c.received && c.replyToCommentId != null && ids.has(c.replyToCommentId);
+  const answers = new Map<number, CommentResponse[]>();
+  for (const c of comments.data) {
+    if (threaded(c)) answers.set(c.replyToCommentId!, [...(answers.get(c.replyToCommentId!) ?? []), c]);
+  }
+
   return (
     <Stack>
       {comments.data.length === 0 && (
@@ -53,9 +89,26 @@ export function IssueComments({ issueKey, canAdd }: { issueKey: string; canAdd: 
           {t('comment.empty')}
         </Text>
       )}
-      {comments.data.map((comment) => (
-        <Comment key={comment.id} issueKey={issueKey} comment={comment} />
-      ))}
+      {comments.data
+        .filter((c) => !threaded(c))
+        .map((comment) => (
+          <Fragment key={comment.id}>
+            <Comment issueKey={issueKey} comment={comment} />
+            {answers.get(comment.id)?.map((answer) => (
+              <Group key={answer.id} gap={6} wrap="nowrap" align="flex-start" pl={{ base: 8, sm: 24 }} mt={-6}>
+                <IconCornerDownRight
+                  size={20}
+                  color="var(--mantine-color-blue-6)"
+                  style={{ flexShrink: 0, marginTop: 12 }}
+                  aria-label={t('comment.answerTo')}
+                />
+                <Box style={{ flex: 1, minWidth: 0 }}>
+                  <Comment issueKey={issueKey} comment={answer} />
+                </Box>
+              </Group>
+            ))}
+          </Fragment>
+        ))}
       {canAdd && (
         <Stack gap="xs">
           {sender?.address && (
@@ -130,6 +183,9 @@ function Comment({ issueKey, comment }: { issueKey: string; comment: CommentResp
   const invalidate = useInvalidateComments(issueKey);
   const attachments = useAttachments(issueKey).data;
   const [editing, setEditing] = useState<string | null>(null);
+  const [showQuoted, setShowQuoted] = useState(false);
+  const [splitting, setSplitting] = useState(false);
+  const canSplit = comment.received && !comment.splitIssueKey;
   const path = `/api/v1/issues/${seg(issueKey)}/comments/${comment.id}`;
 
   const save = useMutation({
@@ -159,7 +215,13 @@ function Comment({ issueKey, comment }: { issueKey: string; comment: CommentResp
   const edited = comment.updatedAt !== comment.createdAt;
 
   return (
-    <Paper withBorder p="sm" radius="sm">
+    <Paper
+      withBorder
+      p="sm"
+      radius="sm"
+      style={comment.received ? { borderLeft: '3px solid var(--mantine-color-blue-5)' } : undefined}
+    >
+      {splitting && <SplitAnswerModal issueKey={issueKey} comment={comment} onClose={() => setSplitting(false)} />}
       <Group justify="space-between" wrap="nowrap" align="flex-start">
         <Group gap={8} wrap="nowrap">
           <Avatar size={26} radius="xl" color="blue">
@@ -174,6 +236,13 @@ function Comment({ issueKey, comment }: { issueKey: string; comment: CommentResp
               {edited && ` · ${t('comment.edited')}`}
             </Text>
           </div>
+          {comment.received && (
+            <Tooltip label={t('comment.receivedHelp')} multiline w={260}>
+              <Badge size="sm" variant="light" color="blue" leftSection={<IconMailForward size={12} />}>
+                {t('comment.received')}
+              </Badge>
+            </Tooltip>
+          )}
           {comment.external && (
             <Tooltip label={t('comment.externalHelp')} multiline w={260}>
               <Badge size="sm" variant="light" color="orange" leftSection={<IconMail size={12} />}>
@@ -182,7 +251,7 @@ function Comment({ issueKey, comment }: { issueKey: string; comment: CommentResp
             </Tooltip>
           )}
         </Group>
-        {(comment.canEdit || comment.canDelete) && editing === null && (
+        {(comment.canEdit || comment.canDelete || canSplit) && editing === null && (
           <Menu position="bottom-end">
             <Menu.Target>
               <ActionIcon variant="subtle" color="gray" aria-label={t('common.more')}>
@@ -190,6 +259,11 @@ function Comment({ issueKey, comment }: { issueKey: string; comment: CommentResp
               </ActionIcon>
             </Menu.Target>
             <Menu.Dropdown>
+              {canSplit && (
+                <Menu.Item leftSection={<IconArrowsSplit2 size={16} />} onClick={() => setSplitting(true)}>
+                  {t('comment.split.action')}
+                </Menu.Item>
+              )}
               {comment.canEdit && (
                 <Menu.Item leftSection={<IconPencil size={16} />} onClick={() => setEditing(comment.body)}>
                   {t('common.edit')}
@@ -213,6 +287,36 @@ function Comment({ issueKey, comment }: { issueKey: string; comment: CommentResp
       {editing === null ? (
         <Box mt="xs">
           <Markdown text={comment.body} attachments={attachments} size="sm" />
+          {comment.quoted && (
+            <>
+              <Button
+                variant="subtle"
+                color="gray"
+                size="compact-xs"
+                mt={4}
+                leftSection={showQuoted ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+                onClick={() => setShowQuoted((v) => !v)}
+              >
+                {showQuoted ? t('comment.hideQuoted') : t('comment.showQuoted')}
+              </Button>
+              <Collapse expanded={showQuoted}>
+                <Box mt={4} pl="sm" c="dimmed" style={{ borderLeft: '2px solid var(--mantine-color-gray-4)' }}>
+                  <Markdown text={comment.quoted} size="sm" />
+                </Box>
+              </Collapse>
+            </>
+          )}
+          {comment.splitIssueKey && (
+            <Group gap={4} mt={6}>
+              <IconArrowsSplit2 size={14} color="var(--mantine-color-dimmed)" />
+              <Text size="xs" c="dimmed">
+                {t('comment.split.splitInto')}{' '}
+                <Anchor component={Link} to={`/browse/${comment.splitIssueKey}`} size="xs">
+                  {comment.splitIssueKey}
+                </Anchor>
+              </Text>
+            </Group>
+          )}
         </Box>
       ) : (
         <Stack gap="xs" mt="xs">

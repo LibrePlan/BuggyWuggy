@@ -22,6 +22,7 @@ import jakarta.mail.internet.MimeMultipart;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import org.buggywuggy.ApiClient;
 import org.buggywuggy.issue.IssueTestSupport;
@@ -297,5 +298,116 @@ class InboundMailIntegrationTest extends IssueTestSupport {
         var refused = admin.post("/api/v1/issues/SUP-2/comments", "{\"body\": \"Hello\", \"external\": true}");
         assertThat(refused.status()).isEqualTo(400);
         assertThat(refused.body()).contains("comment.no-mail-sender");
+    }
+
+    private MimeMessage sentTo(String address) throws Exception {
+        outbox.sendPending();
+        MimeMessage last = null;
+        for (MimeMessage m : mail.getReceivedMessages()) {
+            if (GreenMailUtil.getAddressList(m.getRecipients(Message.RecipientType.TO)).contains(address)) {
+                last = m;
+            }
+        }
+        return last;
+    }
+
+    @Test
+    void answersBecomeCommentsBelowTheExternalCommentAndCanBeSplitOff() throws Exception {
+        support.deliver(message("<printer-2@customer.example>", "Carol Customer <carol@customer.example>", null,
+                "Printer broken", "It stopped."));
+        poller.checkAll();
+        var external = admin.post("/api/v1/issues/SUP-1/comments",
+                "{\"body\": \"Please restart it.\", \"external\": true}");
+        long externalId = ((Number) external.json("$.id")).longValue();
+        String sentId = sentTo("carol@customer.example").getMessageID();
+        assertThat(sentId).startsWith("<comment-" + externalId + ".").endsWith("@bugs.test>");
+
+        // The issue is closed meanwhile; an answer reopens it.
+        List<Map<String, Object>> transitions = admin.get("/api/v1/issues/SUP-1/transitions").json("$");
+        Map<String, Object> done = transitions.stream().filter(t -> Boolean.TRUE.equals(t.get("setsResolution")))
+                .findFirst().orElseThrow();
+        var closed = admin.post("/api/v1/issues/SUP-1/transitions",
+                "{\"transitionId\": %s}".formatted(done.get("id")));
+        assertThat(closed.status()).as(closed.toString()).isEqualTo(200);
+
+        MimeMessage answer = new MimeMessage(Session.getInstance(new Properties()));
+        answer.setFrom(new InternetAddress("Carol Customer <carol@customer.example>"));
+        answer.setRecipients(Message.RecipientType.TO, "support@example.org");
+        answer.setSubject("Re: Printer broken [SUP-1]");
+        answer.setHeader("In-Reply-To", sentId);
+        MimeMultipart parts = new MimeMultipart();
+        MimeBodyPart text = new MimeBodyPart();
+        text.setText("""
+                Restarted, still broken. The *scanner* is broken too.
+
+                On Wed, 18 Nov 2026 at 11:21, Support <support@example.org> wrote:
+                > Please restart it.""", "UTF-8");
+        parts.addBodyPart(text);
+        MimeBodyPart scan = new MimeBodyPart();
+        scan.setContent("SCAN".getBytes(StandardCharsets.UTF_8), "image/png");
+        scan.setFileName("scan.png");
+        scan.setDisposition("attachment");
+        parts.addBodyPart(scan);
+        answer.setContent(parts);
+        answer.saveChanges();
+        support.deliver(answer);
+        // Someone else answering the same mail does not get into the issue: a new issue.
+        MimeMessage other = message("<other-1@elsewhere.example>", "mallory@elsewhere.example", null,
+                "Re: Printer broken [SUP-1]", "Buy toner here!");
+        other.setHeader("In-Reply-To", sentId);
+        other.saveChanges();
+        support.deliver(other);
+        poller.checkAll();
+
+        List<Map<String, Object>> comments = admin.get("/api/v1/issues/SUP-1/comments").json("$");
+        assertThat(comments).hasSize(2);
+        Map<String, Object> reply = comments.get(1);
+        assertThat(reply.get("received")).isEqualTo(true);
+        assertThat(((Number) reply.get("replyToCommentId")).longValue()).isEqualTo(externalId);
+        assertThat((String) reply.get("body")).isEqualTo(
+                "Restarted, still broken. The \\*scanner\\* is broken too.\n\n*Attached: scan.png.*");
+        assertThat((String) reply.get("quoted")).startsWith("On Wed").contains("> Please restart it.");
+        assertThat(((Map<?, ?>) reply.get("author")).get("displayName")).isEqualTo("Carol Customer");
+        var reopened = admin.get("/api/v1/issues/SUP-1");
+        assertThat((String) reopened.json("$.status.category")).isNotEqualTo("DONE");
+        assertThat((Object) reopened.json("$.resolution")).isNull();
+        assertThat((String) admin.get("/api/v1/issues/SUP-2").json("$.reporter.username"))
+                .isEqualTo("mallory@elsewhere.example");
+
+        // Split off as a copy: the answer stays, the new issue gets the file and the sender.
+        long replyId = ((Number) reply.get("id")).longValue();
+        var split = admin.post("/api/v1/issues/SUP-1/comments/" + replyId + "/split",
+                "{\"summary\": \"Scanner broken\", \"description\": \"The scanner is broken too.\", \"move\": false}");
+        assertThat(split.status()).as(split.toString()).isEqualTo(201);
+        assertThat((String) split.json("$.key")).isEqualTo("SUP-3");
+        assertThat((String) split.json("$.reporter.username")).isEqualTo("carol@customer.example");
+        assertThat((String) split.json("$.issueType.name")).isEqualTo("Task");
+        assertThat((String) admin.get("/api/v1/issues/SUP-1/comments").json("$[1].splitIssueKey")).isEqualTo("SUP-3");
+        assertThat((List<String>) admin.get("/api/v1/issues/SUP-3/attachments").json("$[*].fileName"))
+                .containsExactly("scan.png");
+        assertThat((List<String>) admin.get("/api/v1/issues/SUP-1/attachments").json("$[*].fileName"))
+                .containsExactly("scan.png");
+        assertThat(admin.get("/api/v1/issues/SUP-1/links").body()).contains("split to", "SUP-3");
+        assertThat(admin.get("/api/v1/issues/SUP-3/links").body()).contains("split from", "SUP-1");
+        assertThat((String) admin.get("/api/v1/issues/SUP-3/mail-sender").json("$.address"))
+                .isEqualTo("carol@customer.example");
+        assertThat(admin.post("/api/v1/issues/SUP-1/comments/" + replyId + "/split",
+                "{\"summary\": \"Again\", \"move\": false}").status()).isEqualTo(409);
+        assertThat(admin.post("/api/v1/issues/SUP-1/comments/" + externalId + "/split",
+                "{\"summary\": \"Not an answer\", \"move\": false}").status()).isEqualTo(400);
+
+        // An answer found by the key in the subject only, moved to a new issue.
+        support.deliver(message("<later-1@customer.example>", "carol@customer.example", null,
+                "Re: Printer broken [SUP-1]", "And the fax."));
+        poller.checkAll();
+        List<Map<String, Object>> now = admin.get("/api/v1/issues/SUP-1/comments").json("$");
+        assertThat(now).hasSize(3);
+        assertThat(((Number) now.get(2).get("replyToCommentId")).longValue()).isEqualTo(externalId);
+        var moved = admin.post("/api/v1/issues/SUP-1/comments/" + now.get(2).get("id") + "/split",
+                "{\"summary\": \"Fax broken\", \"description\": \"And the fax.\", \"move\": true}");
+        assertThat(moved.status()).as(moved.toString()).isEqualTo(201);
+        assertThat((List<Object>) admin.get("/api/v1/issues/SUP-1/comments").json("$")).hasSize(2);
+        assertThat(jdbc.queryForList("select action from inbound_mail order by id", String.class))
+                .containsExactly("CREATED", "COMMENTED", "CREATED", "COMMENTED");
     }
 }

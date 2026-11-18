@@ -291,8 +291,23 @@ folder and is tried again at the next check.
 only people in BuggyWuggy see it. Choose **Reply to …** above the comment field to make it
 **external**: it is then also mailed to the sender, as an answer to the original mail, with the
 mailbox's `address` as Reply-To. External comments are marked *Sent by e-mail*; editing one
-later does not send it again. Sending needs the mail server of the previous section. Answers
-that come back to the mailbox currently become new issues.
+later does not send it again. Sending needs the mail server of the previous section.
+
+**Answers.** When the sender answers, the answer becomes a comment on the same issue, shown
+indented right below the external comment it answers (marked *Reply by e-mail*). An answer is
+recognised by the Message-ID of the mail it answers (In-Reply-To / References), or else by the
+issue key in the subject (`[SUP-12]`), and only when it comes from the issue's sender; mail from
+anyone else becomes a new issue. Answers need no donor proof: they answer a mail of ours. The
+text the answer quoted (from "On … wrote:" or the like, or `>` lines at the end) is kept apart,
+under **Show quoted text**. Files become attachments of the issue. **An answer to a closed issue
+reopens it.**
+
+**New issue from an answer.** When an answer raises something new, **New issue from this
+answer** in the comment's menu makes an issue of its own of it, with a summary, project, type and
+description to fill in. The sender becomes its reporter and its e-mail contact, it gets the
+answer's files, and the two issues are linked (*split to* / *split from*). As a **copy** the
+answer stays, marked *Split off into …*; **moved**, the answer and its files leave the original
+issue, which takes the permission to delete all comments.
 
 All of this is logged under `org.buggywuggy.inbound-mail`:
 

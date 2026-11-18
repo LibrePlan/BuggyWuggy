@@ -59,8 +59,17 @@ public class InboundMailService {
             .withZone(ZoneOffset.UTC);
 
     public enum Action {
-        CREATED, SPAM, IGNORED, ALREADY_HANDLED
+        CREATED, COMMENTED, SPAM, IGNORED, ALREADY_HANDLED
     }
+
+    /** The issue an answer belongs to, and the external comment it answers (if known). */
+    private record Thread(long issueId, Long commentId) {
+    }
+
+    private static final Pattern MESSAGE_ID = Pattern.compile("<[^<>\\s]+>");
+    private static final Pattern SUBJECT_KEY = Pattern.compile("\\[([A-Z][A-Z0-9_]{1,9})-(\\d+)\\]");
+    /** Room for a note within the 100,000 characters of a comment. */
+    private static final int COMMENT_MAX = 95_000;
 
     public record Outcome(Action action, String issueKey, String reason) {
     }
@@ -96,6 +105,12 @@ public class InboundMailService {
             log.info("Inbound mail {}: ignored mail from {} ({}): {}", box.name(), mail.sender(), ignored,
                     mail.subject());
             return new Outcome(Action.IGNORED, null, ignored);
+        }
+        // An answer to an external comment (or to the mail the issue came from): a comment. It
+        // needs no donor proof: it answers a mail of ours.
+        Optional<Thread> thread = thread(mail);
+        if (thread.isPresent()) {
+            return addAnswer(box, mail, thread.get(), now);
         }
         if (box.accept() == Accept.DONOR_PROOF) {
             String refused = donorProofProblem(mail);
@@ -142,9 +157,157 @@ public class InboundMailService {
                     new ByteArrayInputStream(file.content()));
         }
         record(box, mail, now, Action.CREATED, null, issue.id());
+        jdbc.update("""
+                insert into issue_mail_contact (issue_id, mailbox, address, name, subject, message_id)
+                values (:issue, :mailbox, :address, :name, :subject, :id)""",
+                new MapSqlParameterSource().addValue("issue", issue.id()).addValue("mailbox", box.name())
+                        .addValue("address", mail.sender()).addValue("name", mail.senderName())
+                        .addValue("subject", mail.subject()).addValue("id", mail.messageId()));
         events.created(issue.id(), reporter, now);
         log.info("Inbound mail {}: {} created from mail of {}: {}", box.name(), key, mail.sender(), summary);
         return new Outcome(Action.CREATED, key, null);
+    }
+
+    /**
+     * The issue a mail answers: by In-Reply-To / References (an external comment, or the mail
+     * the issue was made of), else by "[KEY-12]" in the subject. Only when the mail comes from
+     * the person the issue's external comments go to: nobody else can add comments by mail.
+     */
+    private Optional<Thread> thread(IncomingMail mail) {
+        Set<String> ids = new java.util.LinkedHashSet<>();
+        for (String header : List.of("In-Reply-To", "References")) {
+            String value = mail.header(header);
+            if (value != null) {
+                Matcher m = MESSAGE_ID.matcher(value);
+                while (m.find()) {
+                    ids.add(m.group());
+                }
+            }
+        }
+        if (!ids.isEmpty()) {
+            Optional<Thread> comment = jdbc.query("""
+                    select issue_id, id from comment where external and mail_message_id in (:ids)
+                    order by id desc limit 1""", Map.of("ids", ids),
+                    (rs, n) -> new Thread(rs.getLong(1), rs.getLong(2))).stream().findFirst();
+            if (comment.isPresent() && fromContact(comment.get().issueId(), mail)) {
+                return comment;
+            }
+            Optional<Thread> original = jdbc.query("""
+                    select issue_id from issue_mail_contact where message_id in (:ids) order by issue_id limit 1""",
+                    Map.of("ids", ids), (rs, n) -> new Thread(rs.getLong(1), null)).stream().findFirst();
+            if (original.isPresent() && fromContact(original.get().issueId(), mail)) {
+                return original;
+            }
+        }
+        Matcher key = SUBJECT_KEY.matcher(mail.subject());
+        while (key.find()) {
+            Optional<Long> issue = jdbc.queryForList("""
+                    select i.id from issue i join project p on p.id = i.project_id
+                    where p.key = :key and i.number = :number""",
+                    Map.of("key", key.group(1), "number", Long.parseLong(key.group(2))), Long.class)
+                    .stream().findFirst();
+            if (issue.isPresent() && fromContact(issue.get(), mail)) {
+                Long last = jdbc.queryForList("""
+                        select id from comment where issue_id = :issue and external order by id desc limit 1""",
+                        Map.of("issue", issue.get()), Long.class).stream().findFirst().orElse(null);
+                return Optional.of(new Thread(issue.get(), last));
+            }
+        }
+        return Optional.empty();
+    }
+
+    private boolean fromContact(long issueId, IncomingMail mail) {
+        return jdbc.queryForList("select address from issue_mail_contact where issue_id = :issue",
+                Map.of("issue", issueId), String.class).stream().anyMatch(a -> a.equalsIgnoreCase(mail.sender()));
+    }
+
+    /**
+     * The answer as a comment by its sender, below the comment it answers: what was written,
+     * and apart from it the text it quoted. A closed issue is reopened.
+     */
+    private Outcome addAnswer(Mailbox box, IncomingMail mail, Thread thread, Instant now) {
+        long author = writer.user(source(box, now), new SourceUser(mail.sender().toLowerCase(Locale.ROOT),
+                mail.sender(), mail.senderName(), mail.sender()), null, false, box.host(), now).id();
+        QuotedText.Parts parts = QuotedText.split(mail.text());
+        String written = parts.written();
+        boolean cut = written.length() > COMMENT_MAX;
+        StringBuilder body = new StringBuilder(PlainText.toMarkdown(cut ? written.substring(0, COMMENT_MAX) : written));
+        if (cut) {
+            body.append("\n\n*The text was too long: the whole text is in the attachment message.txt.*");
+        }
+        List<String> names = new ArrayList<>(mail.files().stream().map(IncomingMail.File::name).toList());
+        if (cut) {
+            names.add("message.txt");
+        }
+        if (!names.isEmpty()) {
+            body.append("\n\n*Attached: ").append(PlainText.toMarkdown(String.join(", ", names))).append(".*");
+        }
+        if (!mail.skipped().isEmpty()) {
+            body.append("\n\n*Files left out because they are larger than ").append(size(box.maxAttachmentSize()))
+                    .append(": ").append(PlainText.toMarkdown(String.join(", ", mail.skipped()))).append(".*");
+        }
+        String quoted = parts.quoted() == null ? null : PlainText.toMarkdown(parts.quoted());
+        if (quoted != null && quoted.length() > COMMENT_MAX) {
+            quoted = quoted.substring(0, COMMENT_MAX) + "\n\n…";
+        }
+        String text = body.toString().isBlank() ? "—" : body.toString();
+        long commentId = jdbc.queryForObject("""
+                insert into comment (issue_id, author_id, body, created_at, updated_at, received, mail_message_id,
+                                     reply_to_comment_id, quoted)
+                values (:issue, :author, :body, :now, :now, true, :messageId, :parent, :quoted) returning id""",
+                new MapSqlParameterSource().addValue("issue", thread.issueId()).addValue("author", author)
+                        .addValue("body", text).addValue("now", Timestamp.from(now))
+                        .addValue("messageId", mail.messageId()).addValue("parent", thread.commentId())
+                        .addValue("quoted", quoted), Long.class);
+        List<IncomingMail.File> files = new ArrayList<>(mail.files());
+        if (cut) {
+            files.add(new IncomingMail.File("message.txt", "text/plain", written.getBytes(StandardCharsets.UTF_8)));
+        }
+        for (IncomingMail.File file : files) {
+            long attachment = writer.attachment(thread.issueId(), author, file.name(), file.contentType(), now,
+                    new ByteArrayInputStream(file.content()));
+            jdbc.update("update attachment set comment_id = :comment where id = :id",
+                    Map.of("comment", commentId, "id", attachment));
+        }
+        boolean reopened = reopen(thread.issueId(), author, now);
+        jdbc.update("update issue set updated_at = :now where id = :id",
+                Map.of("now", Timestamp.from(now), "id", thread.issueId()));
+        record(box, mail, now, Action.COMMENTED, reopened ? "reopened" : null, thread.issueId());
+        jdbc.update("update inbound_mail set comment_id = :comment where mailbox = :mailbox and message_id = :id",
+                Map.of("comment", commentId, "mailbox", box.name(), "id", mail.messageId()));
+        events.commented(thread.issueId(), author, now, commentId);
+        String key = jdbc.queryForObject("""
+                select p.key || '-' || i.number from issue i join project p on p.id = i.project_id where i.id = :id""",
+                Map.of("id", thread.issueId()), String.class);
+        log.info("Inbound mail {}: answer of {} added to {}{}", box.name(), mail.sender(), key,
+                reopened ? ", which was reopened" : "");
+        return new Outcome(Action.COMMENTED, key, null);
+    }
+
+    /** A closed issue that gets an answer is open again: back to the workflow's reopened status. */
+    private boolean reopen(long issueId, long author, Instant now) {
+        Map<String, Object> issue = jdbc.queryForMap("""
+                select i.project_id, i.issue_type_id, i.status_id, s.name as status, s.category,
+                       i.resolution_id, r.name as resolution
+                from issue i join status s on s.id = i.status_id left join resolution r on r.id = i.resolution_id
+                where i.id = :id""", Map.of("id", issueId));
+        if (!"DONE".equals(issue.get("category"))) {
+            return false;
+        }
+        ImportWriter.Named to = writer.statuses(((Number) issue.get("project_id")).longValue(),
+                ((Number) issue.get("issue_type_id")).longValue()).reopened();
+        jdbc.update("""
+                update issue set status_id = :status, resolution_id = null, resolved_at = null, version = version + 1
+                where id = :id""", Map.of("status", to.id(), "id", issueId));
+        org.buggywuggy.issue.IssueHistory.Changes changes = new org.buggywuggy.issue.IssueHistory.Changes();
+        changes.record(org.buggywuggy.issue.IssueHistory.Fields.STATUS, issue.get("status_id"),
+                (String) issue.get("status"), to.id(), to.name());
+        if (issue.get("resolution_id") != null) {
+            changes.record(org.buggywuggy.issue.IssueHistory.Fields.RESOLUTION, issue.get("resolution_id"),
+                    (String) issue.get("resolution"), null, null);
+        }
+        writer.history(issueId, author, now, changes);
+        return true;
     }
 
     /** Mail that must not become an issue, because answering it could start a mail loop. */

@@ -28,11 +28,14 @@ public final class CollaborationDtos {
     /**
      * A comment. {@code body} is Markdown. {@code canEdit} / {@code canDelete} tell whether the
      * current user may change it. {@code external}: it was also sent by e-mail to the person the
-     * issue came from; other comments are internal.
+     * issue came from; other comments are internal. {@code received}: an answer that came in by
+     * e-mail, to the external comment {@code replyToCommentId} (if known), with the text it
+     * quoted in {@code quoted}; {@code splitIssueKey}: the issue it was split off into.
      */
     public record CommentResponse(long id, @ApiNullable UserRef author, String body, Instant createdAt,
             Instant updatedAt, @ApiNullable UserRef updateAuthor, long version, boolean canEdit, boolean canDelete,
-            boolean external) {
+            boolean external, boolean received, @ApiNullable Long replyToCommentId, @ApiNullable String quoted,
+            @ApiNullable String splitIssueKey) {
     }
 
     /**

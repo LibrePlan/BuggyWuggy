@@ -11,7 +11,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.buggywuggy.common.ApiNullable;
+import jakarta.validation.Valid;
+import org.buggywuggy.issue.IssueDtos;
 import org.buggywuggy.issue.IssueService;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.buggywuggy.mail.inbound.InboundMailProperties.Mailbox;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -46,6 +52,7 @@ public class InboundMailController {
     public record MailSender(@ApiNullable String address, @ApiNullable String name, boolean canSend) {
     }
 
+    private final AnswerSplitter splitter;
     private final InboundMailPoller poller;
     private final InboundMailProperties properties;
     private final ExternalReplies replies;
@@ -53,7 +60,8 @@ public class InboundMailController {
     private final NamedParameterJdbcTemplate jdbc;
 
     public InboundMailController(InboundMailPoller poller, InboundMailProperties properties, ExternalReplies replies,
-            IssueService issues, NamedParameterJdbcTemplate jdbc) {
+            IssueService issues, NamedParameterJdbcTemplate jdbc, AnswerSplitter splitter) {
+        this.splitter = splitter;
         this.poller = poller;
         this.properties = properties;
         this.replies = replies;
@@ -92,6 +100,15 @@ public class InboundMailController {
                 (rs, i) -> new InboundMailEntry(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4),
                         rs.getTimestamp(5).toInstant(), rs.getString(6), rs.getString(7), rs.getString(8)));
         return new InboundMailStatus(properties.pollInterval().toString(), boxes, recent);
+    }
+
+    /** A new issue of an answer that came in by e-mail; returns that issue. */
+    @PostMapping("/api/v1/issues/{idOrKey}/comments/{commentId}/split")
+    @ResponseStatus(HttpStatus.CREATED)
+    public IssueDtos.IssueResponse split(@AuthenticationPrincipal BuggyWuggyPrincipal user,
+            @PathVariable String idOrKey, @PathVariable long commentId,
+            @Valid @RequestBody AnswerSplitter.SplitRequest request) {
+        return splitter.split(user, idOrKey, commentId, request);
     }
 
     @GetMapping("/api/v1/issues/{idOrKey}/mail-sender")

@@ -104,7 +104,7 @@ function MailStatusSection() {
   );
 }
 
-const ACTION_COLOR: Record<string, string> = { CREATED: 'green', SPAM: 'red', IGNORED: 'gray' };
+const ACTION_COLOR: Record<string, string> = { CREATED: 'green', COMMENTED: 'blue', SPAM: 'red', IGNORED: 'gray' };
 
 /** The mailboxes BuggyWuggy reads into projects: set in the configuration file, shown here. */
 function InboundMailSection() {
