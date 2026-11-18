@@ -441,6 +441,8 @@
     "import": "Import",
     "importer": {
       "intro": "Copy the issues of another issue tracker into BuggyWuggy, with their comments, attachments and history. Original authors and dates are kept; nobody is notified by e-mail.",
+      "help": "How importing works",
+      "helpSource": "Help on importing from {{source}}",
       "comingLater": "Coming later",
       "defaultUrl": "Default address: {{url}} (can be changed)",
       "start": "Start import",

@@ -6,7 +6,7 @@ import { Anchor, AppShell, Box, Container, Group, NavLink, ScrollArea, Stack, Te
 import { useMediaQuery } from '@mantine/hooks';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation, useParams, useSearchParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useDonation, useHelpPage, useMyself, useVersion } from '../api/queries';
 import { HelpSearch } from '../components/HelpSearch';
 import { Logo, LogoMark } from '../components/Logo';
@@ -66,20 +66,19 @@ export function HelpPage({ page }: { page?: string }) {
   const id = page ?? params.page ?? '';
   const help = useHelpPage(id);
   const { hash } = useLocation();
+  const navigate = useNavigate();
   const content = useRef<HTMLDivElement>(null);
   // The search is part of the address (?q=), so it survives a reload and can be shared.
-  const [search, setSearch] = useSearchParams();
+  const [search] = useSearchParams();
   const [query, setQuery] = useState(() => search.get('q') ?? '');
   useEffect(() => {
-    setSearch(
-      (p) => {
-        if (query) p.set('q', query);
-        else p.delete('q');
-        return p;
-      },
-      { replace: true },
-    );
-  }, [query, setSearch]);
+    if ((search.get('q') ?? '') === query) return;
+    const p = new URLSearchParams(search);
+    if (query) p.set('q', query);
+    else p.delete('q');
+    // Keep the #anchor: setSearchParams would drop it.
+    navigate({ search: p.toString() ? `?${p}` : '', hash }, { replace: true });
+  }, [query, search, hash, navigate]);
   const wide = useMediaQuery('(min-width: 62em)');
 
   useEffect(() => {

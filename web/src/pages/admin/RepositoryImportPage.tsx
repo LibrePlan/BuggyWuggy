@@ -192,9 +192,15 @@ export function RepositoryImportPage({ kind }: { kind: RepositorySource }) {
     <Stack>
       <Group justify="space-between">
         <Title order={3}>{t(`admin.importer.source.${kind}.title`)}</Title>
-        <Anchor component={Link} to="/admin/import" size="sm">
-          {t('admin.importer.back')}
-        </Anchor>
+        <Group gap="lg">
+          {/* The section of this tracker in the administrator guide (its heading's anchor). */}
+          <Anchor href={`/help/admin-guide#${kind}`} target="_blank" rel="noopener" size="sm">
+            {t('admin.importer.helpSource', { source: source.name })}
+          </Anchor>
+          <Anchor component={Link} to="/admin/import" size="sm">
+            {t('admin.importer.back')}
+          </Anchor>
+        </Group>
       </Group>
       <Stepper active={step} onStepClick={(s) => s < step && setStep(s)} allowNextStepsSelect={false}>
         <Stepper.Step label={t('admin.importer.wizard.step.connection')}>

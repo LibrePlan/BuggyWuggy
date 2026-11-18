@@ -79,7 +79,13 @@ export function ImportPage() {
   return (
     <Stack gap="xl">
       <Stack>
-        <Text c="dimmed">{t('admin.importer.intro')}</Text>
+        <Text c="dimmed">
+          {t('admin.importer.intro')}{' '}
+          {/* The administrator guide, in a tab of its own like the Help menu's pages. */}
+          <Anchor href="/help/admin-guide#importing-from-other-trackers" target="_blank" rel="noopener">
+            {t('admin.importer.help')}
+          </Anchor>
+        </Text>
         <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
           {SOURCES.map((s) => (
             <Card key={s.kind} withBorder padding="md">
