@@ -1899,6 +1899,7 @@ export interface components {
             version: number;
             origin: components["schemas"]["IssueOrigin"] | null;
             remoteLinks: components["schemas"]["RemoteLink"][];
+            movedTo: components["schemas"]["IssueRef"] | null;
         };
         IssueTypeRef: {
             /** Format: int64 */
@@ -2516,6 +2517,7 @@ export interface components {
             name: string;
             description: string | null;
             isDefault: boolean;
+            selectable: boolean;
         };
         PageResponseProjectResponse: {
             items: components["schemas"]["ProjectResponse"][];
@@ -2621,7 +2623,7 @@ export interface components {
         MoveOptions: {
             movable: boolean;
             /** @enum {string|null} */
-            blocker: "ARCHIVED" | "PERMISSION" | "EPIC" | "SUBTASK" | "HAS_SUBTASKS" | "NO_TARGETS" | null;
+            blocker: "MOVED" | "ARCHIVED" | "PERMISSION" | "EPIC" | "SUBTASK" | "HAS_SUBTASKS" | "NO_TARGETS" | null;
             targets: components["schemas"]["ProjectRef"][];
         };
         MovePreview: {
@@ -2631,6 +2633,8 @@ export interface components {
             droppedFixVersions: string[];
             removedAssignee: components["schemas"]["UserRef"] | null;
             leavesEpic: components["schemas"]["IssueRef"] | null;
+            mailboxFrom: string | null;
+            mailboxTo: string | null;
         };
         MailSender: {
             address: string | null;

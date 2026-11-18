@@ -410,4 +410,31 @@ class InboundMailIntegrationTest extends IssueTestSupport {
         assertThat(jdbc.queryForList("select action from inbound_mail order by id", String.class))
                 .containsExactly("CREATED", "COMMENTED", "CREATED", "COMMENTED");
     }
+
+    @Test
+    void anIssueThatMovesTakesTheMailboxOfItsNewProjectAndOldKeysFollowIt() throws Exception {
+        support.deliver(message("<toner-1@customer.example>", "Carol Customer <carol@customer.example>", null,
+                "Toner empty", "Where do I order toner?"));
+        poller.checkAll();
+        assertThat(jdbc.queryForObject("select mailbox from issue_mail_contact", String.class)).isEqualTo("support");
+
+        var preview = admin.get("/api/v1/issues/SUP-1/move/preview?project=FB");
+        assertThat((String) preview.json("$.mailboxFrom")).isEqualTo("support");
+        assertThat((String) preview.json("$.mailboxTo")).isEqualTo("feedback");
+        var moved = admin.post("/api/v1/issues/SUP-1/move", """
+                {"project": "FB"}""");
+        assertThat(moved.status()).as(moved.toString()).isEqualTo(200);
+        assertThat((String) moved.json("$.key")).isEqualTo("FB-1");
+        assertThat(jdbc.queryForObject("select mailbox from issue_mail_contact", String.class)).isEqualTo("feedback");
+
+        // An answer with only the old key in its subject reaches the issue, not the stub.
+        support.deliver(message("<toner-2@customer.example>", "carol@customer.example", null,
+                "Re: Toner empty [SUP-1]", "Never mind, found it."));
+        poller.checkAll();
+        assertThat((List<String>) admin.get("/api/v1/issues/FB-1/comments").json("$[*].body"))
+                .anyMatch(body -> body.contains("Never mind"));
+        assertThat((List<String>) admin.get("/api/v1/issues/SUP-1/comments").json("$[*].body"))
+                .containsExactly("Moved to FB-1.");
+        assertThat((String) admin.get("/api/v1/issues/SUP-1").json("$.status.category")).isEqualTo("DONE");
+    }
 }

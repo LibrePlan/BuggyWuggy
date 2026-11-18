@@ -712,7 +712,7 @@ function MoveModal({
           {transition?.setsResolution && (
             <Select
               label={t('issue.resolution')}
-              data={resolutions.map((r) => ({ value: String(r.id), label: r.name }))}
+              data={resolutions.filter((r) => r.selectable).map((r) => ({ value: String(r.id), label: r.name }))}
               value={resolutionId}
               onChange={setResolutionId}
               allowDeselect={false}

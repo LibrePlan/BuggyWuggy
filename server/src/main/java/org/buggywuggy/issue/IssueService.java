@@ -161,6 +161,13 @@ public class IssueService {
 
     // --- queries -----------------------------------------------------------------------
 
+    /** Whether the issue is the stub that stayed behind when an issue moved to another project. */
+    @Transactional(readOnly = true)
+    public boolean isMovedStub(long issueId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject(
+                "select moved_to_id is not null from issue where id = :id", Map.of("id", issueId), Boolean.class));
+    }
+
     @Transactional(readOnly = true)
     public IssueResponse get(BuggyWuggyPrincipal user, String idOrKey) {
         return toResponse(access(user, idOrKey));
@@ -558,6 +565,6 @@ public class IssueService {
                 fields.versions(id, VersionKind.AFFECTS), fields.versions(id, VersionKind.FIX),
                 i.getDueDate(), parent, children,
                 i.getCreatedAt(), i.getUpdatedAt(), i.getResolvedAt(), i.getVersion(),
-                fields.origin(id), fields.remoteLinks(id));
+                fields.origin(id), fields.remoteLinks(id), fields.movedTo(id));
     }
 }

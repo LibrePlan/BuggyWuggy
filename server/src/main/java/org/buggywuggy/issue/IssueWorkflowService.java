@@ -57,7 +57,8 @@ public class IssueWorkflowService {
     @Transactional(readOnly = true)
     public List<TransitionResponse> available(BuggyWuggyPrincipal user, String idOrKey) {
         IssueAccess access = issueService.access(user, idOrKey);
-        if (!access.project().has(ProjectPermission.TRANSITION_ISSUE) || access.project().project().isArchived()) {
+        if (!access.project().has(ProjectPermission.TRANSITION_ISSUE) || access.project().project().isArchived()
+                || issueService.isMovedStub(access.issue().getId())) {
             return List.of();
         }
         return transitionsOf(access).stream().map(t -> {
@@ -75,6 +76,9 @@ public class IssueWorkflowService {
         if (request.version() != null && request.version() != issue.getVersion()) {
             throw conflict("error.conflict");
         }
+        if (issueService.isMovedStub(issue.getId())) {
+            throw conflict("issue.moved-stub", access.key());
+        }
         Transition transition = transitionsOf(access).stream()
                 .filter(t -> t.id() == request.transitionId())
                 .findFirst()
@@ -90,7 +94,7 @@ public class IssueWorkflowService {
 
         if (isDone) {
             if (request.resolutionId() != null) {
-                resolution = resolutions.findById(request.resolutionId())
+                resolution = resolutions.findById(request.resolutionId()).filter(Resolution::isSelectable)
                         .orElseThrow(() -> badRequest("issue.resolution-invalid", request.resolutionId()));
             } else if (oldResolution != null) {
                 resolution = oldResolution;

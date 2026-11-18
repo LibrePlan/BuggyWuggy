@@ -61,6 +61,34 @@ class IssueMoveIntegrationTest extends IssueTestSupport {
     }
 
     @Test
+    void theStubCannotBeTransitionedOrMovedAndMovedIsNotOffered() {
+        ApiClient admin = setupAndLoginAdmin();
+        createProject(admin, "BUG", "Bug Tracker");
+        createProject(admin, "SUP", "Support");
+        String key = createIssue(admin, "BUG", "Bug", "Printer on fire");
+        String other = createIssue(admin, "BUG", "Bug", "Scanner on fire");
+        assertThat(admin.post("/api/v1/issues/" + key + "/move", """
+                {"project": "SUP"}""").status()).isEqualTo(200);
+
+        var stub = admin.get("/api/v1/issues/" + key);
+        assertThat((String) stub.json("$.movedTo.key")).isEqualTo("SUP-1");
+        assertThat(admin.get("/api/v1/issues/SUP-1").json("$.movedTo") == null).isTrue();
+        assertThat((List<Object>) admin.get("/api/v1/issues/" + key + "/transitions").json("$")).isEmpty();
+        assertThat(code(admin.post("/api/v1/issues/" + key + "/transitions", """
+                {"transitionId": %d}""".formatted(transitionId(admin, other, "Close Issue"))))).isEqualTo("issue.moved-stub");
+        assertThat(blocker(admin, key)).isEqualTo("MOVED");
+        assertThat(code(admin.post("/api/v1/issues/" + key + "/move", """
+                {"project": "SUP"}"""))).isEqualTo("issue.move-moved");
+
+        // Moved is listed (for filters), but cannot be chosen when resolving.
+        var resolutions = admin.get("/api/v1/resolutions");
+        assertThat((List<Boolean>) resolutions.json("$[?(@.name == 'Moved')].selectable")).containsExactly(false);
+        assertThat(code(admin.post("/api/v1/issues/" + other + "/transitions", """
+                {"transitionId": %d, "resolutionId": %d}""".formatted(transitionId(admin, other, "Close Issue"),
+                resolutionId("Moved"))))).isEqualTo("issue.resolution-invalid");
+    }
+
+    @Test
     void dropsWhatTheNewProjectDoesNotHave() {
         ApiClient admin = setupAndLoginAdmin();
         createProject(admin, "BUG", "Bug Tracker");
@@ -176,6 +204,12 @@ class IssueMoveIntegrationTest extends IssueTestSupport {
                 {"name": "%s"}""".formatted(name));
         assertThat(response.status()).as(response.toString()).isEqualTo(201);
         return ((Number) response.json("$.id")).longValue();
+    }
+
+    /** A transition the issue offers now, by name. */
+    private long transitionId(ApiClient client, String key, String name) {
+        List<Number> ids = client.get("/api/v1/issues/" + key + "/transitions").json("$[?(@.name == '" + name + "')].id");
+        return ids.getFirst().longValue();
     }
 
     private long linkTypeId(String name) {

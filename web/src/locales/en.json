@@ -168,6 +168,7 @@
       "button": "Move",
       "help": "Move this issue to another project. A closed issue with the current key stays behind and points to it.",
       "blocker": {
+        "MOVED": "This issue was moved to another project; it only points to its new place.",
         "ARCHIVED": "This project is archived, so its issues cannot be moved.",
         "PERMISSION": "Moving an issue out of a project takes the right to delete issues in it, which you do not have here.",
         "EPIC": "Epics cannot be moved to another project.",
@@ -187,7 +188,10 @@
       "leaveEpic": "The issue leaves epic {{key}}.",
       "noChanges": "All fields are kept.",
       "submit": "Move",
-      "done": "{{from}} moved to {{to}}"
+      "done": "{{from}} moved to {{to}}",
+      "movedTo": "This issue was moved to <issue>{{key}}</issue>. It is closed for good and only points to its new place.",
+      "mailboxChanges": "Answers by e-mail will go through mailbox {{to}} of the new project instead of {{from}}.",
+      "mailboxStays": "The new project has no mailbox: answers by e-mail keep going through mailbox {{mailbox}}."
     }
   },
   "history": {

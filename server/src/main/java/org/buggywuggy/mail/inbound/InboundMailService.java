@@ -170,7 +170,8 @@ public class InboundMailService {
 
     /**
      * The issue a mail answers: by In-Reply-To / References (an external comment, or the mail
-     * the issue was made of), else by "[KEY-12]" in the subject. Only when the mail comes from
+     * the issue was made of), else by "[KEY-12]" in the subject (also an old key of an issue that
+     * moved to another project). Only when the mail comes from
      * the person the issue's external comments go to: nobody else can add comments by mail.
      */
     private Optional<Thread> thread(IncomingMail mail) {
@@ -201,8 +202,9 @@ public class InboundMailService {
         }
         Matcher key = SUBJECT_KEY.matcher(mail.subject());
         while (key.find()) {
+            // The stub of an issue that moved to another project leads to the issue itself.
             Optional<Long> issue = jdbc.queryForList("""
-                    select i.id from issue i join project p on p.id = i.project_id
+                    select coalesce(i.moved_to_id, i.id) from issue i join project p on p.id = i.project_id
                     where p.key = :key and i.number = :number""",
                     Map.of("key", key.group(1), "number", Long.parseLong(key.group(2))), Long.class)
                     .stream().findFirst();

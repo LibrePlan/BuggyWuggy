@@ -94,6 +94,13 @@ export function MoveIssueModal({
             </List>
           </Alert>
         )}
+        {p?.mailboxFrom && (
+          <Text size="sm" c="dimmed">
+            {p.mailboxTo !== p.mailboxFrom
+              ? t('issue.move.mailboxChanges', { from: p.mailboxFrom, to: p.mailboxTo })
+              : t('issue.move.mailboxStays', { mailbox: p.mailboxFrom })}
+          </Text>
+        )}
         {p && losses.length === 0 && (
           <Text size="sm" c="dimmed">
             {t('issue.move.noChanges')}

@@ -227,16 +227,23 @@ the issue.
 - The issue gets a **new key** in the other project (`BUG-12` becomes, say, `SUP-48`). It keeps
   its comments, attachments, history, links, watchers, reporter, status and priority.
 - In its old place stays a **closed issue with the old key**, the same summary and resolution
-  *Moved*. It has a comment *Moved to SUP-48.* and a *moved to* link, so old links, mails and
-  bookmarks still lead to the issue. Its own history shows the move.
+  *Moved*. It has a comment *Moved to SUP-48.*, a *moved to* link, and a notice at the top, so
+  old links and bookmarks still lead to the issue. This issue is closed for good: it cannot be
+  reopened or moved itself. *Moved* is not offered as a resolution when you resolve an issue
+  yourself.
 - **Components and versions** are kept when the other project has one with the same name;
   otherwise they are removed. The **assignee** is kept when they can be assigned issues in the
   other project; otherwise the issue becomes unassigned. An issue in an **epic** leaves the epic.
 - The issue's watchers get a notification of the move.
+- For an issue that came in **by e-mail**, answers by e-mail now go through the mailbox of the
+  new project; when that project has no mailbox, they keep going through the old one. Answers to
+  older mails, with the old key in their subject, still reach the issue. The dialog says which
+  mailbox is used.
 
 Not every issue can be moved. The **Move** button is then greyed out; point at the **?** next to
 it to see why, or click it to come here:
 
+- An issue that was **moved** already (the closed issue with the old key) cannot be moved.
 - **Epics** cannot be moved, nor **sub-tasks**, nor issues that **have sub-tasks**: a parent and
   its children are always in the same project.
 - You need the right to **delete issues** in the project the issue is in (by default

@@ -19,6 +19,8 @@ public class Resolution {
     private String description;
     private int position;
     private boolean isDefault;
+    /** False for resolutions only BuggyWuggy sets, such as Moved. */
+    private boolean selectable;
 
     protected Resolution() {
     }
@@ -28,4 +30,5 @@ public class Resolution {
     public String getDescription() { return description; }
     public int getPosition() { return position; }
     public boolean isDefault() { return isDefault; }
+    public boolean isSelectable() { return selectable; }
 }

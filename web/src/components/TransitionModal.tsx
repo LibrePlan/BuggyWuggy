@@ -44,7 +44,8 @@ export function TransitionModal({
           </Group>
           <Select
             label={t('issue.resolution')}
-            data={resolutions.map((r) => ({ value: String(r.id), label: r.name }))}
+            // Resolutions only BuggyWuggy sets (Moved) cannot be chosen.
+            data={resolutions.filter((r) => r.selectable).map((r) => ({ value: String(r.id), label: r.name }))}
             value={resolutionId}
             onChange={setResolutionId}
             allowDeselect={false}

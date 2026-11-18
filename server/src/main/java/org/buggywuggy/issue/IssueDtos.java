@@ -71,7 +71,8 @@ public final class IssueDtos {
             List<Named> affectsVersions, List<Named> fixVersions, @ApiNullable LocalDate dueDate,
             @ApiNullable IssueRef parent, List<ChildIssueRef> children,
             Instant createdAt, Instant updatedAt, @ApiNullable Instant resolvedAt, long version,
-            @ApiNullable IssueOrigin origin, List<RemoteLink> remoteLinks) {
+            @ApiNullable IssueOrigin origin, List<RemoteLink> remoteLinks,
+            @ApiNullable IssueRef movedTo) {
     }
 
     /** Where an imported issue came from: e.g. kind FORGEJO, key {@code owner/repo#12}. */
@@ -192,20 +193,23 @@ public final class IssueDtos {
         }
     }
 
-    public record ResolutionResponse(long id, String name, @ApiNullable String description, boolean isDefault) {
+    /** {@code selectable}: false for resolutions only BuggyWuggy sets (Moved); not offered when resolving. */
+    public record ResolutionResponse(long id, String name, @ApiNullable String description, boolean isDefault,
+            boolean selectable) {
         static ResolutionResponse of(Resolution r) {
-            return new ResolutionResponse(r.getId(), r.getName(), r.getDescription(), r.isDefault());
+            return new ResolutionResponse(r.getId(), r.getName(), r.getDescription(), r.isDefault(), r.isSelectable());
         }
     }
 
     // --- moving to another project ------------------------------------------------------
 
     /**
-     * Why an issue cannot be moved, if it cannot: {@code ARCHIVED} (its project is archived),
+     * Why an issue cannot be moved, if it cannot: {@code MOVED} (it is the stub of an issue that
+     * moved), {@code ARCHIVED} (its project is archived),
      * {@code PERMISSION} (no right to delete issues in its project), {@code EPIC}, {@code SUBTASK},
      * {@code HAS_SUBTASKS}, or {@code NO_TARGETS} (no other project where the user may create issues).
      */
-    public enum MoveBlocker { ARCHIVED, PERMISSION, EPIC, SUBTASK, HAS_SUBTASKS, NO_TARGETS }
+    public enum MoveBlocker { MOVED, ARCHIVED, PERMISSION, EPIC, SUBTASK, HAS_SUBTASKS, NO_TARGETS }
 
     /** Whether the issue can be moved, and to which projects (not archived, with CREATE_ISSUE). */
     public record MoveOptions(boolean movable, @ApiNullable MoveBlocker blocker, List<ProjectRef> targets) {
@@ -214,10 +218,13 @@ public final class IssueDtos {
     /**
      * What changes when the issue moves to a project: components and versions without a namesake
      * there are dropped, an assignee who cannot be assigned there is removed, and the issue leaves
-     * its epic.
+     * its epic. For an issue that came by e-mail, {@code mailboxFrom} is the mailbox its answers
+     * go through now, {@code mailboxTo} the one after the move: that of the new project, or the
+     * same when the new project has no mailbox. Both null for other issues.
      */
     public record MovePreview(ProjectRef target, List<String> droppedComponents, List<String> droppedAffectsVersions,
-            List<String> droppedFixVersions, @ApiNullable UserRef removedAssignee, @ApiNullable IssueRef leavesEpic) {
+            List<String> droppedFixVersions, @ApiNullable UserRef removedAssignee, @ApiNullable IssueRef leavesEpic,
+            @ApiNullable String mailboxFrom, @ApiNullable String mailboxTo) {
     }
 
     /** {@code version}: the issue's version as the client saw it, to detect concurrent changes. */

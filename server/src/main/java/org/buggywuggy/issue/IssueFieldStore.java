@@ -95,6 +95,16 @@ public class IssueFieldStore {
                 .stream().findFirst().orElse(null);
     }
 
+    /** Where the issue moved to, if it is the stub that stayed behind; otherwise null. */
+    public IssueDtos.IssueRef movedTo(long issueId) {
+        return jdbc.query("""
+                select m.id, p.key || '-' || m.number, m.summary from issue s
+                join issue m on m.id = s.moved_to_id join project p on p.id = m.project_id
+                where s.id = :id""", Map.of("id", issueId),
+                (rs, n) -> new IssueDtos.IssueRef(rs.getLong(1), rs.getString(2), rs.getString(3)))
+                .stream().findFirst().orElse(null);
+    }
+
     public List<IssueDtos.RemoteLink> remoteLinks(long issueId) {
         return jdbc.query("""
                 select id, url, title, relation, created_at from issue_remote_link

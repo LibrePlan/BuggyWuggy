@@ -180,8 +180,15 @@ a `link` item, and notifies its watchers.
 In the old place a **stub** is inserted with the old number: same type, summary and priority,
 the last `DONE` status of its workflow, resolution *Moved* (the default resolution if that was
 removed), a comment "Moved to NEW-12." and an issue link of type *Moved* (moved to / moved
-from) to the moved issue. The stub is written without notifications. So the old key keeps
-resolving — to the stub, which points on.
+from) to the moved issue, and `issue.moved_to_id` pointing to it. The stub is written without
+notifications. So the old key keeps resolving — to the stub, which points on. A stub (one with
+`moved_to_id`) has no workflow transitions and cannot be moved; when the moved issue is
+deleted, `moved_to_id` becomes null and the stub is an ordinary closed issue. Mail answers that
+are found by the key in their subject follow `moved_to_id`. An issue with an e-mail contact gets
+the mailbox of the new project (`issue_mail_contact.mailbox`), if that project has one.
+
+Resolutions have a `selectable` flag: *Moved* (seeded with `selectable = false`) is set only by
+moving and is not offered or accepted in transitions.
 
 Only standard issues without sub-tasks can be moved (parent and child are always in the same
 project). It needs `DELETE_ISSUE` in the old project and `BROWSE_PROJECT` + `CREATE_ISSUE` in

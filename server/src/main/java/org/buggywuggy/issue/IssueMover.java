@@ -32,6 +32,8 @@ import org.buggywuggy.issue.IssueFieldStore.VersionKind;
 import org.buggywuggy.issue.IssueHistory.Changes;
 import org.buggywuggy.issue.IssueHistory.Fields;
 import org.buggywuggy.issue.IssueService.IssueAccess;
+import org.buggywuggy.mail.inbound.InboundMailProperties;
+import org.buggywuggy.mail.inbound.InboundMailProperties.Mailbox;
 import org.buggywuggy.project.Project;
 import org.buggywuggy.project.ProjectAccess;
 import org.buggywuggy.project.ProjectPermission;
@@ -56,6 +58,9 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>Only standard issues without sub-tasks can be moved (not epics, not sub-tasks), because
  * parent and child must be in the same project. An issue in an epic leaves the epic. Moving
  * takes the right to delete issues in the old project and to create issues in the new one.
+ *
+ * <p>The stub cannot be transitioned or moved itself. An issue that came by e-mail gets the
+ * mailbox of the new project for its answers, if that project has one.
  */
 @Service
 @Transactional
@@ -73,11 +78,12 @@ public class IssueMover {
     private final UserAccountRepository users;
     private final NamedParameterJdbcTemplate jdbc;
     private final Clock clock;
+    private final InboundMailProperties mail;
 
     public IssueMover(IssueService issues, IssueRepository issueRepository, IssueFieldStore fields,
             IssueHistory history, ProjectService projects, ProjectPermissionService permissions,
             WorkflowService workflows, StatusRepository statuses, ResolutionRepository resolutions,
-            UserAccountRepository users, NamedParameterJdbcTemplate jdbc, Clock clock) {
+            UserAccountRepository users, NamedParameterJdbcTemplate jdbc, Clock clock, InboundMailProperties mail) {
         this.issues = issues;
         this.issueRepository = issueRepository;
         this.fields = fields;
@@ -90,6 +96,7 @@ public class IssueMover {
         this.users = users;
         this.jdbc = jdbc;
         this.clock = clock;
+        this.mail = mail;
     }
 
     /** What the issue page needs for the Move button: whether it can be used, and the projects. */
@@ -157,6 +164,10 @@ public class IssueMover {
         fields.replaceComponents(id, plan.components().kept());
         fields.replaceVersions(id, VersionKind.AFFECTS, plan.affects().kept());
         fields.replaceVersions(id, VersionKind.FIX, plan.fixes().kept());
+        if (plan.mailboxFrom() != null && !plan.mailboxFrom().equals(plan.mailboxTo())) {
+            jdbc.update("update issue_mail_contact set mailbox = :mailbox where issue_id = :id",
+                    Map.of("mailbox", plan.mailboxTo(), "id", id));
+        }
 
         // The stub in the old place, closed as Moved. Written without notifications: nobody
         // watches it, and the issue's own watchers are told about the move above.
@@ -169,6 +180,7 @@ public class IssueMover {
         stub.setResolvedAt(now);
         issueRepository.saveAndFlush(stub);
         long stubId = stub.getId();
+        jdbc.update("update issue set moved_to_id = :id where id = :stub", Map.of("id", id, "stub", stubId));
         jdbc.update("""
                 insert into comment (issue_id, author_id, body, created_at, updated_at)
                 values (:issue, :author, :body, :now, :now)""",
@@ -193,6 +205,9 @@ public class IssueMover {
     /** Why the issue cannot be moved at all, or null. The order is the order of importance. */
     private MoveBlocker blocker(IssueAccess access) {
         Issue issue = access.issue();
+        if (issues.isMovedStub(issue.getId())) {
+            return MoveBlocker.MOVED;
+        }
         if (access.project().project().isArchived()) {
             return MoveBlocker.ARCHIVED;
         }
@@ -218,6 +233,7 @@ public class IssueMover {
             return;
         }
         throw switch (blocker) {
+            case MOVED -> conflict("issue.move-moved", access.key());
             case ARCHIVED -> conflict("project.archived", access.project().project().getProjectKey());
             case PERMISSION -> forbidden("issue.move-permission");
             case EPIC -> badRequest("issue.move-epic");
@@ -274,10 +290,10 @@ public class IssueMover {
     }
 
     private record Plan(ProjectRef target, Mapped components, Mapped affects, Mapped fixes, UserRef removedAssignee,
-            IssueRef leavesEpic) {
+            IssueRef leavesEpic, String mailboxFrom, String mailboxTo) {
         MovePreview preview() {
             return new MovePreview(target, components.droppedNames(), affects.droppedNames(), fixes.droppedNames(),
-                    removedAssignee, leavesEpic);
+                    removedAssignee, leavesEpic, mailboxFrom, mailboxTo);
         }
     }
 
@@ -296,8 +312,13 @@ public class IssueMover {
         IssueRef epic = parent == null ? null : new IssueRef(parent.getId(),
                 access.project().project().getProjectKey() + "-" + parent.getNumber(), parent.getSummary());
         Project p = target.project();
+        String mailboxFrom = jdbc.queryForList("select mailbox from issue_mail_contact where issue_id = :id",
+                Map.of("id", id), String.class).stream().findFirst().orElse(null);
+        String mailboxTo = mailboxFrom == null ? null : mail.mailboxes().stream()
+                .filter(box -> box.project() != null && box.project().strip().equalsIgnoreCase(p.getProjectKey()))
+                .map(Mailbox::name).findFirst().orElse(mailboxFrom);
         return new Plan(new ProjectRef(p.getId(), p.getProjectKey(), p.getName()), components, affects, fixes,
-                removedAssignee, epic);
+                removedAssignee, epic, mailboxFrom, mailboxTo);
     }
 
     /** Components or versions of the new project with the same name (ignoring case). */
@@ -340,10 +361,11 @@ public class IssueMover {
                 .orElseThrow(() -> new IllegalStateException("Workflow " + workflowId + " has no done status"));
     }
 
-    /** Resolution Moved; the default resolution if an administrator removed or renamed it. */
+    /** Resolution Moved (the one only BuggyWuggy sets); the default resolution if it was removed. */
     private long movedResolution() {
         return jdbc.queryForList("""
-                select id from resolution order by lower(name) = 'moved' desc, is_default desc, position limit 1""",
+                select id from resolution
+                order by selectable, lower(name) = 'moved' desc, is_default desc, position limit 1""",
                 Map.of(), Long.class).stream().findFirst()
                 .orElseThrow(() -> new IllegalStateException("No resolutions"));
     }

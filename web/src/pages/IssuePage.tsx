@@ -4,6 +4,7 @@
 
 import {
   ActionIcon,
+  Alert,
   Anchor,
   Badge,
   Breadcrumbs,
@@ -21,10 +22,10 @@ import {
 } from '@mantine/core';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { IconDots, IconExternalLink, IconFolderShare, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconArrowForward, IconDots, IconExternalLink, IconFolderShare, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 import { del, seg } from '../api/client';
 import { useIssueMutations } from '../api/issueMutations';
@@ -145,6 +146,16 @@ function IssueView({ issue }: { issue: IssueResponse }) {
       <Title order={2} className="bw-pre-wrap">
         {issue.summary}
       </Title>
+
+      {issue.movedTo && (
+        <Alert color="blue" icon={<IconArrowForward size={16} />}>
+          <Trans
+            i18nKey="issue.move.movedTo"
+            values={{ key: issue.movedTo.key }}
+            components={{ issue: <Anchor component={Link} to={`/browse/${issue.movedTo.key}`} inherit /> }}
+          />
+        </Alert>
+      )}
 
       <Group gap="xs">
         {canEdit && (
