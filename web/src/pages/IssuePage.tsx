@@ -346,7 +346,12 @@ function IssueView({ issue }: { issue: IssueResponse }) {
                         })}
                       </Anchor>
                     ) : (
-                      <Text size="sm">{issue.origin.key}</Text>
+                      <Text size="sm">
+                        {/* By e-mail: "E-mail from carol@example.org"; the key is the sender. */}
+                        {issue.origin.kind === 'MAIL'
+                          ? t('issue.originValue', { source: t('issue.originKind.MAIL'), key: issue.origin.key })
+                          : issue.origin.key}
+                      </Text>
                     )}
                   </Field>
                 )}

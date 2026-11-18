@@ -1108,6 +1108,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/issues/{idOrKey}/mail-sender": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["mailSender"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/issues/{idOrKey}/history": {
         parameters: {
             query?: never;
@@ -1324,6 +1340,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["status_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mail/inbound": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["inbound"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1908,6 +1940,7 @@ export interface components {
         };
         CreateCommentRequest: {
             body: string;
+            external?: boolean;
         };
         CommentResponse: {
             /** Format: int64 */
@@ -1923,6 +1956,7 @@ export interface components {
             version: number;
             canEdit: boolean;
             canDelete: boolean;
+            external: boolean;
         };
         AttachmentResponse: {
             /** Format: int64 */
@@ -2518,6 +2552,11 @@ export interface components {
             to: components["schemas"]["StatusRef"];
             setsResolution: boolean;
         };
+        MailSender: {
+            address: string | null;
+            name: string | null;
+            canSend: boolean;
+        };
         Entry: {
             /** Format: int64 */
             id: number;
@@ -2646,6 +2685,50 @@ export interface components {
             failed: number;
             /** Format: int64 */
             sentLastDay: number;
+        };
+        InboundMailEntry: {
+            /** Format: int64 */
+            id: number;
+            mailbox: string;
+            sender: string | null;
+            subject: string | null;
+            /** Format: date-time */
+            processedAt: string;
+            action: string;
+            reason: string | null;
+            issueKey: string | null;
+        };
+        InboundMailStatus: {
+            pollInterval: string;
+            mailboxes: components["schemas"]["MailboxStatus"][];
+            recent: components["schemas"]["InboundMailEntry"][];
+        };
+        MailboxStatus: {
+            name: string;
+            host: string | null;
+            /** Format: int32 */
+            port: number;
+            security: string;
+            username: string | null;
+            folder: string;
+            project: string | null;
+            issueType: string | null;
+            accept: string;
+            processedFolder: string;
+            spamFolder: string;
+            replyAddress: string | null;
+            problem: string | null;
+            /** Format: date-time */
+            lastCheck: string | null;
+            /** Format: date-time */
+            lastSuccess: string | null;
+            lastError: string | null;
+            /** Format: int64 */
+            created: number;
+            /** Format: int64 */
+            spam: number;
+            /** Format: int64 */
+            ignored: number;
         };
         FailedMail: {
             /** Format: int64 */
@@ -5159,6 +5242,28 @@ export interface operations {
             };
         };
     };
+    mailSender: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MailSender"];
+                };
+            };
+        };
+    };
     history: {
         parameters: {
             query?: never;
@@ -5450,6 +5555,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MailStatus"];
+                };
+            };
+        };
+    };
+    inbound: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InboundMailStatus"];
                 };
             };
         };

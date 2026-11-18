@@ -14,6 +14,7 @@ This guide explains how to install, configure, run, back up and upgrade a BuggyW
 4. [Building BuggyWuggy](#building-buggywuggy)
 5. [Configuration](#configuration)
    - [E-mail](#e-mail)
+   - [Issues from e-mail](#issues-from-e-mail)
    - [Two-factor login](#two-factor-login)
    - [Single sign-on](#single-sign-on)
 6. [Running BuggyWuggy](#running-buggywuggy)
@@ -223,6 +224,81 @@ BuggyWuggy instances can share one database; each mail is sent once.
 
 After changing the settings, restart BuggyWuggy and use **Send test mail** on the
 **Administration → E-mail** page.
+
+### Issues from e-mail
+
+BuggyWuggy can read mailboxes over IMAP and make an **unassigned issue** of every mail, in the
+project of that mailbox. There can be several mailboxes, each for one project (e.g.
+`support@` into SUP and `feedback@` into FEEDBACK); they are checked one after the other, and a
+mailbox that cannot be reached does not hold up the others. They are set in the configuration
+file only; **Administration → E-mail** shows them, with the last check, errors and the last 50
+mails that were handled.
+
+```yaml
+buggywuggy:
+  inbound-mail:
+    poll-interval: 2m
+    mailboxes:
+      - name: support
+        host: imap.example.org
+        username: support@example.org
+        password: the-imap-password
+        project: SUP
+      - name: feedback
+        host: imap.example.org
+        username: feedback@example.org
+        password: the-other-password
+        project: FEEDBACK
+        accept: donor-proof
+```
+
+| Setting (per mailbox) | Default | Description |
+|---|---|---|
+| `name` | | A name of your own, for the log and the overview. Must be unique. |
+| `host`, `port` | `993` | IMAP server. |
+| `security` | `ssl` | `ssl` (port 993), `starttls` (port 143, required) or `none`. |
+| `username`, `password` | | IMAP login. |
+| `folder` | `INBOX` | The folder that is read. |
+| `processed-folder` | `Processed` | Where handled mail is moved to. Created when missing. |
+| `spam-folder` | `Spam` | Where refused mail is moved to. Created when missing. |
+| `project` | | The key of the project the issues go into. |
+| `issue-type` | `Task` | The issue type of new issues. |
+| `accept` | `anyone` | `anyone`, or `donor-proof`: only mail with a valid donor proof, as **Help → Send feedback** sends it; other mail is spam. |
+| `address` | the username, if it is an e-mail address | Where answers come back: the Reply-To of external comments. |
+| `max-attachment-size` | `10MB` | Larger files are left out (the description says which). |
+| `timeout` | `30s` | Time-out for the IMAP server. |
+
+`buggywuggy.inbound-mail.poll-interval` (default `2m`) sets how often the mailboxes are checked.
+Several BuggyWuggy instances that share a database never make two issues of one mail, but let
+only one of them read the mailboxes.
+
+**What becomes of a mail.** The subject becomes the summary, and the **whole text** the
+description, so that nothing is lost: plain text is kept as it was written (Markdown characters
+are escaped), an HTML-only mail is converted to text, and below it is who sent it and when.
+Files become attachments. The sender becomes the reporter: an existing account with that e-mail
+address, or else an inactive placeholder named after the address, so that you see who it was.
+Mails of the feedback form get the issue type of the feedback (*Bug* or *Feature*) and the label
+`feedback`. Mail is **never deleted**: after handling it is moved to the processed folder.
+
+**Mail that is not an issue.** Automatic mail (out-of-office replies, mailing lists, mail with
+`Auto-Submitted`) and mail from the mailbox's own address are ignored, so that BuggyWuggy cannot
+start a mail loop. With `accept: donor-proof`, mail without a valid, unexpired donor proof is
+spam: it is moved to the spam folder and logged as `spam from … removed`. Each mail is handled
+once (by its Message-ID), also when moving it failed; a mail that cannot be handled stays in the
+folder and is tried again at the next check.
+
+**Answering by e-mail.** On an issue that came by mail, a comment is **internal** by default:
+only people in BuggyWuggy see it. Choose **Reply to …** above the comment field to make it
+**external**: it is then also mailed to the sender, as an answer to the original mail, with the
+mailbox's `address` as Reply-To. External comments are marked *Sent by e-mail*; editing one
+later does not send it again. Sending needs the mail server of the previous section. Answers
+that come back to the mailbox currently become new issues.
+
+All of this is logged under `org.buggywuggy.inbound-mail`:
+
+```bash
+journalctl -u buggywuggy | grep "Inbound mail"
+```
 
 ### Two-factor login
 

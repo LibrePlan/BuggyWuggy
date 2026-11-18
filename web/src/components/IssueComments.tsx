@@ -2,14 +2,14 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { ActionIcon, Avatar, Box, Button, Group, Menu, Paper, Stack, Text } from '@mantine/core';
+import { ActionIcon, Alert, Avatar, Badge, Box, Button, Group, Menu, Paper, SegmentedControl, Stack, Text, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconDots, IconPencil, IconTrash } from '@tabler/icons-react';
+import { IconDots, IconMail, IconPencil, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { del, patch, post, seg } from '../api/client';
-import { keys, useAttachments, useComments } from '../api/queries';
+import { keys, useAttachments, useComments, useMailSender } from '../api/queries';
 import type { CommentResponse } from '../api/types';
 import { ApiError } from '../lib/apiError';
 import { formatDateTime } from '../lib/format';
@@ -27,11 +27,17 @@ export function IssueComments({ issueKey, canAdd }: { issueKey: string; canAdd: 
   const invalidate = useInvalidateComments(issueKey);
   const [draft, setDraft] = useState('');
   const attachments = useAttachments(issueKey).data;
+  // Issues made from a mail: a comment can also be mailed to the sender. Internal is the default.
+  const sender = useMailSender(issueKey).data;
+  const [external, setExternal] = useState(false);
+  const toSender = !!sender?.address && external;
 
   const add = useMutation({
-    mutationFn: (body: string) => post<CommentResponse>(`/api/v1/issues/${seg(issueKey)}/comments`, { body }),
+    mutationFn: (body: string) =>
+      post<CommentResponse>(`/api/v1/issues/${seg(issueKey)}/comments`, { body, external: toSender }),
     onSuccess: () => {
       setDraft('');
+      setExternal(false);
       invalidate();
     },
     onError: (e) => notifications.show({ color: 'red', title: t('error.title'), message: e.message }),
@@ -52,6 +58,28 @@ export function IssueComments({ issueKey, canAdd }: { issueKey: string; canAdd: 
       ))}
       {canAdd && (
         <Stack gap="xs">
+          {sender?.address && (
+            <SegmentedControl
+              size="xs"
+              color={external ? 'orange' : undefined}
+              value={external ? 'external' : 'internal'}
+              onChange={(v) => setExternal(v === 'external')}
+              data={[
+                { value: 'internal', label: t('comment.internal') },
+                { value: 'external', label: t('comment.toSender', { address: sender.address }) },
+              ]}
+              style={{ alignSelf: 'flex-start', maxWidth: '100%' }}
+            />
+          )}
+          {toSender && (
+            <Alert color={sender.canSend ? 'orange' : 'red'} p="xs" icon={<IconMail size={16} />}>
+              <Text size="sm">
+                {sender.canSend
+                  ? t('comment.toSenderHelp', { address: sender.address })
+                  : t('comment.mailNotConfigured')}
+              </Text>
+            </Alert>
+          )}
           <MarkdownEditor
             placeholder={t('comment.placeholder')}
             aria-label={t('comment.add')}
@@ -63,15 +91,23 @@ export function IssueComments({ issueKey, canAdd }: { issueKey: string; canAdd: 
             attachments={attachments}
             previewSize="sm"
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && draft.trim()) add.mutate(draft);
+              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && draft.trim() && !(toSender && !sender.canSend))
+                add.mutate(draft);
             }}
           />
           <Group justify="space-between">
             <Text size="xs" c="dimmed">
               {t('comment.shortcut')}
             </Text>
-            <Button size="xs" disabled={!draft.trim()} loading={add.isPending} onClick={() => add.mutate(draft)}>
-              {t('comment.add')}
+            <Button
+              size="xs"
+              color={toSender ? 'orange' : undefined}
+              leftSection={toSender ? <IconMail size={14} /> : undefined}
+              disabled={!draft.trim() || (toSender && !sender.canSend)}
+              loading={add.isPending}
+              onClick={() => add.mutate(draft)}
+            >
+              {toSender ? t('comment.send') : t('comment.add')}
             </Button>
           </Group>
         </Stack>
@@ -138,6 +174,13 @@ function Comment({ issueKey, comment }: { issueKey: string; comment: CommentResp
               {edited && ` · ${t('comment.edited')}`}
             </Text>
           </div>
+          {comment.external && (
+            <Tooltip label={t('comment.externalHelp')} multiline w={260}>
+              <Badge size="sm" variant="light" color="orange" leftSection={<IconMail size={12} />}>
+                {t('comment.external')}
+              </Badge>
+            </Tooltip>
+          )}
         </Group>
         {(comment.canEdit || comment.canDelete) && editing === null && (
           <Menu position="bottom-end">

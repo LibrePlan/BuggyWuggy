@@ -27,13 +27,19 @@ public final class CollaborationDtos {
 
     /**
      * A comment. {@code body} is Markdown. {@code canEdit} / {@code canDelete} tell whether the
-     * current user may change it.
+     * current user may change it. {@code external}: it was also sent by e-mail to the person the
+     * issue came from; other comments are internal.
      */
     public record CommentResponse(long id, @ApiNullable UserRef author, String body, Instant createdAt,
-            Instant updatedAt, @ApiNullable UserRef updateAuthor, long version, boolean canEdit, boolean canDelete) {
+            Instant updatedAt, @ApiNullable UserRef updateAuthor, long version, boolean canEdit, boolean canDelete,
+            boolean external) {
     }
 
-    public record CreateCommentRequest(@NotBlank @Size(max = COMMENT_MAX) String body) {
+    /**
+     * {@code external}: also send the comment by e-mail to the person the issue came from (only
+     * for issues made from a mail). Without it, a comment is internal.
+     */
+    public record CreateCommentRequest(@NotBlank @Size(max = COMMENT_MAX) String body, Boolean external) {
     }
 
     /** When {@code version} is given, the update fails with 409 if the comment changed in the meantime. */

@@ -58,6 +58,10 @@ buggywuggy:
     max-delay: 5m
     max-attempts: 8
     retention: 30d
+  # Mailboxes read over IMAP, each into one project; see the installation guide. None by default.
+  inbound-mail:
+    poll-interval: 2m
+    mailboxes: []
   donation:
     comic:
       # The login page's donation text shows xkcd 2347 "Dependency". BuggyWuggy downloads it once

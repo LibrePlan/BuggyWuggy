@@ -5,6 +5,7 @@
 import {
   ActionIcon,
   Alert,
+  Anchor,
   Badge,
   Button,
   Code,
@@ -24,8 +25,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { del, patch, post, seg } from '../../api/client';
-import { keys, useAdminLanguages, useFailedMails, useMailStatus, useMailTemplates } from '../../api/queries';
-import type { LanguageResponse } from '../../api/types';
+import { keys, useAdminLanguages, useFailedMails, useInboundMail, useMailStatus, useMailTemplates } from '../../api/queries';
+import type { LanguageResponse, MailboxStatus } from '../../api/types';
 import { ErrorAlert, PageLoader } from '../../components/QueryState';
 import { fieldErrorMap } from '../../lib/apiError';
 import { formatDateTime } from '../../lib/format';
@@ -36,6 +37,7 @@ export function MailSettingsPage() {
   return (
     <Stack gap="xl">
       <MailStatusSection />
+      <InboundMailSection />
       <TemplatesSection />
       <LanguagesSection />
       <FailedMailsSection />
@@ -99,6 +101,161 @@ function MailStatusSection() {
         </Fact>
       </SimpleGrid>
     </Stack>
+  );
+}
+
+const ACTION_COLOR: Record<string, string> = { CREATED: 'green', SPAM: 'red', IGNORED: 'gray' };
+
+/** The mailboxes BuggyWuggy reads into projects: set in the configuration file, shown here. */
+function InboundMailSection() {
+  const { t, i18n } = useTranslation();
+  const inbound = useInboundMail();
+  if (inbound.isPending) return <PageLoader />;
+  if (inbound.isError) return <ErrorAlert error={inbound.error} />;
+  const { mailboxes, recent } = inbound.data;
+
+  return (
+    <Stack>
+      <div>
+        <Title order={4}>{t('admin.mail.inbound.title')}</Title>
+        <Text size="sm" c="dimmed">
+          {t('admin.mail.inbound.intro')}{' '}
+          <Anchor href="/help/admin-guide#issues-from-e-mail" target="_blank" rel="noopener">
+            {t('admin.mail.inbound.help')}
+          </Anchor>
+        </Text>
+      </div>
+      {mailboxes.length === 0 ? (
+        <Text size="sm" c="dimmed">
+          {t('admin.mail.inbound.none')}
+        </Text>
+      ) : (
+        <SimpleGrid cols={{ base: 1, md: 2 }}>
+          {mailboxes.map((box) => (
+            <Mailbox key={box.name} box={box} />
+          ))}
+        </SimpleGrid>
+      )}
+      {recent.length > 0 && (
+        <Table.ScrollContainer minWidth={640}>
+          <Table striped>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>{t('admin.mail.inbound.when')}</Table.Th>
+                <Table.Th>{t('admin.mail.inbound.mailbox')}</Table.Th>
+                <Table.Th>{t('admin.mail.inbound.sender')}</Table.Th>
+                <Table.Th>{t('admin.mail.inbound.subject')}</Table.Th>
+                <Table.Th>{t('admin.mail.inbound.result')}</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {recent.map((m) => (
+                <Table.Tr key={m.id}>
+                  <Table.Td style={{ whiteSpace: 'nowrap' }}>{formatDateTime(m.processedAt, i18n.language)}</Table.Td>
+                  <Table.Td>{m.mailbox}</Table.Td>
+                  <Table.Td style={{ wordBreak: 'break-all' }}>{m.sender ?? '—'}</Table.Td>
+                  <Table.Td>{m.subject || '—'}</Table.Td>
+                  <Table.Td>
+                    <Group gap={6} wrap="nowrap">
+                      <Badge size="sm" variant="light" color={ACTION_COLOR[m.action] ?? 'gray'}>
+                        {t(`admin.mail.inbound.action.${m.action}`, { defaultValue: m.action })}
+                      </Badge>
+                      {m.issueKey && (
+                        <Anchor component={Link} to={`/browse/${m.issueKey}`} size="sm">
+                          {m.issueKey}
+                        </Anchor>
+                      )}
+                      {m.reason && (
+                        <Text size="xs" c="dimmed">
+                          {m.reason}
+                        </Text>
+                      )}
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
+      )}
+    </Stack>
+  );
+}
+
+function Mailbox({ box }: { box: MailboxStatus }) {
+  const { t, i18n } = useTranslation();
+  const state = box.problem
+    ? { color: 'red', label: t('admin.mail.inbound.notRead') }
+    : box.lastError
+      ? { color: 'red', label: t('admin.mail.inbound.failing') }
+      : box.lastCheck
+        ? { color: 'green', label: t('admin.mail.inbound.ok') }
+        : { color: 'gray', label: t('admin.mail.inbound.notChecked') };
+  const rows: [string, React.ReactNode][] = [
+    [t('admin.mail.inbound.server'), box.host ? `${box.host}:${box.port} (${box.security.toLowerCase()})` : '—'],
+    [t('admin.mail.inbound.account'), box.username ?? '—'],
+    [
+      t('admin.mail.inbound.folders'),
+      t('admin.mail.inbound.foldersValue', {
+        folder: box.folder,
+        processed: box.processedFolder,
+        spam: box.spamFolder,
+      }),
+    ],
+    [
+      t('admin.mail.inbound.project'),
+      box.project ? (
+        <Anchor component={Link} to={`/projects/${box.project}`} size="sm">
+          {box.project}
+        </Anchor>
+      ) : (
+        '—'
+      ),
+    ],
+    [t('admin.mail.inbound.issueType'), box.issueType ?? t('admin.mail.inbound.defaultType')],
+    [t('admin.mail.inbound.accept'), t(`admin.mail.inbound.acceptValue.${box.accept}`)],
+    [t('admin.mail.inbound.replyAddress'), box.replyAddress ?? t('admin.mail.inbound.noReplyAddress')],
+    [
+      t('admin.mail.inbound.lastCheck'),
+      box.lastCheck ? formatDateTime(box.lastCheck, i18n.language) : t('admin.mail.inbound.never'),
+    ],
+    [
+      t('admin.mail.inbound.counts'),
+      t('admin.mail.inbound.countsValue', { created: box.created, spam: box.spam, ignored: box.ignored }),
+    ],
+  ];
+  return (
+    <Paper withBorder p="sm">
+      <Group justify="space-between" mb="xs">
+        <Text fw={600}>{box.name}</Text>
+        <Badge variant="light" color={state.color}>
+          {state.label}
+        </Badge>
+      </Group>
+      {(box.problem || box.lastError) && (
+        <Alert color="red" p="xs" mb="xs">
+          <Text size="sm">{box.problem ?? box.lastError}</Text>
+        </Alert>
+      )}
+      <Table withRowBorders={false} verticalSpacing={2} horizontalSpacing={0}>
+        <Table.Tbody>
+          {rows.map(([label, value]) => (
+            <Table.Tr key={label}>
+              <Table.Td w="38%" style={{ verticalAlign: 'top' }}>
+                <Text size="xs" c="dimmed">
+                  {label}
+                </Text>
+              </Table.Td>
+              <Table.Td>
+                <Text size="sm" style={{ wordBreak: 'break-word' }}>
+                  {value}
+                </Text>
+              </Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+    </Paper>
   );
 }
 

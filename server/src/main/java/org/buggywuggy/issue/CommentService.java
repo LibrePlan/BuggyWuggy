@@ -5,6 +5,7 @@
  */
 package org.buggywuggy.issue;
 
+import static org.buggywuggy.common.ApiException.badRequest;
 import static org.buggywuggy.common.ApiException.conflict;
 import static org.buggywuggy.common.ApiException.forbidden;
 import static org.buggywuggy.common.ApiException.notFound;
@@ -25,6 +26,7 @@ import org.buggywuggy.project.ProjectAccess;
 import org.buggywuggy.project.ProjectPermission;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
 import org.buggywuggy.user.UserDtos.UserRef;
+import org.buggywuggy.mail.inbound.ExternalReplies;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -42,7 +44,7 @@ public class CommentService {
     private final IssueEvents events;
 
     private static final String SELECT = """
-            select c.id, c.author_id, c.body, c.created_at, c.updated_at, c.update_author_id, c.version,
+            select c.id, c.author_id, c.body, c.created_at, c.updated_at, c.update_author_id, c.version, c.external,
                    a.username as a_username, a.display_name as a_display_name,
                    u.username as u_username, u.display_name as u_display_name
             from comment c
@@ -54,9 +56,11 @@ public class CommentService {
     private final IssueFieldStore fields;
     private final NamedParameterJdbcTemplate jdbc;
     private final Clock clock;
+    private final ExternalReplies replies;
 
     public CommentService(IssueService issues, IssueFieldStore fields, NamedParameterJdbcTemplate jdbc, Clock clock,
-            IssueEvents events) {
+            IssueEvents events, ExternalReplies replies) {
+        this.replies = replies;
         this.events = events;
         this.issues = issues;
         this.fields = fields;
@@ -78,12 +82,25 @@ public class CommentService {
         access.requireWritable();
         long issueId = access.issue().getId();
         Instant now = clock.instant();
+        boolean external = Boolean.TRUE.equals(request.external());
+        ExternalReplies.Target target = null;
+        if (external) {
+            target = replies.target(issueId).orElseThrow(() -> badRequest("comment.no-mail-sender"));
+            if (!replies.canSend()) {
+                throw badRequest("comment.mail-not-configured");
+            }
+        }
+        String body = request.body().strip();
         Long id = jdbc.queryForObject("""
-                insert into comment (issue_id, author_id, body, created_at, updated_at)
-                values (:issue, :author, :body, :now, :now) returning id""",
+                insert into comment (issue_id, author_id, body, created_at, updated_at, external)
+                values (:issue, :author, :body, :now, :now, :external) returning id""",
                 new MapSqlParameterSource().addValue("issue", issueId).addValue("author", user.id())
-                        .addValue("body", request.body().strip()).addValue("now", Timestamp.from(now)),
+                        .addValue("body", body).addValue("now", Timestamp.from(now))
+                        .addValue("external", external),
                 Long.class);
+        if (target != null) {
+            replies.send(target, access.key(), user.displayName(), body);
+        }
         fields.addWatcher(issueId, user.id(), now);
         fields.touch(issueId, now);
         events.commented(issueId, user.id(), now, id);
@@ -143,7 +160,8 @@ public class CommentService {
                 || own && project.has(ProjectPermission.DELETE_OWN_COMMENTS);
         return new CommentResponse(rs.getLong("id"), author, rs.getString("body"),
                 rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant(),
-                user(rs, "update_author_id", "u_"), rs.getLong("version"), canEdit, canDelete);
+                user(rs, "update_author_id", "u_"), rs.getLong("version"), canEdit, canDelete,
+                rs.getBoolean("external"));
     }
 
     private static UserRef user(ResultSet rs, String idColumn, String prefix) throws SQLException {

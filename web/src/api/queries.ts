@@ -54,6 +54,8 @@ import type {
   UrgencyResponse,
   UserRef,
   VersionResponse,
+  InboundMailStatus,
+  MailSender,
 } from './types';
 
 /** Query keys, so mutations can invalidate exactly what they changed. */
@@ -97,6 +99,8 @@ export const keys = {
   languages: ['languages'] as const,
   adminLanguages: ['admin', 'languages'] as const,
   mailStatus: ['admin', 'mail', 'status'] as const,
+  inboundMail: ['admin', 'mail', 'inbound'] as const,
+  mailSender: (key: string) => ['issue', key, 'mail-sender'] as const,
   failedMails: ['admin', 'mail', 'failed'] as const,
   mailTemplates: ['admin', 'mail', 'templates'] as const,
   mailTemplate: (key: string, language: string) => ['admin', 'mail', 'templates', key, language] as const,
@@ -442,6 +446,24 @@ export function useAdminLanguages() {
 
 export function useMailStatus() {
   return useQuery({ queryKey: keys.mailStatus, queryFn: () => get<MailStatus>('/api/v1/admin/mail/status') });
+}
+
+/** The mailboxes BuggyWuggy reads, and what became of the last mails (refreshed every minute). */
+export function useInboundMail() {
+  return useQuery({
+    queryKey: keys.inboundMail,
+    queryFn: () => get<InboundMailStatus>('/api/v1/admin/mail/inbound'),
+    refetchInterval: 60_000,
+  });
+}
+
+/** Who external comments on an issue are mailed to: the sender of the mail it came from, if any. */
+export function useMailSender(key: string) {
+  return useQuery({
+    queryKey: keys.mailSender(key),
+    queryFn: () => get<MailSender>(`/api/v1/issues/${seg(key)}/mail-sender`),
+    staleTime: 5 * 60_000,
+  });
 }
 
 export function useFailedMails() {

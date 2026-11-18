@@ -148,6 +148,28 @@
 ##   When old mails are removed (cron: second minute hour day month weekday)
 #    cleanup-cron: "0 17 3 * * *"
 #
+## --- Incoming mail ----------------------------------------------------------------------
+##  Mailboxes read over IMAP: each mail becomes an unassigned issue in the project of its
+##  mailbox. Mail is never deleted: it is moved to processed-folder (refused mail to
+##  spam-folder). All settings of a mailbox: docs/installation.md, "Issues from e-mail".
+#  inbound-mail:
+##   How often the mailboxes are checked
+#    poll-interval: 2m
+##   One entry per mailbox, e.g.
+##     mailboxes:
+##       - name: support
+##         host: imap.example.org
+##         username: support@example.org
+##         password: the-imap-password
+##         project: SUP
+##       - name: feedback
+##         host: imap.example.org
+##         username: feedback@example.org
+##         password: the-other-password
+##         project: FEEDBACK
+##         accept: donor-proof
+#    mailboxes: []
+#
 ## --- TaskWarrior urgency --------------------------------------------------------------
 ##  The urgency shown in the issue list and on the issue page, as TaskWarrior calculates it:
 ##  the sum of factor × coefficient for each term. See docs/taskwarrior.md for what each term

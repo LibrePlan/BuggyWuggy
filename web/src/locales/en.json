@@ -151,6 +151,7 @@
     "originValue": "{{source}} {{key}}",
     "originKind": {
       "BUGZILLA": "Bugzilla",
+      "MAIL": "E-mail from",
       "FORGEJO": "Forgejo",
       "JIRA": "Jira",
       "GITLAB": "GitLab",
@@ -204,7 +205,14 @@
     "shortcut": "Ctrl+Enter to send",
     "edited": "edited",
     "deleteConfirm": "Delete this comment permanently?",
-    "conflict": "This comment was changed in the meantime. The latest version is shown now."
+    "conflict": "This comment was changed in the meantime. The latest version is shown now.",
+    "internal": "Internal comment",
+    "toSender": "Reply to {{address}}",
+    "toSenderHelp": "This comment is also sent by e-mail to {{address}}, who mailed this issue. Internal comments are never sent.",
+    "mailNotConfigured": "E-mail cannot be sent: BuggyWuggy has no mail server configured.",
+    "send": "Send reply",
+    "external": "Sent by e-mail",
+    "externalHelp": "This comment was also sent by e-mail to the person this issue came from. Editing it later does not send it again."
   },
   "attachment": {
     "title": "Attachments",
@@ -399,6 +407,44 @@
       "baseUrl": "Links point to",
       "queue": "Mails",
       "queueCounts": "{{pending}} waiting · {{sent}} sent in the last 24 h · {{failed}} failed",
+      "inbound": {
+        "title": "Incoming mail",
+        "intro": "Mailboxes BuggyWuggy reads: each mail becomes an unassigned issue in the mailbox's project. They are set in the configuration file (buggywuggy.inbound-mail) and shown here read-only.",
+        "help": "How to set them up",
+        "none": "No mailboxes are configured.",
+        "notRead": "Not read",
+        "failing": "Error",
+        "ok": "OK",
+        "notChecked": "Not checked yet",
+        "server": "Server",
+        "account": "Account",
+        "folders": "Folders",
+        "foldersValue": "{{folder}} → {{processed}} (spam: {{spam}})",
+        "project": "Project",
+        "issueType": "Issue type",
+        "defaultType": "Task (feedback: Bug or Feature)",
+        "accept": "Accepts",
+        "acceptValue": {
+          "ANYONE": "Mail from anyone",
+          "DONOR_PROOF": "Only mail with a valid donor proof"
+        },
+        "replyAddress": "Answers come back at",
+        "noReplyAddress": "— (set address)",
+        "lastCheck": "Last checked",
+        "never": "Not yet",
+        "counts": "Mails",
+        "countsValue": "{{created}} issues · {{spam}} spam · {{ignored}} ignored",
+        "when": "Handled",
+        "mailbox": "Mailbox",
+        "sender": "Sender",
+        "subject": "Subject",
+        "result": "Result",
+        "action": {
+          "CREATED": "Issue",
+          "SPAM": "Spam",
+          "IGNORED": "Ignored"
+        }
+      },
       "templates": "Templates",
       "templatesIntro": "Each mail has a template per language. Users get mails in the language of their profile, or in the default language. Choose a language to edit a template.",
       "template": "Mail",
