@@ -153,8 +153,9 @@ An issue page shows:
 - **Breadcrumbs** at the top: project, the parent issue (for sub-tasks and issues in an epic),
   and the issue key.
 - The **summary** as the title.
-- **Action buttons**: Edit, workflow steps such as *Start Progress*, Watch, and more. You only
-  see the buttons for things you are allowed to do.
+- **Action buttons**: Edit, workflow steps such as *Start Progress*, Watch, Move, and more.
+  Most buttons are only shown when you may use them. **Move** is always shown; when it cannot
+  be used it is greyed out, and the **?** next to it says why.
 - **Description**.
 - **Sub-tasks** or **Issues in this epic**, if there are any.
 - **Attachments**.
@@ -216,6 +217,32 @@ The workflow buttons move the issue to another status:
 When you resolve or close an issue, BuggyWuggy asks for the **resolution** (Done is
 preselected). When an issue is reopened, its resolution is cleared, so it counts as unresolved
 again. Resolved issues are shown with their key struck through in issue lists.
+
+### Moving an issue to another project
+
+Choose **Move** to take an issue to another project, for instance when it was reported in the
+wrong place. Choose the project; the dialog shows what changes on the way, and **Move** moves
+the issue.
+
+- The issue gets a **new key** in the other project (`BUG-12` becomes, say, `SUP-48`). It keeps
+  its comments, attachments, history, links, watchers, reporter, status and priority.
+- In its old place stays a **closed issue with the old key**, the same summary and resolution
+  *Moved*. It has a comment *Moved to SUP-48.* and a *moved to* link, so old links, mails and
+  bookmarks still lead to the issue. Its own history shows the move.
+- **Components and versions** are kept when the other project has one with the same name;
+  otherwise they are removed. The **assignee** is kept when they can be assigned issues in the
+  other project; otherwise the issue becomes unassigned. An issue in an **epic** leaves the epic.
+- The issue's watchers get a notification of the move.
+
+Not every issue can be moved. The **Move** button is then greyed out; point at the **?** next to
+it to see why, or click it to come here:
+
+- **Epics** cannot be moved, nor **sub-tasks**, nor issues that **have sub-tasks**: a parent and
+  its children are always in the same project.
+- You need the right to **delete issues** in the project the issue is in (by default
+  *Administrators* of the project), and to **create issues** in the project it goes to. Only
+  such projects are offered.
+- Issues in an **archived** project cannot be moved, and archived projects are not offered.
 
 ### Deleting
 
@@ -508,14 +535,15 @@ to the default board then no longer apply to it. **Use the default board** undoe
 
 ## Permissions: why can't I…?
 
-What you can do depends on your role in each project. Buttons for things you may not do are
-not shown. With the default settings:
+What you can do depends on your role in each project. Most buttons for things you may not do
+are not shown; some, such as **Move**, are shown greyed out with a **?** that explains why. With
+the default settings:
 
 | You want to… | Who can |
 |---|---|
 | See a project and its issues, create issues, comment, attach files, delete your own attachments | Everyone in the project's *Users* role (by default all users) |
 | Edit, assign, transition and link issues; be assigned issues; manage watchers | *Developers* and *Administrators* of the project |
-| Delete issues; edit or delete other people's comments and attachments; change the project settings | *Administrators* of the project |
+| Delete issues; move issues to another project (where you may create issues); edit or delete other people's comments and attachments; change the project settings | *Administrators* of the project |
 | Create projects; archive, delete or re-key projects; manage users and groups | BuggyWuggy administrators |
 
 If you need to do more in a project, ask your BuggyWuggy administrator to add you to the

@@ -44,6 +44,8 @@ import type {
   IssuePage,
   IssueResponse,
   IssueTypeResponse,
+  MoveOptions,
+  MovePreview,
   MyselfResponse,
   PriorityResponse,
   ProjectPage,
@@ -78,6 +80,8 @@ export const keys = {
   watchers: (key: string) => ['issue', key, 'watchers'] as const,
   attachments: (key: string) => ['issue', key, 'attachments'] as const,
   urgency: (key: string) => ['issue', key, 'urgency'] as const,
+  moveOptions: (key: string) => ['issue', key, 'move'] as const,
+  movePreview: (key: string, project: string) => ['issue', key, 'move', project] as const,
   board: (key: string) => ['project', key, 'board'] as const,
   boardConfig: (key: string) => ['project', key, 'board', 'config'] as const,
   defaultBoard: ['admin', 'board'] as const,
@@ -204,6 +208,25 @@ export function useTransitions(key: string, enabled: boolean) {
     queryKey: keys.transitions(key),
     queryFn: () => get<TransitionResponse[]>(`/api/v1/issues/${seg(key)}/transitions`),
     enabled,
+  });
+}
+
+/**
+ * Whether the issue can be moved to another project, and where to. `version` and
+ * `children`: the options depend on the issue, so a change of it fetches them again.
+ */
+export function useMoveOptions(key: string, version: number, children: number) {
+  return useQuery({
+    queryKey: [...keys.moveOptions(key), version, children],
+    queryFn: () => get<MoveOptions>(`/api/v1/issues/${seg(key)}/move`),
+  });
+}
+
+export function useMovePreview(key: string, project: string | null) {
+  return useQuery({
+    queryKey: keys.movePreview(key, project ?? ''),
+    queryFn: () => get<MovePreview>(`/api/v1/issues/${seg(key)}/move/preview?project=${encodeURIComponent(project!)}`),
+    enabled: project !== null,
   });
 }
 

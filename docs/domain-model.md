@@ -169,9 +169,28 @@ inside the creating transaction. The row lock makes this safe under concurrency,
 numbers are reused. An importer may set `number` explicitly and raises `issue_counter`
 to the maximum afterwards.
 
-### 5.3 `issue_key_history`
-`(project_id, number, issue_id)` with unique `(project_id, number)` — when an issue is moved to
-another project it gets a new number; its old key keeps resolving.
+### 5.3 Moving an issue to another project
+The issue row itself moves: same id (so comments, attachments, history, watchers and links
+stay attached), new `project_id` and the next `number` of the new project, `board_rank` reset.
+Components and versions are mapped by name (case-insensitive) to those of the new project and
+dropped otherwise; an assignee who is not `ASSIGNABLE_USER` there is removed; an issue leaves
+its epic. One change group on the moved issue records `project`, `key`, the dropped values and
+a `link` item, and notifies its watchers.
+
+In the old place a **stub** is inserted with the old number: same type, summary and priority,
+the last `DONE` status of its workflow, resolution *Moved* (the default resolution if that was
+removed), a comment "Moved to NEW-12." and an issue link of type *Moved* (moved to / moved
+from) to the moved issue. The stub is written without notifications. So the old key keeps
+resolving — to the stub, which points on.
+
+Only standard issues without sub-tasks can be moved (parent and child are always in the same
+project). It needs `DELETE_ISSUE` in the old project and `BROWSE_PROJECT` + `CREATE_ISSUE` in
+the new one; neither may be archived, and the new project's workflow must contain the issue's
+status.
+
+`issue_key_history(project_id, number, issue_id)` with unique `(project_id, number)` — old keys
+that resolve to another issue. Not written by moving (the stub holds the old key); kept for
+redirects without a stub.
 
 ### 5.4 Multi-valued system fields
 - `issue_label(issue_id, label)` — PK `(issue_id, label)`; labels are free text without spaces.
@@ -292,7 +311,8 @@ groups added to a role when a project is created (seeded: `users` → Users,
     `assignee`, `reporter`, `duedate`, `labels`, `component`, `version` (affects version),
     `fixversion`, `parent`; from the workflow step: `status`, `resolution`; for issue links:
     `link` (value = the other issue's key, text = the phrase from this issue's side, e.g.
-    "blocks BUG-2"; recorded on both issues). These match Jira's field ids where possible, so
+    "blocks BUG-2"; recorded on both issues); `project` and `key` when an issue moved to another
+    project (§5.3). These match Jira's field ids where possible, so
     imported history needs little mapping.
   - Single-valued fields produce one item per change. `labels` produces one item with the full
     old and new label list (space-separated). `component`, `version` and `fixversion` produce one

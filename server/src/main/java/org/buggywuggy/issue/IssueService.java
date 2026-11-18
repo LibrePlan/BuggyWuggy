@@ -351,7 +351,7 @@ public class IssueService {
     // --- helpers -----------------------------------------------------------------------
 
     /** Atomically reserves the next issue number of a project (row lock on the project). */
-    private long nextNumber(long projectId) {
+    long nextNumber(long projectId) {
         return jdbc.queryForObject(
                 "update project set issue_counter = issue_counter + 1 where id = :id returning issue_counter",
                 Map.of("id", projectId), Long.class);
@@ -470,7 +470,7 @@ public class IssueService {
                 });
     }
 
-    private static void recordUser(Changes changes, String field, UserAccount from, UserAccount to) {
+    static void recordUser(Changes changes, String field, UserAccount from, UserAccount to) {
         changes.record(field, from == null ? null : from.getId(), from == null ? null : from.getDisplayName(),
                 to == null ? null : to.getId(), to == null ? null : to.getDisplayName());
     }

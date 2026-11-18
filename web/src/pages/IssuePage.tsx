@@ -21,17 +21,26 @@ import {
 } from '@mantine/core';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { IconDots, IconExternalLink, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconDots, IconExternalLink, IconFolderShare, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
 import { del, seg } from '../api/client';
 import { useIssueMutations } from '../api/issueMutations';
-import { useAttachments, useIssue, useIssueTypes, useLinks, useProjectPermissions, useTransitions } from '../api/queries';
+import {
+  useAttachments,
+  useIssue,
+  useIssueTypes,
+  useLinks,
+  useMoveOptions,
+  useProjectPermissions,
+  useTransitions,
+} from '../api/queries';
 import type { IssueResponse, TransitionResponse } from '../api/types';
 import { CreateIssueModal } from '../components/CreateIssueModal';
 import { EditIssueModal } from '../components/EditIssueModal';
+import { HelpHint } from '../components/HelpHint';
 import { IssueAttachments } from '../components/IssueAttachments';
 import { Markdown } from '../components/Markdown';
 import { IssueComments } from '../components/IssueComments';
@@ -40,6 +49,7 @@ import { IssueHistory } from '../components/IssueHistory';
 import { IssueLinks } from '../components/IssueLinks';
 import { IssueTypeIcon, PriorityLabel, StatusBadge } from '../components/IssueIcons';
 import { IssueUrgency } from '../components/IssueUrgency';
+import { MoveIssueModal } from '../components/MoveIssueModal';
 import { ErrorAlert, isNotFound, PageLoader } from '../components/QueryState';
 import { TransitionModal } from '../components/TransitionModal';
 import { UserLabel } from '../components/UserLabel';
@@ -86,6 +96,8 @@ function IssueView({ issue }: { issue: IssueResponse }) {
   const [editing, editModal] = useDisclosure(false);
   const [creatingChild, childModal] = useDisclosure(false);
   const [deleting, deleteModal] = useDisclosure(false);
+  const [moving, moveModal] = useDisclosure(false);
+  const moveOptions = useMoveOptions(issue.key, issue.version, issue.children.length).data;
   const [askResolution, setAskResolution] = useState<TransitionResponse | null>(null);
   // The preview of a comment being written goes in the right column, when it is next to the left.
   const [previewSlot, setPreviewSlot] = useState<HTMLDivElement | null>(null);
@@ -158,6 +170,22 @@ function IssueView({ issue }: { issue: IssueResponse }) {
             </Button>
           ))}
         <WatchButton issueKey={issue.key} />
+        <Group gap={4} wrap="nowrap">
+          <Button
+            variant="default"
+            leftSection={<IconFolderShare size={16} />}
+            disabled={!moveOptions?.movable}
+            onClick={moveModal.open}
+          >
+            {t('issue.move.button')}
+          </Button>
+          <HelpHint
+            anchor="moving-an-issue-to-another-project"
+            label={
+              moveOptions?.blocker ? t(`issue.move.blocker.${moveOptions.blocker}`) : t('issue.move.help')
+            }
+          />
+        </Group>
         {permissions.has('DELETE_ISSUE') && (
           <Menu position="bottom-end">
             <Menu.Target>
@@ -380,6 +408,9 @@ function IssueView({ issue }: { issue: IssueResponse }) {
           )
         }
       />
+      {moveOptions?.movable && (
+        <MoveIssueModal issue={issue} options={moveOptions} opened={moving} onClose={moveModal.close} />
+      )}
       <Modal opened={deleting} onClose={deleteModal.close} title={t('issue.deleteTitle', { key: issue.key })}>
         <Stack>
           <Text size="sm">

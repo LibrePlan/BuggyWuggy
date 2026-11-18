@@ -13,6 +13,9 @@ import java.util.List;
 import org.buggywuggy.common.PageResponse;
 import org.buggywuggy.issue.IssueDtos.CreateIssueRequest;
 import org.buggywuggy.issue.IssueDtos.IssueResponse;
+import org.buggywuggy.issue.IssueDtos.MoveIssueRequest;
+import org.buggywuggy.issue.IssueDtos.MoveOptions;
+import org.buggywuggy.issue.IssueDtos.MovePreview;
 import org.buggywuggy.issue.IssueDtos.IssueSummaryResponse;
 import org.buggywuggy.issue.IssueDtos.TransitionRequest;
 import org.buggywuggy.issue.IssueDtos.TransitionResponse;
@@ -37,10 +40,12 @@ public class IssueController {
 
     private final IssueService issueService;
     private final IssueWorkflowService workflowService;
+    private final IssueMover mover;
 
-    public IssueController(IssueService issueService, IssueWorkflowService workflowService) {
+    public IssueController(IssueService issueService, IssueWorkflowService workflowService, IssueMover mover) {
         this.issueService = issueService;
         this.workflowService = workflowService;
+        this.mover = mover;
     }
 
     /** Workflow transitions the current user can perform on the issue now. */
@@ -78,6 +83,29 @@ public class IssueController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@AuthenticationPrincipal BuggyWuggyPrincipal user, @PathVariable String idOrKey) {
         issueService.delete(user, idOrKey);
+    }
+
+    /** Whether the issue can be moved to another project, and to which projects. */
+    @GetMapping("/api/v1/issues/{idOrKey}/move")
+    public MoveOptions moveOptions(@AuthenticationPrincipal BuggyWuggyPrincipal user, @PathVariable String idOrKey) {
+        return mover.options(user, idOrKey);
+    }
+
+    /** What changes when the issue moves to {@code project}. */
+    @GetMapping("/api/v1/issues/{idOrKey}/move/preview")
+    public MovePreview movePreview(@AuthenticationPrincipal BuggyWuggyPrincipal user, @PathVariable String idOrKey,
+            @RequestParam String project) {
+        return mover.preview(user, idOrKey, project);
+    }
+
+    /**
+     * Moves the issue to another project, where it gets a new key; a closed stub with the old key
+     * points to it.
+     */
+    @PostMapping("/api/v1/issues/{idOrKey}/move")
+    public IssueResponse move(@AuthenticationPrincipal BuggyWuggyPrincipal user, @PathVariable String idOrKey,
+            @Valid @RequestBody MoveIssueRequest request) {
+        return mover.move(user, idOrKey, request);
     }
 
     @GetMapping("/api/v1/issues/{idOrKey}/history")

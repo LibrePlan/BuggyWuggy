@@ -8,6 +8,7 @@
 - **Built-in workflow:** Open → In Progress → Resolved → Closed, plus Reopen, with a resolution when work is done.
 - **Full change history** for every issue, covering who changed what, when, and from what to what. The history is read-only.
 - **Safe concurrent editing:** nobody overwrites someone else's changes by accident.
+- **Moving issues to another project:** the issue gets a new key and keeps its comments, attachments, history and links; a closed issue with the old key points to it.
 
 ## Collaboration
 

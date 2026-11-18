@@ -25,7 +25,7 @@ class DatabaseMigrationTest {
     void seedsDefaultLookups() {
         assertThat(count("issue_type")).isEqualTo(6);
         assertThat(count("priority")).isEqualTo(5);
-        assertThat(count("resolution")).isEqualTo(5);
+        assertThat(count("resolution")).isEqualTo(6);
         assertThat(count("status")).isEqualTo(5);
         assertThat(count("project_role")).isEqualTo(3);
     }

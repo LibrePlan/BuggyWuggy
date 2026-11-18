@@ -197,4 +197,30 @@ public final class IssueDtos {
             return new ResolutionResponse(r.getId(), r.getName(), r.getDescription(), r.isDefault());
         }
     }
+
+    // --- moving to another project ------------------------------------------------------
+
+    /**
+     * Why an issue cannot be moved, if it cannot: {@code ARCHIVED} (its project is archived),
+     * {@code PERMISSION} (no right to delete issues in its project), {@code EPIC}, {@code SUBTASK},
+     * {@code HAS_SUBTASKS}, or {@code NO_TARGETS} (no other project where the user may create issues).
+     */
+    public enum MoveBlocker { ARCHIVED, PERMISSION, EPIC, SUBTASK, HAS_SUBTASKS, NO_TARGETS }
+
+    /** Whether the issue can be moved, and to which projects (not archived, with CREATE_ISSUE). */
+    public record MoveOptions(boolean movable, @ApiNullable MoveBlocker blocker, List<ProjectRef> targets) {
+    }
+
+    /**
+     * What changes when the issue moves to a project: components and versions without a namesake
+     * there are dropped, an assignee who cannot be assigned there is removed, and the issue leaves
+     * its epic.
+     */
+    public record MovePreview(ProjectRef target, List<String> droppedComponents, List<String> droppedAffectsVersions,
+            List<String> droppedFixVersions, @ApiNullable UserRef removedAssignee, @ApiNullable IssueRef leavesEpic) {
+    }
+
+    /** {@code version}: the issue's version as the client saw it, to detect concurrent changes. */
+    public record MoveIssueRequest(@NotBlank String project, @ApiNullable Long version) {
+    }
 }

@@ -67,7 +67,7 @@ public class NotificationDispatcher {
     /** Fields with one value: several changes in a bundle are shown as one, first → last. */
     private static final Set<String> SINGLE_VALUED = Set.of(Fields.SUMMARY, Fields.DESCRIPTION, Fields.ISSUE_TYPE,
             Fields.PRIORITY, Fields.ASSIGNEE, Fields.REPORTER, Fields.DUE_DATE, Fields.PARENT, Fields.STATUS,
-            Fields.RESOLUTION);
+            Fields.RESOLUTION, Fields.PROJECT, Fields.KEY);
 
     private record Event(long id, String type, long issueId, Long actorId, String payload, Instant at) {
     }

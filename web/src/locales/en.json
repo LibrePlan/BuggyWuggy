@@ -163,6 +163,31 @@
     "remoteLink": {
       "PULL_REQUEST": "Pull request",
       "OTHER": "Link"
+    },
+    "move": {
+      "button": "Move",
+      "help": "Move this issue to another project. A closed issue with the current key stays behind and points to it.",
+      "blocker": {
+        "ARCHIVED": "This project is archived, so its issues cannot be moved.",
+        "PERMISSION": "Moving an issue out of a project takes the right to delete issues in it, which you do not have here.",
+        "EPIC": "Epics cannot be moved to another project.",
+        "SUBTASK": "Sub-tasks cannot be moved on their own; they belong to their parent issue.",
+        "HAS_SUBTASKS": "Issues with sub-tasks cannot be moved to another project.",
+        "NO_TARGETS": "There is no other project where you may create issues."
+      },
+      "title": "Move {{key}} to another project",
+      "intro": "The issue gets a new key in the other project, and keeps its comments, attachments, history, links and watchers. A closed issue {{key}} stays behind, with a comment and a link to the new key.",
+      "project": "Project",
+      "projectPlaceholder": "Choose a project",
+      "changes": "What changes",
+      "dropComponent": "Component {{name}} is removed: the project has no component of that name.",
+      "dropAffectsVersion": "Affects version {{name}} is removed: the project has no version of that name.",
+      "dropFixVersion": "Fix version {{name}} is removed: the project has no version of that name.",
+      "unassign": "{{name}} cannot be assigned issues in that project, so the issue becomes unassigned.",
+      "leaveEpic": "The issue leaves epic {{key}}.",
+      "noChanges": "All fields are kept.",
+      "submit": "Move",
+      "done": "{{from}} moved to {{to}}"
     }
   },
   "history": {
@@ -190,7 +215,9 @@
       "attachment": "Attachment",
       "import": "Imported from",
       "remotelink": "External link",
-      "rank": "Rank"
+      "rank": "Rank",
+      "project": "Project",
+      "key": "Key"
     },
     "showMore": "Show more",
     "showLess": "Show less",

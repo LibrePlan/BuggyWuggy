@@ -292,6 +292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/issues/{idOrKey}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["moveOptions"];
+        put?: never;
+        post: operations["move_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/issues/{idOrKey}/links": {
         parameters: {
             query?: never;
@@ -1124,6 +1140,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/issues/{idOrKey}/move/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["movePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/issues/{idOrKey}/mail-sender": {
         parameters: {
             query?: never;
@@ -1923,6 +1955,11 @@ export interface components {
             /** Format: int64 */
             version?: number;
         };
+        MoveIssueRequest: {
+            project: string;
+            /** Format: int64 */
+            version?: number | null;
+        };
         CreateLinkRequest: {
             /** Format: int64 */
             linkTypeId: number;
@@ -2580,6 +2617,20 @@ export interface components {
             name: string;
             to: components["schemas"]["StatusRef"];
             setsResolution: boolean;
+        };
+        MoveOptions: {
+            movable: boolean;
+            /** @enum {string|null} */
+            blocker: "ARCHIVED" | "PERMISSION" | "EPIC" | "SUBTASK" | "HAS_SUBTASKS" | "NO_TARGETS" | null;
+            targets: components["schemas"]["ProjectRef"][];
+        };
+        MovePreview: {
+            target: components["schemas"]["ProjectRef"];
+            droppedComponents: string[];
+            droppedAffectsVersions: string[];
+            droppedFixVersions: string[];
+            removedAssignee: components["schemas"]["UserRef"] | null;
+            leavesEpic: components["schemas"]["IssueRef"] | null;
         };
         MailSender: {
             address: string | null;
@@ -3535,6 +3586,54 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["TransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["IssueResponse"];
+                };
+            };
+        };
+    };
+    moveOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MoveOptions"];
+                };
+            };
+        };
+    };
+    move_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveIssueRequest"];
             };
         };
         responses: {
@@ -5294,6 +5393,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["UrgencyResponse"];
+                };
+            };
+        };
+    };
+    movePreview: {
+        parameters: {
+            query: {
+                project: string;
+            };
+            header?: never;
+            path: {
+                idOrKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MovePreview"];
                 };
             };
         };

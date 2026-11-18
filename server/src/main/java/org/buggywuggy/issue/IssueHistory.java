@@ -51,6 +51,10 @@ public class IssueHistory {
         public static final String IMPORT = "import";
         /** A link to something outside BuggyWuggy, e.g. a pull request: value = URL, text = title. */
         public static final String REMOTE_LINK = "remotelink";
+        /** The project, when the issue moved to another one: value = project id, text = its name. */
+        public static final String PROJECT = "project";
+        /** The key, when the issue moved to another project: text only, e.g. "BUG-12" → "SUP-48". */
+        public static final String KEY = "key";
 
         private Fields() {
         }

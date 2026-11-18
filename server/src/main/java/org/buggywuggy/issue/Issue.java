@@ -94,6 +94,12 @@ public class Issue {
     public Long getId() { return id; }
     public long getProjectId() { return projectId; }
     public long getNumber() { return number; }
+
+    /** To another project, under a number reserved there. */
+    void moveTo(long projectId, long number) {
+        this.projectId = projectId;
+        this.number = number;
+    }
     public IssueType getIssueType() { return issueType; }
     public void setIssueType(IssueType issueType) { this.issueType = issueType; }
     public Status getStatus() { return status; }
