@@ -183,6 +183,7 @@ export function LoginPage() {
         {donation.data && (
           <SupportProject
             status={donation.data.status}
+            thanksOnly
             requestLink={
               <Anchor component={Link} to={`/login?next=${encodeURIComponent(DONATION_PAGE)}`} replace size="sm" ta="center">
                 {t('donate.request')}

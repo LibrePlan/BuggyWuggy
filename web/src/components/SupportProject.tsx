@@ -22,6 +22,7 @@ export function SupportProject({
   defaultOpen = false,
   collapsible = true,
   wide = false,
+  thanksOnly = false,
 }: {
   status: SupportStatus;
   requestLink?: ReactNode;
@@ -29,9 +30,19 @@ export function SupportProject({
   defaultOpen?: boolean;
   collapsible?: boolean;
   wide?: boolean;
+  /** For a supporter (status ACTIVE) only the thank-you line, nothing that asks for a donation. */
+  thanksOnly?: boolean;
 }) {
   const { t } = useTranslation();
   const [moreInfo, { toggle: toggleMoreInfo }] = useDisclosure(defaultOpen);
+  if (thanksOnly && status === 'ACTIVE') {
+    // A supporter is not asked again: only the thank-you, as large as the title would be.
+    return (
+      <Box mt="xl">
+        <SupportStatusLine status={status} large />
+      </Box>
+    );
+  }
   const texts = (
     <>
       <Text size="sm">{t('donate.freedom')}</Text>
@@ -90,12 +101,18 @@ export function SupportProject({
 const SUPPORT_COLORS: Record<SupportStatus, string> = { NONE: 'blue', ACTIVE: 'green', EXPIRED: 'orange' };
 
 /** Whether this installation supports the project: never, with a valid donation code, or no longer. */
-function SupportStatusLine({ status }: { status: SupportStatus }) {
+function SupportStatusLine({ status, large = false }: { status: SupportStatus; large?: boolean }) {
   const { t } = useTranslation();
   const key = status.toLowerCase() as Lowercase<SupportStatus>;
   return (
-    <Alert color={SUPPORT_COLORS[status]} variant="light" icon={<IconHeart />} py="xs">
-      <Text size="sm">
+    <Alert
+      color={SUPPORT_COLORS[status]}
+      variant="light"
+      icon={<IconHeart size={large ? 32 : undefined} />}
+      py={large ? 'md' : 'xs'}
+      styles={large ? { icon: { width: 32, height: 32 } } : undefined}
+    >
+      <Text size="sm" fz={large ? 'var(--mantine-h2-font-size)' : undefined} lh={large ? 1.3 : undefined}>
         <Text span inherit fw={700}>
           {t(`donate.status.${key}.title`)}
         </Text>
