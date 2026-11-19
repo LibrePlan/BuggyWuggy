@@ -30,7 +30,7 @@ import { keys, useLicenseCountries, useLicenseQuote, useLicenseStatus } from '..
 import type { LicenseCountry, LicenseQuote, LicenseStatus, QuotationRequest, QuotationResponse } from '../../api/types';
 import { ErrorAlert, PageLoader } from '../../components/QueryState';
 import { fieldErrorMap } from '../../lib/apiError';
-import { formatDate } from '../../lib/format';
+import { formatDate, formatDateTime } from '../../lib/format';
 import { notifyError } from '../../lib/notify';
 
 export function formatMoney(amount: number, currency: string, language: string) {
@@ -284,7 +284,7 @@ function ActivateForm({ status }: { status: LicenseStatus }) {
                 <Table.Td>
                   <Code>{r.challenge}</Code>
                 </Table.Td>
-                <Table.Td>{formatDate(r.createdAt, i18n.language)}</Table.Td>
+                <Table.Td>{formatDateTime(r.createdAt, i18n.language)}</Table.Td>
                 <Table.Td visibleFrom="sm">{r.companyName}</Table.Td>
                 <Table.Td ta="right">{formatMoney(r.yearlyTotal, r.currency, i18n.language)}</Table.Td>
               </Table.Tr>

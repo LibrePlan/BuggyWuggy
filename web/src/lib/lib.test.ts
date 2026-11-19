@@ -98,6 +98,9 @@ describe('formatting', () => {
   it('formats a date without a time zone shift', () => {
     expect(formatDate('2026-03-01', 'en-GB')).toBe('1 Mar 2026');
     expect(formatDate(null, 'en-GB')).toBe('');
+    // A timestamp (e.g. createdAt) gives a date, never "date value is not finite".
+    expect(formatDate('2026-11-19T12:05:00Z', 'en-GB')).toBe('19 Nov 2026');
+    expect(formatDate('not a date', 'en-GB')).toBe('not a date');
   });
   it('builds query strings without empty values', () => {
     expect(withQuery('/x', { a: 1, b: '', c: undefined, d: 'q r' })).toBe('/x?a=1&d=q+r');
