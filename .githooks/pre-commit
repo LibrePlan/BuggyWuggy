@@ -10,6 +10,8 @@
 # - A version changed by hand (scripts/set-version.sh) is committed as it is.
 # - git commit --amend keeps the version of the commit it replaces.
 # - A commit that adds a database migration gets a reminder to raise the minor version.
+# - Only on main: issue branches leave the version alone, otherwise every branch changes the
+#   same version lines and every second pull request has a merge conflict.
 # - git commit --no-verify skips this hook.
 set -euo pipefail
 
@@ -28,6 +30,9 @@ minor_of() {
 
 # The very first commit has nothing to compare with.
 git rev-parse --verify --quiet HEAD > /dev/null || exit 0
+
+# Issue branches (and any branch other than main) keep the version of main.
+[[ $(git symbolic-ref --short -q HEAD || true) == main ]] || exit 0
 
 # git commit --amend: the commit being replaced already got its own version.
 if ps -o args= -p "$PPID" 2> /dev/null | grep -qE -- '(^| )--amend( |$)'; then

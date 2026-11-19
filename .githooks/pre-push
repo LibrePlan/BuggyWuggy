@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# BuggyWuggy — open source, self-hosted issue tracker
+# Copyright (C) 2026 The BuggyWuggy contributors
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Guards pushes to chosen remotes. Does nothing until configured (per clone, with git config):
+#
+#   bwflow.protect    remotes that get no push at all, e.g. the official repository
+#                     (override once: BW_ALLOW_PUSH=1 git push ...)
+#   bwflow.requireCi  remotes that only get commits whose CI succeeded, e.g. your fork
+#   bwflow.ciCheck    command that checks one commit: called with the commit id, exit 0 = CI
+#                     succeeded for exactly that commit
+#
+# Several remotes: separate them with spaces. Install the hooks once per clone:
+#   git config core.hooksPath .githooks
+set -euo pipefail
+
+remote=$1
+protect=" $(git config --get bwflow.protect || true) "
+require_ci=" $(git config --get bwflow.requireCi || true) "
+check=$(git config --get bwflow.ciCheck || true)
+zero=0000000000000000000000000000000000000000
+
+if [[ $protect == *" $remote "* && ${BW_ALLOW_PUSH:-} != 1 ]]; then
+    echo "pre-push: no pushes to '$remote' (git config bwflow.protect)." >&2
+    echo "  Changes go there through a pull request. Really needed: BW_ALLOW_PUSH=1 git push ..." >&2
+    exit 1
+fi
+
+[[ $require_ci == *" $remote "* ]] || exit 0
+if [[ -z $check ]]; then
+    echo "pre-push: '$remote' requires CI, but git config bwflow.ciCheck is not set." >&2
+    exit 1
+fi
+
+status=0
+while read -r local_ref local_sha _remote_ref _remote_sha; do
+    [[ $local_sha == "$zero" ]] && continue # deleting a branch
+    if ! $check "$local_sha" >&2; then
+        echo "pre-push: CI has not succeeded for ${local_sha:0:10} ($local_ref); not pushed to '$remote'." >&2
+        status=1
+    fi
+done
+exit $status
