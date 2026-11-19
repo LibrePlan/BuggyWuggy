@@ -61,4 +61,4 @@
 
 - **Fully open source** under the AGPL-3.0-or-later license.
 - **Optional annual donation**, priced per country (Big Mac index) and number of users. BuggyWuggy works fully without it.
-- **Feedback form for supporters:** organisations that donate send compliments, bug reports and feature requests straight to the developers, with priority. Everyone else can report issues publicly in the source code repository.
+- **Feedback form for supporters:** organisations that donate send compliments, bug reports, feature requests, service requests and training requests straight to the developers, with priority. The mail carries all details as a JSON attachment as well. Everyone else can report issues publicly in the source code repository.

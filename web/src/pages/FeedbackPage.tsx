@@ -20,7 +20,16 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconBug, IconBulbFilled, IconCheck, IconCopy, IconHeart, IconLock } from '@tabler/icons-react';
+import {
+  IconBug,
+  IconBulbFilled,
+  IconCheck,
+  IconCopy,
+  IconHeart,
+  IconLock,
+  IconSchool,
+  IconTool,
+} from '@tabler/icons-react';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -138,8 +147,8 @@ function FeedbackForm({ allowed, onSent }: { allowed: boolean; onSent: (sent: Fe
     },
   });
   const type = form.values.type;
-  // Three options do not fit next to each other on a phone.
-  const narrow = useMediaQuery('(max-width: 36em)');
+  // Five options only fit next to each other on a wide screen.
+  const narrow = useMediaQuery('(max-width: 62em)');
   const option = (value: FeedbackType, icon: ReactNode) => ({
     value,
     label: (
@@ -169,6 +178,8 @@ function FeedbackForm({ allowed, onSent }: { allowed: boolean; onSent: (sent: Fe
               option('COMPLIMENT', <IconHeart size={16} />),
               option('BUG', <IconBug size={16} />),
               option('FEATURE', <IconBulbFilled size={16} />),
+              option('SERVICE', <IconTool size={16} />),
+              option('TRAINING', <IconSchool size={16} />),
             ]}
           />
         </Input.Wrapper>

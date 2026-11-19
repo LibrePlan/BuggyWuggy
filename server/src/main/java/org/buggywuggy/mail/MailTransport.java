@@ -17,6 +17,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.mail.MailException;
 import org.springframework.mail.MailPreparationException;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
@@ -61,6 +62,12 @@ public class MailTransport {
      */
     public void send(String to, String replyTo, Map<String, String> headers, String subject, String html,
             String text) throws MailException {
+        send(to, replyTo, headers, subject, html, text, null);
+    }
+
+    /** As {@link #send(String, String, Map, String, String, String)}, with an attachment (null for none). */
+    public void send(String to, String replyTo, Map<String, String> headers, String subject, String html,
+            String text, MailAttachment attachment) throws MailException {
         if (sender == null) {
             throw new MailPreparationException(demo ? "Mail is switched off in demo mode"
                     : "Mail is not configured (buggywuggy.mail.host)");
@@ -81,6 +88,10 @@ public class MailTransport {
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(text, html);
+            if (attachment != null) {
+                helper.addAttachment(attachment.name(), new ByteArrayResource(attachment.data()),
+                        attachment.contentType());
+            }
             if (replyTo != null) {
                 helper.setReplyTo(replyTo);
             }

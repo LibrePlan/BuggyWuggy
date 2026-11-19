@@ -67,6 +67,13 @@ public class MailOutbox {
     @Transactional
     public void enqueue(Long recipientId, String toAddress, String replyTo, Map<String, String> headers,
             String subject, String html, String text) {
+        enqueue(recipientId, toAddress, replyTo, headers, subject, html, text, null);
+    }
+
+    /** As {@link #enqueue(Long, String, String, Map, String, String, String)}, with an attachment (null for none). */
+    @Transactional
+    public void enqueue(Long recipientId, String toAddress, String replyTo, Map<String, String> headers,
+            String subject, String html, String text, MailAttachment attachment) {
         if (transport.demo()) {
             return; // demo mode: no mail, not even queued
         }
@@ -76,9 +83,11 @@ public class MailOutbox {
                 .append(value.replaceAll("[\\r\\n]+", " ")).append('\n'));
         jdbc.update("""
                 insert into mail_message (recipient_id, to_address, reply_to, headers, subject, html_body, text_body,
-                                          next_attempt_at, created_at)
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?)""", recipientId, toAddress, replyTo,
-                headers.isEmpty() ? null : lines.toString(), subject, html, text, now, now);
+                                          attachment_name, attachment_type, attachment_data, next_attempt_at, created_at)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", recipientId, toAddress, replyTo,
+                headers.isEmpty() ? null : lines.toString(), subject, html, text,
+                attachment == null ? null : attachment.name(), attachment == null ? null : attachment.contentType(),
+                attachment == null ? null : attachment.data(), now, now);
     }
 
     /** The headers as stored by {@link #enqueue}: "Name: value" per line. */
@@ -110,17 +119,21 @@ public class MailOutbox {
     boolean sendBatch() {
         Instant now = clock.instant();
         record Row(long id, String to, String replyTo, String headers, String subject, String html, String text,
-                int attempts) {
+                int attempts, MailAttachment attachment) {
         }
         List<Row> rows = jdbc.query("""
-                select id, to_address, reply_to, headers, subject, html_body, text_body, attempts from mail_message
+                select id, to_address, reply_to, headers, subject, html_body, text_body, attempts,
+                       attachment_name, attachment_type, attachment_data from mail_message
                 where status = 'PENDING' and next_attempt_at <= ?
                 order by next_attempt_at, id limit ? for update skip locked""",
                 (rs, n) -> new Row(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4),
-                        rs.getString(5), rs.getString(6), rs.getString(7), rs.getInt(8)), Timestamp.from(now), BATCH);
+                        rs.getString(5), rs.getString(6), rs.getString(7), rs.getInt(8),
+                        rs.getString(9) == null ? null : new MailAttachment(rs.getString(9), rs.getString(10),
+                                rs.getBytes(11))), Timestamp.from(now), BATCH);
         for (Row row : rows) {
             try {
-                transport.send(row.to(), row.replyTo(), headers(row.headers()), row.subject(), row.html(), row.text());
+                transport.send(row.to(), row.replyTo(), headers(row.headers()), row.subject(), row.html(), row.text(),
+                        row.attachment());
                 jdbc.update("update mail_message set status = 'SENT', sent_at = ?, attempts = attempts + 1,"
                         + " last_error = null where id = ?", Timestamp.from(clock.instant()), row.id());
             } catch (RuntimeException e) {

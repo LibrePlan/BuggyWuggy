@@ -987,19 +987,25 @@
     "type": {
       "COMPLIMENT": "Compliment",
       "BUG": "Bug report",
-      "FEATURE": "Feature request"
+      "FEATURE": "Feature request",
+      "SERVICE": "Service request",
+      "TRAINING": "Training request"
     },
     "subject": "Subject",
     "subjectPlaceholder": {
       "COMPLIMENT": "What do you like?",
       "BUG": "What goes wrong, in a few words",
-      "FEATURE": "What would you like BuggyWuggy to do?"
+      "FEATURE": "What would you like BuggyWuggy to do?",
+      "SERVICE": "What can we do for you?",
+      "TRAINING": "What would you like to learn?"
     },
     "message": "Message",
     "messageHelp": {
       "COMPLIMENT": "Tell us what works well for you: it helps us to keep it that way.",
       "BUG": "What did you do, what did you expect, and what happened instead? Steps to reproduce it help most.",
-      "FEATURE": "What do you want to achieve, and why? A description of the problem helps more than a solution."
+      "FEATURE": "What do you want to achieve, and why? A description of the problem helps more than a solution.",
+      "SERVICE": "What do you need help with, such as installing, upgrading, migrating or configuring BuggyWuggy? Tell us about your situation and when you need it.",
+      "TRAINING": "Who is the training for (users, administrators), how many people, and which topics? Say whether you prefer online or on site."
     },
     "privacy": "Sent with your message: your name, user name and e-mail address, the address and version of this BuggyWuggy, and the donation of your organisation.",
     "send": "Send feedback",

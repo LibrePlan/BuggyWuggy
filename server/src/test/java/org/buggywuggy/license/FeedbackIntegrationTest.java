@@ -10,8 +10,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.icegreen.greenmail.junit5.GreenMailExtension;
 import com.icegreen.greenmail.util.GreenMailUtil;
 import com.icegreen.greenmail.util.ServerSetupTest;
+import jakarta.mail.BodyPart;
 import jakarta.mail.Message;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
 import java.time.LocalDate;
 import org.buggywuggy.ApiClient;
 import org.buggywuggy.IntegrationTest;
@@ -22,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.util.ReflectionTestUtils;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /** Help → Send feedback: only with a valid donation, mailed with the donor proof. */
 class FeedbackIntegrationTest extends IntegrationTest {
@@ -58,6 +62,23 @@ class FeedbackIntegrationTest extends IntegrationTest {
 
     private static final String FEEDBACK = """
             {"type": "BUG", "subject": "Crash on\\nsave", "message": "It **crashes**.\\n\\n<script>alert(1)</script>"}""";
+
+    /** The JSON attachment of a feedback mail. */
+    private static JsonNode attachedDetails(MimeMessage mail) {
+        try {
+            MimeMultipart parts = (MimeMultipart) mail.getContent();
+            for (int i = 0; i < parts.getCount(); i++) {
+                BodyPart part = parts.getBodyPart(i);
+                if (FeedbackService.ATTACHMENT.equals(part.getFileName())) {
+                    assertThat(part.getContentType()).startsWith("application/json");
+                    return JsonMapper.builder().build().readTree(part.getInputStream());
+                }
+            }
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+        throw new AssertionError("no " + FeedbackService.ATTACHMENT + " attached");
+    }
 
     @Test
     void onlyUsersOfASupportingInstallationSendFeedbackWithTheDonorProof() throws Exception {
@@ -122,6 +143,34 @@ class FeedbackIntegrationTest extends IntegrationTest {
                         mail.getHeader("X-BuggyWuggy-Donor-Code", null)))
                 .contains(LocalDate.now().plusYears(1));
         assertThat(GreenMailUtil.getBody(mail)).contains("crashes", challenge);
+        // All details as JSON, for processing without reading the text.
+        JsonNode details = attachedDetails(mail);
+        assertThat(details.path("format").asString()).isEqualTo("buggywuggy-feedback/1");
+        assertThat(details.path("type").asString()).isEqualTo("bug");
+        assertThat(details.path("subject").asString()).isEqualTo("Crash on save");
+        assertThat(details.path("message").asString()).startsWith("It **crashes**.");
+        assertThat(details.path("from").path("username").asString()).isEqualTo("otto");
+        assertThat(details.path("from").path("email").asString()).isEqualTo("otto@example.org");
+        assertThat(details.path("donation").path("company").asString()).isEqualTo("Acme BV");
+        assertThat(details.path("donation").path("challenge").asString()).isEqualTo(challenge);
+        assertThat(details.path("donation").path("code").asString()).isEqualTo(code);
+        assertThat(details.path("installation").path("version").asString()).isNotBlank();
+        assertThat(details.path("sentAt").asString()).isNotBlank();
+
+        // Service and training requests go the same way.
+        smtp.reset();
+        var service = otto.post("/api/v1/feedback", """
+                {"type": "SERVICE", "subject": "Move to a new server", "message": "Can you help us?"}""");
+        assertThat(service.status()).as(service.toString()).isEqualTo(200);
+        assertThat((String) service.json("$.subject")).isEqualTo("BuggyWuggy service request: Move to a new server");
+        assertThat(otto.post("/api/v1/feedback", """
+                {"type": "TRAINING", "subject": "Board training", "message": "For 12 people."}""").status())
+                .isEqualTo(200);
+        outbox.sendPending();
+        assertThat(smtp.getReceivedMessages()).extracting(m -> m.getHeader("X-BuggyWuggy-Feedback", null))
+                .containsExactlyInAnyOrder("service", "training");
+        assertThat(smtp.getReceivedMessages()).extracting(m -> attachedDetails(m).path("type").asString())
+                .containsExactlyInAnyOrder("service", "training");
 
         // After the donation expired, nothing more.
         jdbc.update("update license set valid_until = current_date - 1");

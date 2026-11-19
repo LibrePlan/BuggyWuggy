@@ -2116,7 +2116,7 @@ export interface components {
         };
         FeedbackRequest: {
             /** @enum {string} */
-            type: "COMPLIMENT" | "BUG" | "FEATURE";
+            type: "COMPLIMENT" | "BUG" | "FEATURE" | "SERVICE" | "TRAINING";
             subject: string;
             message: string;
         };
