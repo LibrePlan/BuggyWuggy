@@ -8,13 +8,18 @@ export function formatDateTime(iso: string | null | undefined, locale: string, t
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short', timeZone }).format(new Date(iso));
 }
 
-/** Formats an ISO date (yyyy-mm-dd) without shifting it through a time zone. */
+/**
+ * Formats an ISO date (yyyy-mm-dd) without shifting it through a time zone. A full timestamp
+ * gives its local date; something that is not a date is shown as it is, never an error.
+ */
 export function formatDate(isoDate: string | null | undefined, locale: string): string {
   if (!isoDate) return '';
-  const [y, m, d] = isoDate.split('-').map(Number);
-  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(
-    new Date(Date.UTC(y!, m! - 1, d!)),
-  );
+  const plain = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  const date = plain
+    ? new Date(Date.UTC(Number(plain[1]), Number(plain[2]) - 1, Number(plain[3])))
+    : new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return isoDate;
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: plain ? 'UTC' : undefined }).format(date);
 }
 
 /** Shallow difference of two values for PATCH requests: fields of {@code next} that differ. */
