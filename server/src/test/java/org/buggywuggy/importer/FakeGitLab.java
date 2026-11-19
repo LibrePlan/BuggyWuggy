@@ -37,6 +37,8 @@ final class FakeGitLab implements AutoCloseable {
     private final Map<String, Object> json = new ConcurrentHashMap<>();
     private final Map<String, byte[]> files = new ConcurrentHashMap<>();
     private final Set<String> rateLimited = ConcurrentHashMap.newKeySet();
+    /** API paths only for logged-in users, as labels and comments on gitlab.com. */
+    final Set<String> loginOnly = ConcurrentHashMap.newKeySet();
     final List<String> methods = new CopyOnWriteArrayList<>();
     final List<String> authorizations = new CopyOnWriteArrayList<>();
 
@@ -57,6 +59,10 @@ final class FakeGitLab implements AutoCloseable {
                 return;
             }
             String api = path.startsWith("/api/v4") ? path.substring("/api/v4".length()) : path;
+            if (auth == null && loginOnly.contains(api)) {
+                send(exchange, 401, "application/json", "{\"message\":\"401 Unauthorized\"}".getBytes());
+                return;
+            }
             if (rateLimited.remove(api)) {
                 exchange.getResponseHeaders().add("Retry-After", "1");
                 send(exchange, 429, "text/plain", "Retry later".getBytes(StandardCharsets.UTF_8));

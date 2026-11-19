@@ -158,7 +158,21 @@ public class GitLabConnector implements Connector {
         Api api = api(url, token);
         if (!api.http.hasToken()) {
             // Without a token GitLab does not tell its version; any public list shows it is GitLab.
-            api.http.get(api.uri("/projects", Map.of("per_page", "1")));
+            List<Project> some = ReadOnlyHttp.list(api.http.get(api.uri("/projects", Map.of("per_page", "1"))),
+                    Project.class);
+            // Large public servers (gitlab.com, gitlab.gnome.org) list projects and issues to
+            // anyone, but labels, comments and history only to logged-in users: say so now, not
+            // halfway through an import.
+            if (!some.isEmpty()) {
+                try {
+                    api.http.get(api.uri("/projects/" + some.get(0).id() + "/labels", Map.of("per_page", "1")));
+                } catch (ApiException e) {
+                    if ("import.login-required".equals(e.messageKey())) {
+                        throw ApiException.badRequest("import.login-required", "labels, comments and history");
+                    }
+                    // Anything else (a project without labels access, …) is for the import to find.
+                }
+            }
             return new ConnectionResponse(api.web.toString(), "", null, false);
         }
         Version version = api.get("/version", Version.class);

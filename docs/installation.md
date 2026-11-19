@@ -660,7 +660,10 @@ wizard.
 
 1. **Connection.** The address is `https://gitlab.com`, or the address of your own GitLab
    (including its path, e.g. `https://example.org/gitlab`; BuggyWuggy finds the API under
-   `/api/v4`). A token is optional for public projects.
+   `/api/v4`). A token is optional for public projects on a GitLab of your own, but
+   gitlab.com and most other large public servers (such as gitlab.gnome.org) show labels,
+   comments and history only to logged-in users: there, any free account's token is enough.
+   *Test connection* without a token already checks this.
    - Create a personal, project or group access token with the **`read_api`** scope under
      *Preferences → Access tokens*. It never needs more: the importer only reads.
    - With the token of a GitLab administrator, or for people who made their e-mail address

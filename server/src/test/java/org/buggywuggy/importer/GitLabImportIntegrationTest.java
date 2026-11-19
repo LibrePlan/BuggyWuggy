@@ -161,6 +161,28 @@ class GitLabImportIntegrationTest extends IssueTestSupport {
     }
 
     @Test
+    void saysSoWhenAServerShowsLabelsAndCommentsOnlyToLoggedInUsers() {
+        // As gitlab.com: projects and issues for anyone, labels and comments only with a login.
+        gitlab.loginOnly.add("/projects/7/labels");
+        gitlab.loginOnly.add("/projects/7/issues/1/notes");
+        var anonymous = admin.post("/api/v1/admin/import/gitlab/connection", "{\"url\": \"%s\"}".formatted(base));
+        assertThat(anonymous.status()).as(anonymous.toString()).isEqualTo(400);
+        assertThat(anonymous.body()).contains("only lets logged-in users read labels, comments and history")
+                .doesNotContain("refused");
+
+        // Found halfway (the connection was not tested): the same message, with what it could not read.
+        var analysis = admin.post("/api/v1/admin/import/gitlab/analysis",
+                "{\"url\": \"%s\", \"repository\": \"acme/tools/widgets\"}".formatted(base));
+        assertThat(analysis.status()).as(analysis.toString()).isEqualTo(400);
+        assertThat(analysis.body()).contains("only lets logged-in users read", "/projects/7/");
+
+        // With a token all is well.
+        var connection = admin.post("/api/v1/admin/import/gitlab/connection",
+                "{\"url\": \"%s\", \"token\": \"%s\"}".formatted(base, FakeGitLab.TOKEN));
+        assertThat(connection.status()).as(connection.toString()).isEqualTo(200);
+    }
+
+    @Test
     void importsIssuesWithHistoryLinksAndUploadsAndOnlyReads() throws Exception {
         gitlab.rateLimitOnce("/projects/7/milestones");
         var started = admin.post("/api/v1/admin/import/gitlab/jobs", """

@@ -576,7 +576,7 @@
           "description": "Issues of a project on gitlab.com or a self-managed GitLab.",
           "title": "Import from GitLab",
           "urlHelp": "https://gitlab.com, or the address of your own GitLab (with its path, if it has one).",
-          "tokenHelp": "Optional for public projects; needed for private ones and for e-mail addresses. Create a personal (or project or group) access token with the read_api scope under Preferences → Access tokens. It only needs to read; the importer never changes anything in GitLab. The token is only kept in memory while BuggyWuggy runs, never stored.",
+          "tokenHelp": "Needed for private projects, for e-mail addresses, and on gitlab.com and most other large public servers, which show labels and comments only to logged-in users. Without a token it can work for public projects on a server of your own. Create a personal (or project or group) access token with the read_api scope under Preferences → Access tokens. It only needs to read; the importer never changes anything in GitLab. The token is only kept in memory while BuggyWuggy runs, never stored.",
           "connectedAs": "GitLab {{version}}, logged in as {{login}}.",
           "connectedAnonymous": "GitLab, without a token: only public projects.",
           "searchHelp": "Part of the name, or the full path (group/subgroup/project). Empty with a token: your own projects."

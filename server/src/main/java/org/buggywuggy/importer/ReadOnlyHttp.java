@@ -254,6 +254,10 @@ public final class ReadOnlyHttp {
                         .ifPresent(until -> pause(until, "rate limit of " + host));
                 return new Response(status, response.headers(), response.body(), uri);
             }
+            if ((status == 401 || status == 403) && !hasToken()) {
+                // No token entered: the server only shows this to logged-in users, nothing was refused.
+                throw new ApiException(HttpStatus.BAD_REQUEST, "import.login-required", uri.getPath());
+            }
             throw switch (status) {
                 case 401 -> new ApiException(HttpStatus.BAD_REQUEST, "import.token-refused");
                 case 403 -> new ApiException(HttpStatus.BAD_REQUEST, "import.forbidden", uri.getPath());
