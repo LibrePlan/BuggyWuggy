@@ -35,10 +35,18 @@ public class ApiClient {
     private final CookieManager cookies = new CookieManager();
     private final HttpClient http;
     private boolean sendCsrfHeader = true;
+    private String bearer;
 
     public ApiClient(int port) {
         this.baseUrl = "http://localhost:" + port;
         this.http = HttpClient.newBuilder().cookieHandler(cookies).build();
+    }
+
+    /** Sends {@code Authorization: Bearer <token>} and no CSRF header, like a script with an API token. */
+    public ApiClient withBearer(String token) {
+        bearer = token;
+        sendCsrfHeader = false;
+        return this;
     }
 
     /** Disables the CSRF header, to test CSRF protection. */
@@ -170,6 +178,9 @@ public class ApiClient {
 
     private Response send(HttpRequest.Builder builder) {
         try {
+            if (bearer != null) {
+                builder.header("Authorization", "Bearer " + bearer);
+            }
             var response = http.send(builder.header("Accept", "application/json").build(), BodyHandlers.ofString());
             return new Response(response.statusCode(), response.body());
         } catch (IOException e) {

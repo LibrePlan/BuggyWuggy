@@ -49,6 +49,12 @@ public class BuggyWuggyUserDetailsService implements UserDetailsService {
                 authoritiesOf(user));
     }
 
+    /** The user of a personal API token: without password, but only when active. */
+    @Transactional(readOnly = true)
+    public BuggyWuggyPrincipal loadForToken(long id) {
+        return loadForSso(id);
+    }
+
     private Set<String> authoritiesOf(UserAccount user) {
         Set<String> authorities = new HashSet<>();
         if (user.isSystemAdmin()) {

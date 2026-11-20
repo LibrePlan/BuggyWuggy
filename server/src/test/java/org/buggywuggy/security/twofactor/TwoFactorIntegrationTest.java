@@ -202,4 +202,18 @@ class TwoFactorIntegrationTest extends IntegrationTest {
                 {"code": "123456"}""").status()).isEqualTo(401);
         assertThat(admin.client().get("/api/v1/myself").status()).isEqualTo(200);
     }
+
+    @Test
+    void anApiTokenNeedsNoSecondFactor() {
+        Enrolled admin = setupAdmin();
+        var created = admin.client().post("/api/v1/myself/tokens", """
+                {"name": "Script", "readOnly": true}""");
+        assertThat(created.status()).as(created.toString()).isEqualTo(200);
+        ApiClient script = client().withBearer(created.json("$.secret"));
+        assertThat(script.get("/api/v1/myself").<String>json("$.username")).isEqualTo(ADMIN);
+        // A password-only login (second factor still to come) makes no tokens.
+        ApiClient half = passwordOnly(ADMIN, ADMIN_PASSWORD);
+        assertThat(half.post("/api/v1/myself/tokens", """
+                {"name": "Sneaky", "readOnly": true}""").status()).isEqualTo(401);
+    }
 }

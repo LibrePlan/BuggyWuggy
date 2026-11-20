@@ -483,6 +483,24 @@ Choose **Profile** in the menu under your name to change:
 
 Your username cannot be changed.
 
+### API tokens
+
+Scripts and other programs can use BuggyWuggy through its API with a **personal API token**.
+On your profile, under **API tokens**, choose **New API token** and give it:
+
+- a **name** that says what it is for, e.g. "Backup script";
+- **Read only**: the token can look things up but cannot change anything (on by default);
+- optionally a **last day**; without one, the token works until you remove it.
+
+The token (it starts with `bw_`) is shown **once**: copy it right away. BuggyWuggy keeps only a
+fingerprint of it, so it cannot show it again; if you lose it, remove it and make a new one. The
+program sends it with every request as `Authorization: Bearer <token>`.
+
+A token works with **your** rights and needs no password and no second factor, so keep it as
+safe as a password. **Remove** a token you no longer use, or that may have leaked: it stops
+working right away. The list shows when each token was last used. The shared demo account
+cannot make tokens.
+
 ## E-mail notifications
 
 BuggyWuggy mails you when something happens to an issue that you **watch**, **reported** or are

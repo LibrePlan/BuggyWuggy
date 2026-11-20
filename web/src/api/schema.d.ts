@@ -260,6 +260,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/myself/tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["myTokens"];
+        put?: never;
+        post: operations["createToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/issues": {
         parameters: {
             query?: never;
@@ -1348,6 +1364,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/users/{userId}/tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tokensOfUser"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users/{id}/sso-identities": {
         parameters: {
             query?: never;
@@ -1556,6 +1588,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/myself/tokens/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteMyToken"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/issues/{idOrKey}/links/{linkId}": {
         parameters: {
             query?: never;
@@ -1583,6 +1631,22 @@ export interface paths {
         put?: never;
         post?: never;
         delete: operations["delete_6"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{userId}/tokens/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteTokenOfUser"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1826,6 +1890,29 @@ export interface components {
             lane?: components["schemas"]["Lane"];
             after?: string;
             before?: string;
+        };
+        CreateApiTokenRequest: {
+            name: string;
+            readOnly?: boolean;
+            /** Format: date */
+            expiresOn?: string | null;
+        };
+        ApiTokenResponse: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            prefix: string;
+            readOnly: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date */
+            expiresOn: string | null;
+            /** Format: date-time */
+            lastUsedAt: string | null;
+        };
+        CreatedApiTokenResponse: {
+            token: components["schemas"]["ApiTokenResponse"];
+            secret: string;
         };
         CreateIssueRequest: {
             project: string;
@@ -3529,6 +3616,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    myTokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiTokenResponse"][];
+                };
+            };
+        };
+    };
+    createToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateApiTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CreatedApiTokenResponse"];
+                };
             };
         };
     };
@@ -5680,6 +5811,28 @@ export interface operations {
             };
         };
     };
+    tokensOfUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiTokenResponse"][];
+                };
+            };
+        };
+    };
     ssoIdentities: {
         parameters: {
             query?: never;
@@ -5958,6 +6111,26 @@ export interface operations {
             };
         };
     };
+    deleteMyToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     deleteLink: {
         parameters: {
             query?: never;
@@ -5986,6 +6159,27 @@ export interface operations {
             path: {
                 idOrKey: string;
                 attachmentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteTokenOfUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: number;
+                id: number;
             };
             cookie?: never;
         };

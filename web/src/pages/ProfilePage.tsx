@@ -9,6 +9,7 @@ import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { patch, put } from '../api/client';
 import { keys, useLanguages, useMyself, useVersion } from '../api/queries';
+import { ApiTokens } from '../components/ApiTokens';
 import { useIsDemoAccount } from '../components/DemoNotice';
 import type { MyselfResponse, UpdateMyselfRequest } from '../api/types';
 import { PageLoader } from '../components/QueryState';
@@ -32,6 +33,7 @@ export function ProfilePage() {
           </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 6 }}>
+          <Stack gap="xl">
           {demoAccount ? (
             <Text size="sm" c="dimmed">
               {t('profile.demoAccount')}
@@ -43,6 +45,8 @@ export function ProfilePage() {
               {t('profile.ssoOnly')}
             </Text>
           )}
+          <ApiTokens disabledReason={demoAccount ? t('tokens.demoAccount') : undefined} />
+          </Stack>
         </Grid.Col>
       </Grid>
     </Stack>

@@ -29,6 +29,7 @@ import { Link, useParams } from 'react-router';
 import { del, patch, put } from '../../api/client';
 import { keys, useAdminUser, useAdminUserSso, useMyself, useSso } from '../../api/queries';
 import type { GroupRef, UpdateUserRequest, UserResponse } from '../../api/types';
+import { ApiTokens } from '../../components/ApiTokens';
 import { GroupPicker } from '../../components/EntityPickers';
 import { ErrorAlert, isNotFound, PageLoader } from '../../components/QueryState';
 import { fieldErrorMap } from '../../lib/apiError';
@@ -175,6 +176,7 @@ export function AdminUserPage() {
             <Text size="xs" c="dimmed">
               {t('admin.user.groupsHelp')}
             </Text>
+            <ApiTokens userId={u.id} />
           </Stack>
         </Grid.Col>
       </Grid>

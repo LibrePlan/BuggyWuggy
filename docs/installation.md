@@ -984,6 +984,24 @@ logged in in the same browser, **Try it out** uses your session. The administrat
 are under `/api/v1/admin/` (users, groups, global permissions); project configuration is under
 `/api/v1/projects/{key}/` (components, versions, roles).
 
+Scripts and other programs log in with a **personal API token**. Every user makes their own
+under **Profile → API tokens** (see the user guide); a token works with the rights of that user,
+so for a program give it a user of its own with only the memberships it needs. Send it with
+every request:
+
+```
+curl -H "Authorization: Bearer bw_..." https://<your-server>/api/v1/myself
+```
+
+- A token needs no CSRF token and no session, and no second factor: the user made it after a
+  full login. It can be **read only** and can have a **last day**.
+- BuggyWuggy keeps only a SHA-256 hash of a token, and shows the token once, when it is made.
+- A token stops working when it is removed, after its last day, and while its user is not
+  active. Tokens are made and removed only after a login in the browser, never with a token.
+- Administrators see the tokens of a user on the user's page under **Administration → Users**,
+  with when each was last used, and can remove them.
+- A wrong token gets 401, a read-only token that tries to change something 403.
+
 ### Default groups, roles and permissions
 
 | Group | Global permissions |

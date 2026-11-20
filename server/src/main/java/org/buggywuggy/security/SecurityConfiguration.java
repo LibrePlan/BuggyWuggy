@@ -13,6 +13,8 @@ import org.buggywuggy.security.sso.SsoConfiguration;
 import org.buggywuggy.security.sso.SsoLoginHandlers;
 import org.buggywuggy.security.sso.SsoProperties;
 import org.buggywuggy.security.sso.SsoUserService;
+import org.buggywuggy.security.token.ApiTokenFilter;
+import org.buggywuggy.security.token.ApiTokenService;
 import org.buggywuggy.security.twofactor.TwoFactorSessionFilter;
 import org.buggywuggy.security.twofactor.TwoFactorSettings;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -50,7 +52,7 @@ public class SecurityConfiguration {
             SecurityContextRepository securityContextRepository,
             TwoFactorSettings twoFactorSettings,
             SsoProperties sso, SsoClientRegistrations ssoRegistrations, SsoLoginHandlers ssoHandlers,
-            SsoAccountService ssoAccounts,
+            SsoAccountService ssoAccounts, ApiTokenService apiTokens,
             @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
@@ -71,10 +73,14 @@ public class SecurityConfiguration {
                         .anyRequest().permitAll())
                 // Cookie-based CSRF protection for the browser SPA: the XSRF-TOKEN cookie must be
                 // echoed in the X-XSRF-TOKEN header on every state-changing request.
-                .csrf(csrf -> csrf.spa().csrfTokenRepository(csrfTokenRepository))
+                // Requests with an API token (Authorization: Bearer) have no cookies to abuse.
+                .csrf(csrf -> csrf.spa().csrfTokenRepository(csrfTokenRepository)
+                        .ignoringRequestMatchers(ApiTokenFilter.BEARER))
                 .securityContext(ctx -> ctx.securityContextRepository(securityContextRepository))
                 // Not a bean: a filter bean would also be registered outside Spring Security.
                 .addFilterAfter(new TwoFactorSessionFilter(twoFactorSettings), SecurityContextHolderFilter.class)
+                // After it: a token request has no session, and needs no second factor.
+                .addFilterAfter(new ApiTokenFilter(apiTokens, exceptionResolver), TwoFactorSessionFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(logout -> logout

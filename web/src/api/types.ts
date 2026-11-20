@@ -7,6 +7,9 @@ import type { components } from './schema';
 type Schemas = components['schemas'];
 
 export type MyselfResponse = Schemas['MyselfResponse'];
+export type ApiTokenResponse = Schemas['ApiTokenResponse'];
+export type CreatedApiTokenResponse = Schemas['CreatedApiTokenResponse'];
+export type CreateApiTokenRequest = Schemas['CreateApiTokenRequest'];
 export type LoginResponse = Schemas['LoginResponse'];
 export type TwoFactorLoginResponse = Schemas['TwoFactorLoginResponse'];
 export type EnrollmentResponse = Schemas['EnrollmentResponse'];

@@ -33,5 +33,11 @@ public final class Authorities {
      */
     public static final String SSO_LOGIN = "SSO_LOGIN";
 
+    /**
+     * Marks a request made with a personal API token (see ApiTokenFilter): it has no session,
+     * and some actions (making tokens) need a real login.
+     */
+    public static final String API_TOKEN = "API_TOKEN";
+
     public static final Set<String> GLOBAL_PERMISSIONS = Set.of(ADMINISTER, CREATE_PROJECT, BROWSE_USERS);
 }

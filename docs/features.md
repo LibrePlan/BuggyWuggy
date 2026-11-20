@@ -53,6 +53,8 @@
 - **Guided first-time setup**, and a configuration file template generated on first start.
 - **Web-based administration** for users, groups, permissions, default board, e-mail and imports. Projects can be archived, restored and deleted.
 - **Complete REST API** with interactive OpenAPI documentation. The web interface uses the same API.
+- **Personal API tokens** for scripts and other programs: read-only or not, with an optional last
+  day, stored only as a hash, and removable by the user and by administrators.
 - **Built-in help:** searchable user and administrator guides inside the application.
 - **Software bill of materials (CycloneDX SBOMs)** for the server and the web UI.
 - **Demo mode** for hosting a public try-it-out instance.
