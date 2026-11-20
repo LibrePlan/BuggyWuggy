@@ -92,6 +92,9 @@ class LicenseIntegrationTest extends IntegrationTest {
         assertThat((String) admin.get("/api/v1/admin/license").json("$.requests[0].challenge")).isEqualTo(challenge);
         assertThat(jdbc.queryForObject("select reply_to from mail_message order by id desc limit 1", String.class))
                 .isEqualTo("ada@acme.example");
+        // Not automatic mail: a mailbox that makes issues of mail must not ignore it.
+        assertThat(jdbc.queryForObject("select headers from mail_message order by id desc limit 1", String.class))
+                .contains("Auto-Submitted").contains("no");
         JsonNode details = attachedDetails();
         assertThat(details.path("format").asString()).isEqualTo(LicenseService.FORMAT);
         assertThat(details.path("kind").asString()).isEqualTo("quotation");

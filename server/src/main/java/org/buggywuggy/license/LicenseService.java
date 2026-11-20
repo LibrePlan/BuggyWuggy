@@ -316,7 +316,11 @@ public class LicenseService {
         html.append("</table>");
         byte[] attachment = json.writerWithDefaultPrettyPrinter().writeValueAsBytes(details);
         Object contact = details.get("contact") instanceof Map<?, ?> c ? c.get("email") : null;
-        outbox.enqueue(null, SALES, contact == null ? null : contact.toString(), Map.of(), subject, HtmlMail.document(html.toString()), text.toString(),
+        // A request for a person at sales to answer, not an automatic notice: without this, a
+        // mailbox that makes issues of mail (see InboundMailService) ignores it as automatic mail.
+        Map<String, String> headers = Map.of("Auto-Submitted", "no");
+        outbox.enqueue(null, SALES, contact == null ? null : contact.toString(), headers, subject,
+                HtmlMail.document(html.toString()), text.toString(),
                 new MailAttachment(ATTACHMENT, "application/json", attachment));
         return text.toString();
     }
