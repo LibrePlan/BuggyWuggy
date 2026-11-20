@@ -13,7 +13,7 @@
 
     <groupId>org.buggywuggy</groupId>
     <artifactId>buggywuggy-parent</artifactId>
-    <version>1.4.3</version>
+    <version>1.4.4</version>
     <packaging>pom</packaging>
 
     <name>BuggyWuggy</name>
