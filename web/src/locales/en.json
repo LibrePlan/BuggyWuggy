@@ -733,7 +733,8 @@
       }
     },
     "board": "Board",
-    "donation": "Donation"
+    "donation": "Donation",
+    "webhooks": "Webhooks"
   },
   "settings": {
     "title": "Project settings",
@@ -1112,5 +1113,61 @@
     "remove": "Remove",
     "removed": "Token \"{{name}}\" removed.",
     "demoAccount": "The shared demo account cannot make API tokens."
+  },
+  "webhooks": {
+    "intro": "A webhook posts what happens to issues to another program, as JSON, signed with a secret. For example to update another system, or to have a program act on new issues.",
+    "new": "New webhook",
+    "none": "No webhooks.",
+    "name": "Name",
+    "url": "URL",
+    "urlHelp": "The address BuggyWuggy posts to (http:// or https://). Redirects are not followed.",
+    "urlInvalid": "Enter a full http:// or https:// address",
+    "lastDelivery": "Last delivery",
+    "never": "Nothing sent yet",
+    "inactive": "Off",
+    "failedCount_one": "{{count}} failed",
+    "failedCount_other": "{{count}} failed",
+    "pendingCount_one": "{{count}} waiting",
+    "pendingCount_other": "{{count}} waiting",
+    "settings": "Settings",
+    "events": "Events",
+    "eventsRequired": "Choose at least one event",
+    "event": {
+      "issue.created": "An issue was created",
+      "issue.changed": "An issue was changed (fields, status, assignee, …)",
+      "issue.commented": "A comment was added",
+      "issue.deleted": "An issue was deleted"
+    },
+    "projects": "Projects",
+    "allProjects": "All projects",
+    "someProjects": "Only these projects",
+    "chooseProjects": "Choose projects…",
+    "projectsRequired": "Choose at least one project",
+    "active": "On",
+    "activeHelp": "While it is off, nothing is posted and no new events are kept for it; what was waiting is posted when it is switched on again.",
+    "create": "Create webhook",
+    "delete": "Delete webhook",
+    "deleteConfirm": "Delete the webhook \"{{name}}\", with its deliveries? Nothing is posted to it any more.",
+    "deleted": "Webhook \"{{name}}\" deleted.",
+    "deliveries": "Deliveries",
+    "deliveriesHelp": "The last 50 posts. A post that does not get a 2xx answer is tried again after 1, 2, 4, … minutes (at most an hour between tries), 10 times; the events of a webhook are posted in order, one after the other.",
+    "noDeliveries": "Nothing posted yet.",
+    "test": "Send a test",
+    "testInactive": "Switch the webhook on to send a test.",
+    "testQueued": "A test (event \"ping\") is on its way.",
+    "rotate": "New secret",
+    "rotateConfirm": "Make a new secret? The current one stops working right away: the receiving program needs the new one.",
+    "retry": "Try again",
+    "attempts_one": "{{count}} attempt",
+    "attempts_other": "{{count}} attempts",
+    "nextAttempt": "Next attempt {{date}}",
+    "status": {
+      "PENDING": "Waiting",
+      "SENT": "Sent",
+      "FAILED": "Failed"
+    },
+    "secretTitle": "Signing secret",
+    "secretOnce": "Copy the secret now: it is shown only this once.",
+    "secretUse": "Each post has the header X-BuggyWuggy-Signature: sha256=<HMAC-SHA256 of the body with this secret, in hex>. The receiving program checks it to know the post comes from this BuggyWuggy."
   }
 }

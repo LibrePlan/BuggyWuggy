@@ -1002,6 +1002,42 @@ curl -H "Authorization: Bearer bw_..." https://<your-server>/api/v1/myself
   with when each was last used, and can remove them.
 - A wrong token gets 401, a read-only token that tries to change something 403.
 
+### Webhooks
+
+Under **Administration → Webhooks** administrators make webhooks: BuggyWuggy posts what
+happens to issues as JSON to another program, e.g. to keep another system up to date or to
+let a program act on new issues. A webhook has a URL (http or https), the events it wants
+(`issue.created`, `issue.changed`, `issue.commented`, `issue.deleted`), and all projects or
+only some.
+
+- **The post.** `POST` with a JSON body (`"format": "buggywuggy-webhook/1"`): the event, when,
+  who did it (`actor`), the issue as it is after the change (key, URL, summary, description,
+  type, status, priority, project, reporter, assignee, dates), and for `issue.changed` the
+  changed fields (`changes`, as in the history), for `issue.commented` the comment (with
+  `external` for comments that were mailed to an outside sender). **Send a test** posts the
+  event `ping`.
+- **Headers.** `X-BuggyWuggy-Event`, `X-BuggyWuggy-Delivery` (the same for every attempt of a
+  post: use it to skip a repeat) and `X-BuggyWuggy-Signature: sha256=<hex>`, the HMAC-SHA256
+  of the body with the webhook's secret. The secret is shown once, when the webhook is made or
+  with **New secret**; it is stored encrypted with `data-dir/secrets/webhook.key` (keep that
+  file with the backups of the data directory).
+- **Delivery.** Events are queued in the same transaction as the change, so nothing is lost at
+  a restart. The posts of a webhook go one after the other, in order. A post without a 2xx
+  answer within 10 seconds is tried again after 1, 2, 4, … minutes (at most an hour between
+  tries), 10 times, and then counts as failed; the next one goes on. A failed post can be
+  tried again from the webhook's page, which shows the last 50 posts with their answer.
+  Redirects are not followed. Sent and failed posts are removed after 30 days.
+- **Who.** Only administrators manage webhooks, because a webhook sends the content of issues
+  to any address and can reach servers in your own network.
+
+Settings (configuration file or environment):
+
+| Setting | Default | |
+|---|---|---|
+| `buggywuggy.webhooks.timeout` | `10s` | how long to wait for a connection and an answer |
+| `buggywuggy.webhooks.max-attempts` | `10` | attempts before a post counts as failed |
+| `buggywuggy.webhooks.poll-interval` | `5s` | how often waiting posts are looked at |
+
 ### Default groups, roles and permissions
 
 | Group | Global permissions |

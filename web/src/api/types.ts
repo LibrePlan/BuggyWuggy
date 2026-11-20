@@ -113,3 +113,7 @@ export type FeedbackStatus = Schemas['FeedbackStatus'];
 export type FeedbackRequest = Schemas['FeedbackRequest'];
 export type FeedbackResponse = Schemas['FeedbackResponse'];
 export type FeedbackType = FeedbackRequest['type'];
+export type WebhookRequest = Schemas['WebhookRequest'];
+export type WebhookResponse = Schemas['WebhookResponse'];
+export type WebhookSecretResponse = Schemas['WebhookSecretResponse'];
+export type DeliveryResponse = Schemas['DeliveryResponse'];

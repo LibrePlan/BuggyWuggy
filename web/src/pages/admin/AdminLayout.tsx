@@ -10,7 +10,7 @@ import { useDonation, useMyself } from '../../api/queries';
 import { NotFoundPage } from '../NotFoundPage';
 import { ImportStatusLine } from './ImportPage';
 
-const SECTIONS = ['users', 'groups', 'permissions', 'board', 'email', 'import', 'donation'] as const;
+const SECTIONS = ['users', 'groups', 'permissions', 'board', 'email', 'import', 'webhooks', 'donation'] as const;
 
 /** Frame of the administration pages; only for users with the ADMINISTER permission. */
 export function AdminLayout() {

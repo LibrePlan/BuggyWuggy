@@ -14,6 +14,7 @@ import java.util.Set;
 import org.buggywuggy.issue.IssueHistory.Item;
 import org.buggywuggy.project.ProjectPermission;
 import org.buggywuggy.project.ProjectPermissionService;
+import org.buggywuggy.webhook.WebhookService;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -47,11 +48,14 @@ public class IssueEvents {
     private final NamedParameterJdbcTemplate jdbc;
     private final ProjectPermissionService permissions;
     private final JsonMapper json;
+    private final WebhookService webhooks;
 
-    public IssueEvents(NamedParameterJdbcTemplate jdbc, ProjectPermissionService permissions, JsonMapper json) {
+    public IssueEvents(NamedParameterJdbcTemplate jdbc, ProjectPermissionService permissions, JsonMapper json,
+            WebhookService webhooks) {
         this.jdbc = jdbc;
         this.permissions = permissions;
         this.json = json;
+        this.webhooks = webhooks;
     }
 
     public void created(long issueId, Long actorId, Instant at) {
@@ -98,5 +102,7 @@ public class IssueEvents {
                 new MapSqlParameterSource().addValue("type", type)
                         .addValue("payload", json.writeValueAsString(payload))
                         .addValue("at", Timestamp.from(at)).addValue("issue", issueId).addValue("actor", actorId));
+        webhooks.enqueue(type, issueId, actorId, at, payload instanceof Changed c ? c.items() : null,
+                payload instanceof Commented cm ? cm.commentId() : null);
     }
 }

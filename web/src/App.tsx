@@ -22,6 +22,7 @@ import { LicensePage } from './pages/admin/LicensePage';
 import { MailSettingsPage } from './pages/admin/MailSettingsPage';
 import { MailTemplatePage } from './pages/admin/MailTemplatePage';
 import { RepositoryImportPage } from './pages/admin/RepositoryImportPage';
+import { WebhookPage, WebhooksPage } from './pages/admin/WebhooksPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ProjectPage } from './pages/ProjectPage';
@@ -77,6 +78,9 @@ export const router = createBrowserRouter([
               { path: 'import/redmine', element: <RepositoryImportPage key="redmine" kind="redmine" /> },
               { path: 'import/trac', element: <RepositoryImportPage key="trac" kind="trac" /> },
               { path: 'import/jobs/:jobId', element: <ImportJobPage /> },
+              { path: 'webhooks', element: <WebhooksPage /> },
+              { path: 'webhooks/new', element: <WebhookPage /> },
+              { path: 'webhooks/:webhookId', element: <WebhookPage /> },
             ],
           },
           { path: '/browse/:issueKey', element: <IssuePage /> },

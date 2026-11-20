@@ -55,6 +55,8 @@
 - **Complete REST API** with interactive OpenAPI documentation. The web interface uses the same API.
 - **Personal API tokens** for scripts and other programs: read-only or not, with an optional last
   day, stored only as a hash, and removable by the user and by administrators.
+- **Webhooks**: issue events (created, changed, commented, deleted) posted as signed JSON to
+  other programs, per project or for all, in order, with retries and a delivery log.
 - **Built-in help:** searchable user and administrator guides inside the application.
 - **Software bill of materials (CycloneDX SBOMs)** for the server and the web UI.
 - **Demo mode** for hosting a public try-it-out instance.
