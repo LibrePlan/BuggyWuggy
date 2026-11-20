@@ -300,7 +300,11 @@ public class LicenseService {
         return details;
     }
 
-    /** Queues a mail to {@link #SALES}, with {@code details} as {@value #ATTACHMENT}, and returns its text. */
+    /**
+     * Queues a mail to {@link #SALES}, with {@code details} as {@value #ATTACHMENT}, and returns its
+     * text. The contact person is the Reply-To: an answer (or a mailbox that makes issues of these
+     * mails) reaches them, not the installation's own sender address.
+     */
     private String send(String subject, String intro, Map<String, String> fields, Map<String, Object> details) {
         StringBuilder text = new StringBuilder(intro).append("\n\n");
         StringBuilder html = new StringBuilder("<p>").append(HtmlUtils.htmlEscape(intro)).append("</p><table>");
@@ -311,7 +315,8 @@ public class LicenseService {
         });
         html.append("</table>");
         byte[] attachment = json.writerWithDefaultPrettyPrinter().writeValueAsBytes(details);
-        outbox.enqueue(null, SALES, null, Map.of(), subject, HtmlMail.document(html.toString()), text.toString(),
+        Object contact = details.get("contact") instanceof Map<?, ?> c ? c.get("email") : null;
+        outbox.enqueue(null, SALES, contact == null ? null : contact.toString(), Map.of(), subject, HtmlMail.document(html.toString()), text.toString(),
                 new MailAttachment(ATTACHMENT, "application/json", attachment));
         return text.toString();
     }
