@@ -130,7 +130,11 @@ jobs:
   deploy-test:
     name: Deploy to the test server
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_HOST != ''
+    # A push to main, or a build of main started by hand (Actions → Run workflow), for
+    # instance again after a failure that was not the code's. Pull requests never deploy.
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && github.ref == 'refs/heads/main' && vars.DEPLOY_HOST != ''
     runs-on: docker
     timeout-minutes: 15
     env:
