@@ -126,7 +126,7 @@ The dependencies live in these tables, not as *Blocks* links between issues. A l
   - sets the run to `ESCALATED`;
   - shows a **red banner** on the process and on the step, with the reason;
   - colours the step red in the process view;
-  - mails the initiator *Process escalated: <step> — <reason>*.
+  - mails the initiator *Process escalated: <step> — <reason>* (or the project administrators, when the initiator is deactivated).
 
 ### The initiator
 Only the initiator can change a running process:
@@ -138,6 +138,8 @@ Only the initiator can change a running process:
 - **Stop** the process: open steps are closed with resolution *Won't Fix*, and the run becomes `STOPPED`.
 
 When none of the steps are escalated any more, the run is `RUNNING` again.
+
+**When the initiator is deactivated,** the project administrators (`ADMINISTER_PROJECT`) take over the initiator's role for that run: they can use the actions above, and they get the escalation mails. The process view shows *Initiator deactivated — handled by the project administrators*.
 
 ### Completion
 - The run is `COMPLETED` when every step is *done* or *skipped*.
@@ -155,7 +157,7 @@ When none of the steps are escalated any more, the run is `RUNNING` again.
 
 ## Deadlines
 
-- A duration is optional per step: a number of hours or days, counted from activation.
+- A duration is optional per step: a number of hours or days in **calendar time**, counted from activation. Weekends and holidays count too.
 - A scheduled job checks for overdue steps every minute. Several BuggyWuggy instances can share one database, so the job claims rows with `for update skip locked`, and every overdue step escalates once.
 
 ## History, notifications, webhooks
@@ -178,7 +180,7 @@ When none of the steps are escalated any more, the run is `RUNNING` again.
   - every step indented by its depth (the longest chain of steps it waits for);
   - arrows from the steps it waits for;
   - parallel steps at the same depth.
-- Each step shows its state colour, assignee or group (planned while waiting), due date, and escalation in red. Hidden steps the user may not see are shown as *Step n: no access rights*, with only the state.
+- Each step shows its state colour, assignee or group (planned while waiting, visible to everyone who may see the step), due date, and escalation in red. Hidden steps the user may not see are shown as *Step n: no access rights*, with only the state.
 - At the top of every step issue: *Part of process <name> — view the flow*, which opens the same view with this step highlighted.
 - The initiator sees the actions (reopen, reassign, skip, deadline, add step, stop) in the view. For others they are disabled with a "?".
 
@@ -267,11 +269,8 @@ Taken on 2026-11-20:
 8. **Process creator** is its own project permission, `MANAGE_PROCESSES`.
 9. **Tests and processes stay separate.** A step can be a test run; it is done when that test **passed**.
 10. **Deadlines and durations** are optional. An overdue step escalates to the initiator.
-
-## Open questions
-
-1. **What is a rejection?** This plan counts every resolution other than *Done* and *Fixed* as a rejection. Should resolutions instead get a setting *counts as success*, so that administrators decide?
-2. **When the initiator is gone:** if the initiator is deactivated, who takes over the initiator's role? This plan has no fallback yet. Should project administrators take over, or can the initiator role be handed to someone else?
-3. **Hours and days:** count durations in calendar time, or in working days (skipping weekends, and perhaps holidays, which needs a calendar)?
-4. **Planned assignees:** may everyone who can see a waiting step also see who will do it? This plan shows the planned assignee or group.
-5. **Tests plan change:** a test run on a process step is a test run on a *Sub-task*, not on an issue of type Test. The tests plan then needs one exception: "a test run is an issue of type Test, *or a process step*". Agreed?
+11. **Rejection:** every resolution other than *Done* and *Fixed* counts as a rejection.
+12. **Deactivated initiator:** the project administrators take over the initiator's role and escalation mails for that run.
+13. **Durations** are counted in calendar time.
+14. **Planned assignees** of waiting steps are visible to everyone who may see the step.
+15. **Test steps** are test runs on a Sub-task; the tests plan allows this as its one exception to "a test run is an issue of type Test".

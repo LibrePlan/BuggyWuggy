@@ -15,7 +15,7 @@ Reusable test cases with steps, run as issues of type Test.
 | Name | What it is |
 |---|---|
 | **Test case** | The definition: name, description and an ordered list of steps (action + expected result). Belongs to one project. Managed by test creators. |
-| **Test run** | An issue of type *Test*, created from a test case. It has its own copy of the steps, each with a result. |
+| **Test run** | An issue of type *Test*, created from a test case. It has its own copy of the steps, each with a result. The one exception: a step of a process (a *Sub-task*, see [plan-processes.md](plan-processes.md)) can also carry a test run. |
 
 A test run copies the steps when it is created. Editing a test case later never changes runs that already exist, so a finished run always shows what was actually tested.
 
@@ -45,7 +45,7 @@ A test run copies the steps when it is created. Editing a test case later never 
 - In the create dialog, choosing the type *Test* adds a required field **Test**. It lists the project's test cases that are not archived.
 - The summary is prefilled as `Test: <name>` and can be changed.
 - The server copies the steps into `issue_test_step` in the same transaction as the issue, all with result `NOT_RUN`.
-- `testCaseId` is required for type Test and refused for every other type.
+- `testCaseId` is required for type Test and refused for every other type. The one exception is a process step: the processes feature creates a test run on its Sub-task through the tests module's service, not through this field.
 - When the project has no test cases, the type *Test* stays in the list but is disabled, with a "?" that explains that a test creator must first make a test case.
 
 **Recording results**
