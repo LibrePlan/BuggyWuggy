@@ -25,9 +25,9 @@ A test run copies the steps when it is created. Editing a test case later never 
 - **Project permission `MANAGE_TESTS`** (shown as *Test creator*):
   - added to `ProjectPermission` and to the check constraint `permission_grant_permission_ck`;
   - granted by default to the project role *Administrators* in every permission scheme.
-- **`test_case`:** `id`, `project_id` (FK project, on delete cascade), `name`, `description` (Markdown), `archived boolean`, `created_by`, `created_at`, `updated_at`. Unique `(project_id, lower(name))`.
+- **`test_case`:** `id`, `project_id` (FK project, on delete cascade), `name`, `description` (Markdown), `auto_resolve boolean default false`, `archived boolean`, `created_by`, `created_at`, `updated_at`. Unique `(project_id, lower(name))`.
 - **`test_case_step`:** `id`, `test_case_id` (FK, on delete cascade), `position`, `action` (Markdown, required), `expected_result` (Markdown, optional). Unique `(test_case_id, position)`.
-- **`issue_test_run`:** `issue_id` (PK, FK issue, on delete cascade), `test_case_id` (FK test_case, on delete set null), `test_case_name` (a copy, so the run still says which test it was), `outcome` (`PASSED` or `FAILED`; null while not complete), `completed_at` (null while not complete).
+- **`issue_test_run`:** `issue_id` (PK, FK issue, on delete cascade), `test_case_id` (FK test_case, on delete set null), `test_case_name` (a copy, so the run still says which test it was), `auto_resolve` (copied from the test case), `outcome` (`PASSED` or `FAILED`; null while not complete), `completed_at` (null while not complete).
 - **`issue_test_step`:** `id`, `issue_id` (FK issue_test_run, on delete cascade), `position`, `action`, `expected_result`, `result` (text, default `NOT_RUN`), `note` (Markdown, optional), `result_by` (FK user_account, nullable), `result_at`.
 
 **Step results are open for extension.** `result` is text with a check constraint (`NOT_RUN`, `PASSED`, `FAILED`), mapped to a Java enum, like `status.category`. Each value says whether it is *final* (counts as run) and whether it makes the run fail. A later state such as `BLOCKED` (not final) or `SKIPPED` (final, does not fail the run) is then one value in the enum plus a migration that widens the check constraint. The completion rule and the UI work from those two properties, not from a fixed list.
@@ -57,7 +57,8 @@ A test run copies the steps when it is created. Editing a test case later never 
 **Complete**
 - The run is complete when no step has a non-final result (now: no step is *not run*). Then `completed_at` is set and `outcome` becomes `FAILED` when any step failed, otherwise `PASSED`.
 - Changing a result of a complete run recomputes this. Back to *not run* makes the run incomplete again (`outcome` and `completed_at` cleared); passed ↔ failed changes the outcome.
-- Completion does **not** change the issue's status. Resolving or closing the issue stays a normal workflow step for the user.
+- By default, completion does **not** change the issue's status: resolving or closing stays a normal workflow step for the user.
+- **Auto-resolve:** a test case can have *Resolve the run automatically when it passes* switched on. The run copies this setting when it is created. When such a run completes with outcome `PASSED`, and the user who set the last result may transition the issue, the issue goes through a transition from its current status to a Done status, with resolution *Done* (in the Default workflow: *Resolve Issue*). A run that completes as `FAILED` is never resolved automatically: someone has to look at it. When there is no such transition, or the user may not transition, the run is only marked complete.
 - The completion check runs in the same transaction as the result change, with a row lock on the run. Two people finishing the last two steps at the same moment then still get one consistent outcome.
 
 **Other actions**
@@ -94,6 +95,7 @@ All endpoints follow the existing conventions (project key in the path, ProblemD
   - **New test case**, Edit, Copy, Archive and Delete, disabled with a "?" for users without *Test creator*.
 - **Test case editor:**
   - name and description (Markdown editor);
+  - a checkbox *Resolve the run automatically when it passes*;
   - steps as a list with arrows to reorder them, like versions in project settings;
   - per step an *Action* field and an optional *Expected result* field, both Markdown.
 - **Create issue dialog** (`CreateIssueModal.tsx`): the extra field Test when the type is Test.
@@ -125,7 +127,9 @@ All endpoints follow the existing conventions (project key in the path, ProblemD
   - when the last *not run* step gets a result, `completedAt` is set; the outcome is `PASSED` when all passed and `FAILED` when one failed;
   - setting a step back to *not run* makes the run incomplete again;
   - changing a step from failed to passed changes the outcome;
-  - the issue's status never changes because of results.
+  - without auto-resolve, the issue's status never changes because of results;
+  - with auto-resolve, a passed run is resolved with *Done*, a failed run is not, and a user without `TRANSITION_ISSUE` only completes the run;
+  - switching auto-resolve on a test case does not change runs that already exist.
 - **Concurrency:** two transactions finish the last two steps at the same moment; the run ends up complete with the right outcome, and completion is recorded once.
 - **Extension:** a test-only result state that is not final keeps a run incomplete, without changes to the completion code.
 - **Rules:**
@@ -143,7 +147,7 @@ Taken on 2026-11-20:
 
 1. **Test creator is a project permission** (`MANAGE_TESTS`), granted through permission schemes, with test cases per project. Not a global permission with a shared library.
 2. **Results can be set by the assignee, the reporter and `EDIT_ISSUE` holders.**
-3. **A complete run is only marked complete** (with its outcome). It does not resolve or close the issue; that stays a workflow step for the user.
+3. **A complete run is marked complete** (with its outcome). It only resolves the issue when its test case has *auto-resolve* switched on and the run passed; otherwise resolving stays a workflow step for the user.
 4. **Steps are passed / failed / not run**, with an optional note, stored so that more states can be added later.
 5. **A step has an action and an optional expected result.**
 
