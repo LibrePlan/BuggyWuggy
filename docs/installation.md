@@ -3,15 +3,19 @@
 This guide explains how to install, configure, run, back up and upgrade a BuggyWuggy server.
 
 > **Status:** BuggyWuggy is in early development. It is fine for trying out and for small
-> internal use, but there are no releases yet. You build it from source, and administration is
-> partly done through the REST API (see [Administration](#administration)).
+> internal use. Released versions are on the
+> [releases page on GitHub](https://github.com/LibrePlan/BuggyWuggy/releases); you can also
+> build it from source. Administration is partly done through the REST API (see
+> [Administration](#administration)).
 
 ## Contents
 
 1. [Overview](#overview)
 2. [Requirements](#requirements)
 3. [Preparing the database](#preparing-the-database)
-4. [Building BuggyWuggy](#building-buggywuggy)
+4. [Getting BuggyWuggy](#getting-buggywuggy)
+   - [Downloading a release](#downloading-a-release)
+   - [Building from source](#building-from-source)
 5. [Configuration](#configuration)
    - [E-mail](#e-mail)
    - [Issues from e-mail](#issues-from-e-mail)
@@ -87,7 +91,32 @@ docker compose up -d
 
 Do not use these default credentials in production.
 
-## Building BuggyWuggy
+## Getting BuggyWuggy
+
+BuggyWuggy is one file, `buggywuggy.jar`. Download it from a release, or build it yourself.
+
+### Downloading a release
+
+Each version is published on the
+[releases page on GitHub](https://github.com/LibrePlan/BuggyWuggy/releases). A release has:
+
+| File | Contents |
+|---|---|
+| `buggywuggy-<version>.jar` | BuggyWuggy itself: server and web interface. |
+| `buggywuggy-<version>.jar.sha256` | The SHA-256 checksum of the jar. |
+| `buggywuggy-<version>-server.cdx.json`, `buggywuggy-<version>-web.cdx.json` | The SBOMs (CycloneDX): the libraries in the server and the web interface. |
+
+Download the jar and its checksum, check the jar, and install it under its usual name:
+
+```sh
+sha256sum -c buggywuggy-<version>.jar.sha256
+sudo install -D -m 644 buggywuggy-<version>.jar /opt/buggywuggy/buggywuggy.jar
+```
+
+Every release is built and tested from its version tag (`v<version>`) in the repository, so its
+source code is that tag.
+
+### Building from source
 
 ```sh
 git clone <repository-url> buggywuggy
