@@ -19,13 +19,17 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.buggywuggy.common.ApiNullable;
+import org.buggywuggy.common.BuildVersionController;
+import org.buggywuggy.common.BuildVersionController.BuildVersionResponse;
 import org.buggywuggy.license.LicensePricing.Quote;
 import org.buggywuggy.mail.HtmlMail;
+import org.buggywuggy.mail.MailAttachment;
 import org.buggywuggy.mail.MailOutbox;
 import org.buggywuggy.mail.MailTransport;
 import org.buggywuggy.security.BuggyWuggyPrincipal;
@@ -38,6 +42,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.HtmlUtils;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Annual donations that support the project (called licenses in the code and the database). An
@@ -53,6 +58,13 @@ public class LicenseService {
 
     /** Where quotation requests and expiry reminders go. */
     public static final String SALES = "sales@buggywuggy.org";
+
+    /**
+     * Attached to every mail to {@link #SALES}: the request in a form a program can read
+     * (format {@value #FORMAT}, field "kind" is "quotation" or "renewal").
+     */
+    public static final String ATTACHMENT = "buggywuggy-donation.json";
+    public static final String FORMAT = "buggywuggy-donation/1";
 
     private static final Logger log = LoggerFactory.getLogger(LicenseService.class);
 
@@ -112,9 +124,12 @@ public class LicenseService {
     private final MailTransport transport;
     private final Clock clock;
     private final String baseUrl;
+    private final BuildVersionController version;
+    private final JsonMapper json;
 
     public LicenseService(NamedParameterJdbcTemplate jdbc, LicensePricing pricing, LicenseCode codes,
-            MailOutbox outbox, MailTransport transport, Clock clock, @Value("${buggywuggy.base-url}") String baseUrl) {
+            MailOutbox outbox, MailTransport transport, Clock clock, @Value("${buggywuggy.base-url}") String baseUrl,
+            BuildVersionController version, JsonMapper json) {
         this.jdbc = jdbc;
         this.pricing = pricing;
         this.codes = codes;
@@ -122,6 +137,8 @@ public class LicenseService {
         this.transport = transport;
         this.clock = clock;
         this.baseUrl = baseUrl;
+        this.version = version;
+        this.json = json;
     }
 
     private LocalDate today() {
@@ -226,7 +243,21 @@ public class LicenseService {
         String subject = "BuggyWuggy quotation request: " + request.companyName().strip();
         String intro = "A BuggyWuggy administrator asks for a quotation for an annual donation. Answer with a donation "
                 + "code for the challenge below.";
-        String text = send(subject, intro, fields);
+        Map<String, Object> details = details("quotation", challenge, request.companyName().strip(),
+                request.contactName().strip(), request.contactEmail().strip(), phone, quote.countryCode(),
+                quote.countryName(), quote.users(), quote.currency(), quote.yearlyTotal());
+        details.put("requestedAt", now.truncatedTo(ChronoUnit.SECONDS).toString());
+        details.put("requestedBy", user.getUsername());
+        Map<String, Object> price = new LinkedHashMap<>();
+        price.put("perUserMonth", quote.pricePerUserMonth());
+        price.put("currencyName", quote.currencyName());
+        price.put("basePerUserMonthEur", quote.basePricePerUserEur());
+        price.put("bigMacPrice", quote.bigMacPrice());
+        price.put("referenceBigMacPriceEur", quote.referenceBigMacPrice());
+        price.put("bigMacIndexDate", quote.indexDate() == null ? null : quote.indexDate().toString());
+        price.put("calculation", calculation(quote));
+        details.put("price", price);
+        String text = send(subject, intro, fields, details);
         return new QuotationResponse(challenge, quote, transport.configured(), SALES, subject, text);
     }
 
@@ -239,8 +270,38 @@ public class LicenseService {
                 + " EUR (Big Mac index of " + quote.indexDate() + ")";
     }
 
-    /** Queues a mail to {@link #SALES} and returns its text. */
-    private String send(String subject, String intro, Map<String, String> fields) {
+    /** What every {@value #ATTACHMENT} has; the caller adds what is particular to its kind. */
+    private Map<String, Object> details(String kind, String challenge, String company, String contactName,
+            String contactEmail, String contactPhone, String countryCode, String countryName, int users,
+            String currency, BigDecimal yearlyTotal) {
+        BuildVersionResponse build = version.version();
+        Map<String, Object> contact = new LinkedHashMap<>();
+        contact.put("name", contactName);
+        contact.put("email", contactEmail);
+        contact.put("phone", contactPhone);
+        Map<String, Object> country = new LinkedHashMap<>();
+        country.put("code", countryCode);
+        country.put("name", countryName);
+        Map<String, Object> installation = new LinkedHashMap<>();
+        installation.put("url", baseUrl);
+        installation.put("version", build.version());
+        installation.put("commit", build.commit());
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("format", FORMAT);
+        details.put("kind", kind);
+        details.put("challenge", challenge);
+        details.put("company", company);
+        details.put("contact", contact);
+        details.put("country", country);
+        details.put("users", users);
+        details.put("currency", currency);
+        details.put("yearlyTotal", yearlyTotal);
+        details.put("installation", installation);
+        return details;
+    }
+
+    /** Queues a mail to {@link #SALES}, with {@code details} as {@value #ATTACHMENT}, and returns its text. */
+    private String send(String subject, String intro, Map<String, String> fields, Map<String, Object> details) {
         StringBuilder text = new StringBuilder(intro).append("\n\n");
         StringBuilder html = new StringBuilder("<p>").append(HtmlUtils.htmlEscape(intro)).append("</p><table>");
         fields.forEach((label, value) -> {
@@ -249,7 +310,9 @@ public class LicenseService {
                     .append("</b></td><td>").append(HtmlUtils.htmlEscape(value)).append("</td></tr>");
         });
         html.append("</table>");
-        outbox.enqueue(null, SALES, subject, HtmlMail.document(html.toString()), text.toString());
+        byte[] attachment = json.writerWithDefaultPrettyPrinter().writeValueAsBytes(details);
+        outbox.enqueue(null, SALES, null, Map.of(), subject, HtmlMail.document(html.toString()), text.toString(),
+                new MailAttachment(ATTACHMENT, "application/json", attachment));
         return text.toString();
     }
 
@@ -311,10 +374,16 @@ public class LicenseService {
                     fields.put("Yearly total", rs.getBigDecimal("yearly_total").toPlainString() + " "
                             + rs.getString("currency"));
                     fields.put("Installation", baseUrl);
+                    String country = rs.getString("country_code");
+                    Map<String, Object> details = details("renewal", rs.getString("challenge"),
+                            rs.getString("company_name"), rs.getString("contact_name"), rs.getString("contact_email"),
+                            phone, country, pricing.country(country).map(LicensePricing.Country::name).orElse(country), rs.getInt("users"),
+                            rs.getString("currency"), rs.getBigDecimal("yearly_total"));
+                    details.put("validUntil", fields.get("Valid until"));
                     send("BuggyWuggy donation expires on " + fields.get("Valid until") + ": "
                             + rs.getString("company_name"),
                             "The annual BuggyWuggy donation below expires within a month. Time to discuss a renewal.",
-                            fields);
+                            fields, details);
                     jdbc.update("update license set reminder_sent_at = :at where id = :id",
                             new MapSqlParameterSource().addValue("at", Timestamp.from(clock.instant()))
                                     .addValue("id", rs.getLong("id")));

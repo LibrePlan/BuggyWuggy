@@ -8,6 +8,7 @@ package org.buggywuggy.license;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
+import java.util.Map;
 import org.buggywuggy.ApiClient;
 import org.buggywuggy.IntegrationTest;
 import org.junit.jupiter.api.AfterEach;
@@ -15,6 +16,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.util.ReflectionTestUtils;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /** Quotation requests, donation codes and the support status, with a key pair of the test. */
 class LicenseIntegrationTest extends IntegrationTest {
@@ -49,6 +52,15 @@ class LicenseIntegrationTest extends IntegrationTest {
                 Integer.class);
     }
 
+    /** The {@value LicenseService#ATTACHMENT} of the last mail. */
+    private JsonNode attachedDetails() {
+        Map<String, Object> row = jdbc.queryForMap(
+                "select attachment_name, attachment_type, attachment_data from mail_message order by id desc limit 1");
+        assertThat(row.get("attachment_name")).isEqualTo(LicenseService.ATTACHMENT);
+        assertThat(row.get("attachment_type")).isEqualTo("application/json");
+        return JsonMapper.builder().build().readTree((byte[]) row.get("attachment_data"));
+    }
+
     @Test
     void donationCodeMakesAnActiveSupporterUntilItExpires() {
         assertThat((Boolean) client().get("/api/v1/donation").json("$.show")).isTrue();
@@ -78,6 +90,20 @@ class LicenseIntegrationTest extends IntegrationTest {
         assertThat(jdbc.queryForObject("select html_body from mail_message", String.class))
                 .contains("Acme &lt;BV&gt;").doesNotContain("<BV>");
         assertThat((String) admin.get("/api/v1/admin/license").json("$.requests[0].challenge")).isEqualTo(challenge);
+        JsonNode details = attachedDetails();
+        assertThat(details.path("format").asString()).isEqualTo(LicenseService.FORMAT);
+        assertThat(details.path("kind").asString()).isEqualTo("quotation");
+        assertThat(details.path("challenge").asString()).isEqualTo(challenge);
+        assertThat(details.path("company").asString()).isEqualTo("Acme <BV>");
+        assertThat(details.path("contact").path("email").asString()).isEqualTo("ada@acme.example");
+        assertThat(details.path("contact").path("phone").asString()).isEqualTo("+31 20 123 4567");
+        assertThat(details.path("country").path("code").asString()).isEqualTo("NL");
+        assertThat(details.path("users").asInt()).isEqualTo(25);
+        assertThat(details.path("currency").asString()).isEqualTo("EUR");
+        assertThat(details.path("yearlyTotal").decimalValue()).isEqualByComparingTo("2100.00");
+        assertThat(details.path("requestedBy").asString()).isEqualTo("admin");
+        assertThat(details.path("price").path("calculation").asString()).isNotBlank();
+        assertThat(details.path("installation").path("version").asString()).isNotBlank();
 
         // A code for another challenge, or one that has expired.
         assertThat(admin.post("/api/v1/admin/license", """
@@ -105,6 +131,11 @@ class LicenseIntegrationTest extends IntegrationTest {
         assertThat(mailsToSales()).isEqualTo(2);
         assertThat(jdbc.queryForObject("select subject from mail_message order by id desc limit 1", String.class))
                 .startsWith("BuggyWuggy donation expires on");
+        JsonNode renewal = attachedDetails();
+        assertThat(renewal.path("kind").asString()).isEqualTo("renewal");
+        assertThat(renewal.path("challenge").asString()).isEqualTo(challenge);
+        assertThat(renewal.path("validUntil").asString()).isEqualTo(LocalDate.now().plusDays(20).toString());
+        assertThat(renewal.path("country").path("name").asString()).isEqualTo("Netherlands");
 
         // After the last day, the support has expired and the request to donate is back.
         jdbc.update("update license set valid_until = current_date - 1");
