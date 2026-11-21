@@ -36,8 +36,10 @@ fi
 status=0
 while read -r local_ref local_sha _remote_ref _remote_sha; do
     [[ $local_sha == "$zero" ]] && continue # deleting a branch
-    if ! $check "$local_sha" >&2; then
-        echo "pre-push: CI has not succeeded for ${local_sha:0:10} ($local_ref); not pushed to '$remote'." >&2
+    # An annotated tag arrives as the id of the tag object: CI ran for the commit it points to.
+    commit=$(git rev-parse --verify --quiet "$local_sha^{commit}" || echo "$local_sha")
+    if ! $check "$commit" >&2; then
+        echo "pre-push: CI has not succeeded for ${commit:0:10} ($local_ref); not pushed to '$remote'." >&2
         status=1
     fi
 done
