@@ -43,8 +43,12 @@ public class OpenApiConfiguration {
      * Schema properties ({@code Schema.property}) annotated with {@link ApiNullable}. Collected
      * while the schemas are built and applied afterwards: during building, the call for a list
      * property cannot be told apart from the call for its items.
+     *
+     * <p>Static: swagger keeps its model converters in a JVM-wide list, so with several
+     * application contexts in one JVM (tests) the property customizer of another context may be
+     * the one that sees the properties. Nullability belongs to the classes, so sharing is right.
      */
-    private final Set<String> nullableProperties = ConcurrentHashMap.newKeySet();
+    private static final Set<String> nullableProperties = ConcurrentHashMap.newKeySet();
 
     @Bean
     PropertyCustomizer nullablePropertyCustomizer() {
