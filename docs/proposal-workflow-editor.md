@@ -1,5 +1,8 @@
-**Type:** Feature
-**Summary:** Configurable statuses and workflows for administrators
+# Configurable statuses and workflows
+
+Status: proposal · Last updated: 2026-11-20 · See also: [domain-model.md](domain-model.md), [scope.md](scope.md)
+
+Statuses, workflows and workflow schemes managed by administrators, with status remapping when issues get another workflow.
 
 ## Problem
 
