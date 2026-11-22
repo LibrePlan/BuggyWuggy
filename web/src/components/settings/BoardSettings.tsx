@@ -22,6 +22,15 @@ export function BoardSettings({ projectKey, readOnly }: { projectKey: string; re
   const done = (saved: BoardConfigResponse) => {
     queryClient.setQueryData(keys.boardConfig(projectKey), saved);
     void queryClient.invalidateQueries({ queryKey: keys.board(projectKey), exact: true });
+    if (saved.customStatusIds.length || config.data?.customStatusIds.length) {
+      void queryClient.invalidateQueries({
+        predicate: ({ queryKey }) =>
+          (queryKey[0] === 'issue' && typeof queryKey[1] === 'string'
+            && queryKey[1].startsWith(`${projectKey}-`))
+          || (queryKey[0] === 'project' && queryKey[1] === projectKey && queryKey[2] === 'issues'),
+      });
+      void queryClient.invalidateQueries({ queryKey: keys.allSearches });
+    }
     notifySaved();
   };
   const save = useMutation({
@@ -51,11 +60,12 @@ export function BoardSettings({ projectKey, readOnly }: { projectKey: string; re
       <BoardConfigEditor
         key={`${c.own}-${c.columns.map((x) => x.id).join(',')}`}
         config={c}
+        allowCustomStatuses
         saving={save.isPending}
         readOnly={readOnly}
         onSave={(request) => save.mutate(request)}
         extraActions={
-          c.own && (
+          c.own && c.customStatusIds.length === 0 && (
             <Button variant="subtle" color="gray" loading={reset.isPending} onClick={() => reset.mutate()}>
               {t('board.config.useDefault')}
             </Button>

@@ -2,14 +2,12 @@
 // Copyright (C) 2026 The BuggyWuggy contributors
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { ActionIcon, Button, Group, MultiSelect, NumberInput, Paper, Select, Stack, Text, TextInput } from '@mantine/core';
+import { ActionIcon, Button, Group, MultiSelect, NumberInput, Paper, Select, Stack, Text, TextInput, Title } from '@mantine/core';
 import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useStatuses } from '../api/queries';
 import type { BoardConfigRequest, BoardConfigResponse, Swimlanes } from '../api/types';
 import { moved } from '../lib/order';
-import { ErrorAlert, PageLoader } from './QueryState';
 
 export const SWIMLANES: Swimlanes[] = ['NONE', 'ASSIGNEE', 'EPIC', 'PRIORITY'];
 
@@ -32,34 +30,122 @@ export function BoardConfigEditor({
   readOnly,
   onSave,
   extraActions,
+  allowCustomStatuses = false,
 }: {
   config: BoardConfigResponse;
   saving: boolean;
   readOnly: boolean;
   onSave: (request: BoardConfigRequest) => void;
   extraActions?: ReactNode;
+  allowCustomStatuses?: boolean;
 }) {
   const { t } = useTranslation();
-  const statuses = useStatuses();
   const [swimlanes, setSwimlanes] = useState<Swimlanes>(config.swimlanes);
   const [resolvedDays, setResolvedDays] = useState<number>(config.resolvedDays);
   const [columns, setColumns] = useState<ColumnDraft[]>(() =>
-    config.columns.map((c) => ({ uid: nextUid++, name: c.name, statusIds: c.statusIds.map(String) })),
+    config.columns.map((c) => ({
+      uid: nextUid++,
+      name: c.name,
+      statusIds: c.statusIds.map(String),
+    })),
   );
 
-  if (statuses.isPending) return <PageLoader />;
-  if (statuses.isError) return <ErrorAlert error={statuses.error} />;
+  const [customStatuses, setCustomStatuses] = useState(() =>
+    config.customStatusIds.map((id) => ({
+      id,
+      name: config.availableStatuses.find((status) => status.id === id)!.name,
+    })),
+  );
+  const [replacements, setReplacements] = useState<Record<string, string>>({});
 
   const used = new Set(columns.flatMap((c) => c.statusIds));
-  const unused = statuses.data.filter((s) => !used.has(String(s.id)));
+  const removed = config.availableStatuses.filter((s) =>
+    config.customStatusIds.includes(s.id) && !customStatuses.some((draft) => draft.id === s.id),
+  );
+  const statuses = [
+    ...config.availableStatuses.filter((s) => !config.customStatusIds.includes(s.id)),
+    ...customStatuses.filter((s) => s.name.trim()).map((s) => ({ ...s, category: 'IN_PROGRESS' })),
+  ];
+  const replacementOptions = statuses
+    .filter((s) => s.category !== 'DONE' && used.has(String(s.id)))
+    .map((s) => ({ value: String(s.id), label: s.name }));
+  const unused = statuses.filter((s) => !used.has(String(s.id)));
   const names = columns.map((c) => c.name.trim().toLowerCase());
   const duplicate = (name: string) => name.trim() !== '' && names.filter((n) => n === name.trim().toLowerCase()).length > 1;
-  const valid = columns.length > 0 && columns.every((c) => c.name.trim() !== '' && !duplicate(c.name));
+  const statusNames = statuses.map((s) => s.name.trim().toLowerCase());
+  const duplicateStatus = (name: string) => statusNames.filter((n) => n === name.trim().toLowerCase()).length > 1;
+  const valid = columns.length > 0 && columns.every((c) => c.name.trim() !== '' && !duplicate(c.name))
+    && customStatuses.every((s) => s.name.trim() !== '' && !duplicateStatus(s.name));
   const change = (index: number, patch: Partial<ColumnDraft>) =>
     setColumns(columns.map((c, i) => (i === index ? { ...c, ...patch } : c)));
 
   return (
     <Stack>
+      {allowCustomStatuses && (
+        <Stack gap="xs">
+          <Title order={4}>{t('board.config.customStatuses')}</Title>
+          <Text size="sm" c="dimmed">{t('board.config.customStatusesHelp')}</Text>
+          {customStatuses.map((status, index) => (
+            <Group key={status.id} align="flex-end" gap="xs">
+              <TextInput
+                label={t('board.config.statusName')}
+                value={status.name}
+                maxLength={100}
+                disabled={readOnly}
+                onChange={(event) => {
+                  const name = event.currentTarget.value;
+                  setCustomStatuses((current) => current.map((s) => s.id === status.id ? { ...s, name } : s));
+                }}
+                error={duplicateStatus(status.name) ? t('board.config.nameDuplicate') : undefined}
+              />
+              {!readOnly && (
+                <Group gap={4} pb={5}>
+                  <ActionIcon variant="subtle" color="gray" disabled={index === 0} aria-label={t('board.config.moveUp')}
+                    onClick={() => setCustomStatuses(moved(customStatuses, index, -1))}>
+                    <IconArrowUp size={16} />
+                  </ActionIcon>
+                  <ActionIcon variant="subtle" color="gray" disabled={index === customStatuses.length - 1}
+                    aria-label={t('board.config.moveDown')} onClick={() => setCustomStatuses(moved(customStatuses, index, 1))}>
+                    <IconArrowDown size={16} />
+                  </ActionIcon>
+                  <ActionIcon variant="subtle" color="red" aria-label={t('board.config.removeStatus')}
+                    onClick={() => {
+                      setCustomStatuses((current) => current.filter((s) => s.id !== status.id));
+                      setColumns((current) => current.map((column) => ({
+                        ...column,
+                        statusIds: column.statusIds.filter((id) => id !== String(status.id)),
+                      })));
+                    }}>
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Group>
+              )}
+            </Group>
+          ))}
+          {!readOnly && (
+            <Group>
+              <Button variant="default" leftSection={<IconPlus size={16} />} disabled={customStatuses.length >= 100}
+                onClick={() => setCustomStatuses([...customStatuses, { id: -nextUid++, name: '' }])}>
+                {t('board.config.addStatus')}
+              </Button>
+            </Group>
+          )}
+          {removed.map((status) => (
+            <Select
+              key={status.id}
+              label={t('board.config.statusReplacement', { status: status.name })}
+              description={t('board.config.statusReplacementHelp')}
+              data={replacementOptions}
+              value={replacementOptions.some((option) => option.value === replacements[status.id])
+                ? replacements[status.id]! : null}
+              onChange={(value) => setReplacements({ ...replacements, [status.id]: value ?? '' })}
+              searchable
+              clearable
+            />
+          ))}
+        </Stack>
+      )}
+      {allowCustomStatuses && <Title order={4}>{t('board.config.columns')}</Title>}
       <Stack gap="xs">
         {columns.map((column, index) => (
           <Paper key={column.uid} withBorder p="sm">
@@ -75,7 +161,7 @@ export function BoardConfigEditor({
               />
               <MultiSelect
                 label={t('board.config.statuses')}
-                data={statuses.data
+                data={statuses
                   .filter((s) => column.statusIds.includes(String(s.id)) || !used.has(String(s.id)))
                   .map((s) => ({ value: String(s.id), label: s.name }))}
                 value={column.statusIds}
@@ -151,7 +237,16 @@ export function BoardConfigEditor({
               onSave({
                 swimlanes,
                 resolvedDays,
-                columns: columns.map((c) => ({ name: c.name.trim(), statusIds: c.statusIds.map(Number) })),
+                columns: columns.map((c) => ({
+                  name: c.name.trim(), statusIds: c.statusIds.map(Number),
+                })),
+                customStatuses: customStatuses.map((s) => ({ ...s, name: s.name.trim() })),
+                removedStatusIds: removed.map((status) => status.id),
+                statusReplacements: Object.fromEntries(removed.flatMap((status) => {
+                  const replacement = replacements[status.id];
+                  return replacementOptions.some((option) => option.value === replacement)
+                    ? [[status.id, Number(replacement)]] : [];
+                })),
               })
             }
           >

@@ -36,9 +36,10 @@ class BoardIntegrationTest extends IssueTestSupport {
                 insert into board_column_status (board_column_id, board_id, status_id)
                 select c.id, c.board_id, s.id from board_column c
                 join board b on b.id = c.board_id and b.project_id is null
-                join status s on (c.name = 'To Do' and s.category = 'TODO')
+                join status s on s.project_id is null and (
+                                 (c.name = 'To Do' and s.category = 'TODO')
                               or (c.name = 'In Progress' and s.category = 'IN_PROGRESS')
-                              or (c.name = 'Done' and s.category = 'DONE')""");
+                              or (c.name = 'Done' and s.category = 'DONE'))""");
     }
 
     private String statusIds(String category) {
@@ -232,5 +233,81 @@ class BoardIntegrationTest extends IssueTestSupport {
         ApiClient otto = loginAs("otto", "otto-password-12");
         assertThat(otto.get("/api/v1/admin/board").status()).isEqualTo(403);
         assertThat(otto.get("/api/v1/projects/BRD/board/config").status()).isIn(403, 404);
+    }
+
+    @Test
+    void managesProjectStatusesAndReassignsIssuesOnDeletion() {
+        ApiClient admin = setupAndLoginAdmin();
+        long project = createProject(admin, "BRD", "Board");
+        createProject(admin, "OTH", "Other");
+        String issue = createIssue(admin, "BRD", "Task", "Needs review");
+        String otherIssue = createIssue(admin, "OTH", "Task", "Other project");
+        String config = "/api/v1/projects/BRD/board/config";
+        long open = statusId("Open");
+        long progress = statusId("In Progress");
+        String base = """
+                {"swimlanes": "NONE", "resolvedDays": 14, "columns": [
+                  {"name": "To Do", "statusIds": [%d]},
+                  {"name": "In Progress", "statusIds": [%d]}""".formatted(open, progress).stripTrailing();
+
+        var created = admin.put(config, base + """
+                , {"name": "Review", "statusIds": [-1, -2]}],
+                  "customStatuses": [{"id": -1, "name": "Review"}, {"id": -2, "name": "Test"}]}""");
+        assertThat(created.status()).as(created.toString()).isEqualTo(200);
+        List<Number> custom = created.json("$.customStatusIds");
+        assertThat(custom).hasSize(2);
+        long review = custom.get(0).longValue();
+        long test = custom.get(1).longValue();
+
+        assertThat((List<String>) admin.get("/api/v1/issues/" + otherIssue + "/transitions").json("$[*].to.name"))
+                .doesNotContain("Review", "Test");
+        assertThat(admin.put("/api/v1/projects/OTH/board/config", base + """
+                , {"name": "Review", "statusIds": [%d]}]}""".formatted(review)).status()).isEqualTo(400);
+        assertThat(admin.delete(config).status()).isEqualTo(400);
+        assertThat((List<String>) admin.get("/api/v1/projects/BRD/board")
+                .json("$.columns[?(@.name == 'Review')].statuses[*].name")).containsExactly("Review", "Test");
+
+        move(admin, "BRD", """
+                {"issue": "%s", "transitionId": %d}""".formatted(issue, transitionId(admin, issue, "Review")), 204);
+        assertThat(keysIn(admin, "BRD", "Review")).containsExactly(issue);
+        assertThat(transitionId(admin, issue, "Test")).isPositive();
+        assertThat(transitionId(admin, issue, "Resolve Issue")).isPositive();
+
+        var updated = admin.put(config, base + """
+                , {"name": "Quality", "statusIds": [%1$d, %2$d]}],
+                  "customStatuses": [{"id": %1$d, "name": "Test"}, {"id": %2$d, "name": "Code Review"}]}"""
+                .formatted(test, review));
+        assertThat(updated.status()).as(updated.toString()).isEqualTo(200);
+        assertThat((List<Number>) admin.get(config).json("$.customStatusIds"))
+                .containsExactly(custom.get(1), custom.get(0));
+        assertThat((List<String>) admin.get("/api/v1/projects/BRD/board").json("$.columns[*].name"))
+                .containsExactly("To Do", "In Progress", "Quality");
+        assertThat((List<String>) admin.get("/api/v1/projects/BRD/board")
+                .json("$.columns[?(@.name == 'Quality')].statuses[*].name")).containsExactly("Test", "Code Review");
+        assertThat(keysIn(admin, "BRD", "Quality")).containsExactly(issue);
+        assertThat((String) admin.get("/api/v1/issues/" + issue).json("$.status.name")).isEqualTo("Code Review");
+
+        // Removing a column leaves its workflow statuses and issues intact.
+        var unmapped = admin.put(config, base + "]}");
+        assertThat(unmapped.status()).as(unmapped.toString()).isEqualTo(200);
+        assertThat((List<Number>) unmapped.json("$.customStatusIds")).containsExactly(custom.get(1), custom.get(0));
+        assertThat((String) admin.get("/api/v1/issues/" + issue).json("$.status.name")).isEqualTo("Code Review");
+
+        String removing = base + "], \"removedStatusIds\": [%d, %d]".formatted(review, test);
+        assertThat(admin.put(config, removing + "}").status()).isEqualTo(400);
+        assertThat((String) admin.get("/api/v1/issues/" + issue).json("$.status.name")).isEqualTo("Code Review");
+        String replacement = ", \"statusReplacements\": {\"%d\": %%d}}".formatted(review);
+        assertThat(admin.put(config, removing + replacement.formatted(test)).status()).isEqualTo(400);
+        var deleted = admin.put(config, removing + replacement.formatted(open));
+        assertThat(deleted.status()).as(deleted.toString()).isEqualTo(200);
+        assertThat((List<Number>) deleted.json("$.customStatusIds")).isEmpty();
+        assertThat(keysIn(admin, "BRD", "To Do")).containsExactly(issue);
+        assertThat((List<String>) admin.get("/api/v1/issues/" + issue + "/history").json("$[*].items[*].toText"))
+                .contains("Open");
+        assertThat(admin.delete(config).status()).isEqualTo(200);
+
+        jdbc.update("delete from project where id = ?", project);
+        assertThat(jdbc.queryForObject("select count(*) from workflow where project_id = ?", Integer.class, project))
+                .isZero();
     }
 }
