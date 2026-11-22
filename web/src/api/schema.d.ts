@@ -1839,10 +1839,20 @@ export interface components {
             /** Format: int32 */
             resolvedDays: number;
             columns: components["schemas"]["ColumnRequest"][];
+            customStatuses?: components["schemas"]["CustomStatusRequest"][];
+            removedStatusIds?: number[];
+            statusReplacements?: {
+                [key: string]: number;
+            };
         };
         ColumnRequest: {
             name: string;
             statusIds: number[];
+        };
+        CustomStatusRequest: {
+            /** Format: int64 */
+            id: number;
+            name: string;
         };
         BoardConfigResponse: {
             own: boolean;
@@ -1851,12 +1861,21 @@ export interface components {
             /** Format: int32 */
             resolvedDays: number;
             columns: components["schemas"]["ColumnConfig"][];
+            availableStatuses: components["schemas"]["StatusRef"][];
+            customStatusIds: number[];
         };
         ColumnConfig: {
             /** Format: int64 */
             id: number;
             name: string;
             statusIds: number[];
+        };
+        StatusRef: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** @enum {string} */
+            category: "TODO" | "IN_PROGRESS" | "DONE";
         };
         ChangeOwnPasswordRequest: {
             currentPassword: string;
@@ -2173,13 +2192,6 @@ export interface components {
             /** Format: int64 */
             id: number;
             name: string;
-        };
-        StatusRef: {
-            /** Format: int64 */
-            id: number;
-            name: string;
-            /** @enum {string} */
-            category: "TODO" | "IN_PROGRESS" | "DONE";
         };
         TransitionRequest: {
             /** Format: int64 */

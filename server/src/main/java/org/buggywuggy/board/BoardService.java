@@ -34,7 +34,6 @@ import org.buggywuggy.issue.IssueDtos.PriorityRef;
 import org.buggywuggy.issue.IssueDtos.ProjectRef;
 import org.buggywuggy.issue.IssueDtos.StatusRef;
 import org.buggywuggy.issue.IssueType;
-import org.buggywuggy.issue.Status;
 import org.buggywuggy.project.Project;
 import org.buggywuggy.project.ProjectAccess;
 import org.buggywuggy.project.ProjectPermission;
@@ -64,13 +63,15 @@ public class BoardService {
     private final ProjectService projects;
     private final UrgencyService urgency;
     private final Clock clock;
+    private final BoardStatuses boardStatuses;
 
     public BoardService(NamedParameterJdbcTemplate jdbc, ProjectService projects, UrgencyService urgency,
-            Clock clock) {
+            Clock clock, BoardStatuses boardStatuses) {
         this.jdbc = jdbc;
         this.projects = projects;
         this.urgency = urgency;
         this.clock = clock;
+        this.boardStatuses = boardStatuses;
     }
 
     // --- configuration ---------------------------------------------------------------
@@ -92,7 +93,7 @@ public class BoardService {
                 .stream().findFirst().orElseGet(this::defaultBoard);
     }
 
-    private BoardConfigResponse config(Board board) {
+    private List<ColumnConfig> columns(Board board) {
         Map<Long, ColumnConfig> columns = new LinkedHashMap<>();
         jdbc.query("""
                 select c.id, c.name, cs.status_id
@@ -108,18 +109,26 @@ public class BoardService {
                 column.statusIds().add(statusId);
             }
         });
-        return new BoardConfigResponse(board.own(), board.swimlanes(), board.resolvedDays(),
-                List.copyOf(columns.values()));
+        return List.copyOf(columns.values());
+    }
+
+    private BoardConfigResponse config(Board board, Long project) {
+        return new BoardConfigResponse(board.own(), board.swimlanes(), board.resolvedDays(), columns(board),
+                boardStatuses.available(project), project == null ? List.of() : boardStatuses.custom(project));
     }
 
     @Transactional(readOnly = true)
     public BoardConfigResponse defaultConfig() {
-        return config(defaultBoard());
+        return config(defaultBoard(), null);
     }
 
     public BoardConfigResponse saveDefault(BoardConfigRequest request) {
         Board board = defaultBoard();
-        save(board.id(), request);
+        if ((request.customStatuses() != null && !request.customStatuses().isEmpty())
+                || (request.removedStatusIds() != null && !request.removedStatusIds().isEmpty())) {
+            throw badRequest("board.status-project-only");
+        }
+        save(board.id(), null, request);
         return defaultConfig();
     }
 
@@ -127,31 +136,37 @@ public class BoardService {
     @Transactional(readOnly = true)
     public BoardConfigResponse projectConfig(BuggyWuggyPrincipal user, String projectIdOrKey) {
         ProjectAccess access = projects.access(user, projectIdOrKey).require(ProjectPermission.ADMINISTER_PROJECT);
-        return config(boardOf(access.projectId()));
+        return config(boardOf(access.projectId()), access.projectId());
     }
 
     /** Gives the project columns of its own (or changes them). */
     public BoardConfigResponse saveProject(BuggyWuggyPrincipal user, String projectIdOrKey,
             BoardConfigRequest request) {
         ProjectAccess access = projects.access(user, projectIdOrKey).requireConfigurable();
+        long scheme = boardStatuses.lockProject(access.projectId());
+        BoardConfigRequest staged = boardStatuses.apply(access.projectId(), scheme, user.id(), request);
         Long id = jdbc.query("select id from board where project_id = :project for update",
                 Map.of("project", access.projectId()), (rs, n) -> rs.getLong(1)).stream().findFirst().orElse(null);
         if (id == null) {
             id = jdbc.queryForObject("insert into board (project_id) values (:project) returning id",
                     Map.of("project", access.projectId()), Long.class);
         }
-        save(id, request);
-        return config(boardOf(access.projectId()));
+        save(id, access.projectId(), staged);
+        return config(boardOf(access.projectId()), access.projectId());
     }
 
     /** Lets the project use the default board again. */
     public BoardConfigResponse resetProject(BuggyWuggyPrincipal user, String projectIdOrKey) {
         ProjectAccess access = projects.access(user, projectIdOrKey).requireConfigurable();
+        boardStatuses.lockProject(access.projectId());
+        if (!boardStatuses.custom(access.projectId()).isEmpty()) {
+            throw badRequest("board.status-reset");
+        }
         jdbc.update("delete from board where project_id = :project", Map.of("project", access.projectId()));
-        return config(defaultBoard());
+        return config(defaultBoard(), access.projectId());
     }
 
-    private void save(long boardId, BoardConfigRequest request) {
+    private void save(long boardId, Long project, BoardConfigRequest request) {
         Set<String> names = new HashSet<>();
         Set<Long> statusIds = new HashSet<>();
         for (ColumnRequest column : request.columns()) {
@@ -165,8 +180,8 @@ public class BoardService {
             }
         }
         if (!statusIds.isEmpty()) {
-            Set<Long> known = new HashSet<>(jdbc.queryForList("select id from status where id in (:ids)",
-                    Map.of("ids", statusIds), Long.class));
+            Set<Long> known = new HashSet<>();
+            boardStatuses.available(project).forEach(status -> known.add(status.id()));
             statusIds.stream().filter(id -> !known.contains(id)).findFirst()
                     .ifPresent(id -> { throw badRequest("board.status-invalid", id); });
         }
@@ -198,11 +213,8 @@ public class BoardService {
         Board board = boardOf(project.getId());
 
         Map<Long, StatusRef> statuses = new LinkedHashMap<>();
-        jdbc.query("select id, name, category from status", rs -> {
-            statuses.put(rs.getLong("id"), new StatusRef(rs.getLong("id"), rs.getString("name"),
-                    Status.Category.valueOf(rs.getString("category"))));
-        });
-        List<BoardColumn> columns = config(board).columns().stream()
+        boardStatuses.available(project.getId()).forEach(status -> statuses.put(status.id(), status));
+        List<BoardColumn> columns = columns(board).stream()
                 .map(c -> new BoardColumn(c.id(), c.name(), c.statusIds().stream().map(statuses::get).toList()))
                 .toList();
 

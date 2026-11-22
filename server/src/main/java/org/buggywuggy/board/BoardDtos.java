@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.Map;
 import org.buggywuggy.common.ApiNullable;
 import org.buggywuggy.issue.IssueDtos.IssueRef;
 import org.buggywuggy.issue.IssueDtos.IssueTypeRef;
@@ -36,16 +37,23 @@ public final class BoardDtos {
     }
 
     /** {@code own}: the project has its own columns; otherwise it uses the default board. */
-    public record BoardConfigResponse(boolean own, Swimlanes swimlanes, int resolvedDays, List<ColumnConfig> columns) {
+    public record BoardConfigResponse(boolean own, Swimlanes swimlanes, int resolvedDays, List<ColumnConfig> columns,
+            List<StatusRef> availableStatuses, List<Long> customStatusIds) {
     }
 
     public record ColumnRequest(@NotBlank @Size(max = 100) String name, @NotNull List<@NotNull Long> statusIds) {
     }
 
+    /** Negative IDs identify new statuses within this request and can be referenced by columns. */
+    public record CustomStatusRequest(@NotNull Long id, @NotBlank @Size(max = 100) String name) {
+    }
+
     public record BoardConfigRequest(
             @NotNull Swimlanes swimlanes,
             @NotNull @Min(0) @Max(365) Integer resolvedDays,
-            @NotNull @Size(min = 1, max = 20) List<@NotNull @Valid ColumnRequest> columns) {
+            @NotNull @Size(min = 1, max = 20) List<@NotNull @Valid ColumnRequest> columns,
+            @Size(max = 100) List<@NotNull @Valid CustomStatusRequest> customStatuses,
+            List<@NotNull Long> removedStatusIds, Map<Long, @NotNull Long> statusReplacements) {
     }
 
     // --- the board -------------------------------------------------------------------

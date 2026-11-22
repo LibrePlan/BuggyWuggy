@@ -11,6 +11,6 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface StatusRepository extends JpaRepository<Status, Long> {
 
-    @Query("select x from Status x order by x.position, x.id")
+    @Query(value = "select * from status where project_id is null order by position, id", nativeQuery = true)
     List<Status> findAllOrdered();
 }
